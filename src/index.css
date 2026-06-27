@@ -17,10 +17,9 @@
   --muted: #8a8a8a;
   --surface: #131313;
   --surface-2: #1f1f1f;
-  /* borders + shadows are both a dark grey (mirrors the light theme, where
-     both are black), over a black background */
-  --line: #3d3d3d;
-  --shadow-col: #3d3d3d;
+  /* borders + shadows: a deep grey over the black background */
+  --line: #1c1c1c;
+  --shadow-col: #1c1c1c;
   --cell-bg: #272727; /* open cells: the lighter squares */
   --cell-fg: #e6e6e6;
   --cell-block: #0d0d0d; /* blocked: darker than open, just above pure black */
