@@ -340,6 +340,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
      each square's width (cqw = 1% of grid width; cell width = 100/cols cqw). */
   container-type: inline-size;
 }
+/* Drop shadow on desktop only — on mobile it renders badly while scrolling. */
+@media (min-width: 821px) {
+  .grid { box-shadow: var(--sh) var(--sh) 0 var(--shadow-col); }
+}
 
 .cell {
   position: relative;
