@@ -24,7 +24,7 @@
   --cell-bg: #272727; /* open cells: the lighter squares */
   --cell-fg: #e6e6e6;
   --cell-block: #0d0d0d; /* blocked: darker than open, just above pure black */
-  --grid-line: #3d3d3d; /* same as the border + circles */
+  --grid-line: #1c1c1c; /* grid border + gridlines + circles (darker than cells) */
   --shaded: #343434;
   --wrong: #ff5247;
   --revealed: #4aabff;
@@ -331,7 +331,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   grid-template-rows: repeat(var(--rows), 1fr);
   gap: 2px;
   background: var(--grid-line);
-  border: var(--bw) solid var(--line);
+  border: var(--bw) solid var(--grid-line);
   width: min(92vw, 560px);
   aspect-ratio: var(--cols) / var(--rows);
   touch-action: manipulation;
@@ -416,7 +416,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .cell .circle {
   position: absolute;
   inset: 0; /* circle inscribed in the tile, touching the edges */
-  border: 2px solid var(--line);
+  border: 2px solid var(--grid-line);
   border-radius: 50% !important;
   pointer-events: none;
   z-index: 0;
