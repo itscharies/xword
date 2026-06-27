@@ -351,10 +351,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-weight: 550;
   text-transform: uppercase;
-  /* ~75% of a single square's width */
-  font-size: clamp(10px, calc(75cqw / var(--cols)), 30px);
+  /* ~60% of a single square's width */
+  font-size: clamp(9px, calc(60cqw / var(--cols)), 24px);
   line-height: 1;
 }
 .cell.multi {
@@ -666,6 +666,28 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ai-theme { font-size: 14px; font-weight: 600; }
 .ai-author { font-size: 13px; color: var(--muted); }
 .archive-item:hover .ai-author { color: #000; }
+
+/* ---- star rating -------------------------------------------------------- */
+
+.stars { display: inline-flex; gap: 3px; line-height: 1; }
+.stars .star {
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+.stars .star.on { color: #f6c33b; }
+.stars.interactive .star { cursor: pointer; }
+.stars-lg .star { font-size: 32px; }
+.archive-item { gap: 3px; }
+.archive-item .stars { margin-top: 4px; }
+.archive-item:hover .star:not(.on) { color: rgba(0, 0, 0, 0.4); }
+
+/* completion-modal rating */
+.rate-label { margin-top: 16px !important; font-weight: 700; color: var(--fg) !important; }
+.rate-stars { display: flex; justify-content: center; margin-top: 4px; }
 
 /* Corner badge: a check for solved puzzles, a % for in-progress ones. */
 .ai-done,

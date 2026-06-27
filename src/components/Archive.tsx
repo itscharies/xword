@@ -3,6 +3,7 @@ import type { PuzzleIndexEntry } from "../types.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { CheckIcon } from "./icons.tsx";
+import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
 
 function formatDate(iso: string): string {
@@ -53,6 +54,7 @@ export function Archive({
           const theme = themeName(p.title);
           const prog = loadProgress(p.date);
           const done = prog?.completed ?? false;
+          const rating = prog?.rating ?? 0;
           const pct =
             !done && prog?.total
               ? Math.round((100 * (prog.filled ?? 0)) / prog.total)
@@ -66,6 +68,7 @@ export function Archive({
                 <span className="ai-date">{formatDate(p.isoDate)}</span>
                 {theme && <span className="ai-theme">{theme}</span>}
                 <span className="ai-author">By {p.author}</span>
+                {rating > 0 && <StarRating value={rating} />}
                 {done ? (
                   <span className="ai-done" title="Solved" aria-label="Solved">
                     <CheckIcon />

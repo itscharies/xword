@@ -109,6 +109,7 @@ function Solver({
   const [showSettings, setShowSettings] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
+  const [rating, setRating] = useState(saved?.rating ?? 0);
 
   const modalOpen = showModal || showSettings || showReset;
 
@@ -126,8 +127,9 @@ function Solver({
       completed: xw.completed,
       filled,
       total,
+      rating,
     });
-  }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells]);
+  }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {
@@ -215,6 +217,8 @@ function Solver({
         <CompletionModal
           elapsed={elapsed}
           usedReveal={xw.revealed.size > 0}
+          rating={rating}
+          onRate={setRating}
           onClose={() => setShowModal(false)}
         />
       )}
@@ -239,6 +243,7 @@ function Solver({
                 setElapsed(0);
                 setPaused(false);
                 setCelebrated(false);
+                setRating(0);
                 setShowReset(false);
               }}
             >

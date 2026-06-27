@@ -11,6 +11,8 @@ export interface Progress {
   /** Open cells filled, and total open cells — for the archive % badge. */
   filled?: number;
   total?: number;
+  /** Self-rating 1–5, set on completion. */
+  rating?: number;
 }
 
 const key = (date: string) => `xword:progress:${date}`;
