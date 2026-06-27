@@ -63,7 +63,7 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
 
   // Grid rows. Special characters in the source:
   //   '#' black square, '.' void cell (outside the puzzle),
-  //   '^' and '%' both mark a shaded (greyed) cell, prefixing the next letter,
+  //   '^' shaded (greyed) cell, '%' circled cell — both prefix the next letter,
   //   ',' rebus join — connects the surrounding letters into one multi-letter
   //       cell, e.g. "ICEB,L,O,C,KERS" -> [ICE][BLOCK][ERS].
   const grid: Cell[][] = [];
@@ -71,10 +71,15 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
     const rowText = tokens[i++] ?? "";
     const row: Cell[] = [];
     let shadedNext = false;
+    let circledNext = false;
     let mergeNext = false; // a ',' was seen — fold the next letter into the last cell
     for (const ch of rowText) {
-      if (ch === "^" || ch === "%") {
+      if (ch === "^") {
         shadedNext = true;
+        continue;
+      }
+      if (ch === "%") {
+        circledNext = true;
         continue;
       }
       if (ch === ",") {
@@ -91,12 +96,15 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
         prev.solution = (prev.solution ?? "") + ch.toUpperCase();
         prev.rebus = true;
         if (shadedNext) prev.shaded = true;
+        if (circledNext) prev.circled = true;
       } else {
         const cell: Cell = { solution: ch.toUpperCase() };
         if (shadedNext) cell.shaded = true;
+        if (circledNext) cell.circled = true;
         row.push(cell);
       }
       shadedNext = false;
+      circledNext = false;
       mergeNext = false;
     }
     // Pad short rows / trim long ones to exactly `width`.

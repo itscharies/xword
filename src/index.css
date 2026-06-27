@@ -413,6 +413,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: relative;
   z-index: 2;
 }
+.cell .circle {
+  position: absolute;
+  inset: 0; /* circle inscribed in the tile, touching the edges */
+  /* currentColor (the cell's text colour) always contrasts with the cell. */
+  border: 2px solid color-mix(in srgb, currentColor 55%, transparent);
+  border-radius: 50% !important;
+  pointer-events: none;
+  z-index: 0; /* behind the number + letter */
+}
 
 /* ---- active clue banner ------------------------------------------------- */
 
