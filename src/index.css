@@ -633,7 +633,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .app { padding: 14px 14px 0; gap: 12px; }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
-  .grid { width: 100%; }
+  .grid { width: 100%; gap: 1px; }
   .clue-banner { width: 100%; }
   /* Full clue lists are redundant on mobile — the banner + keyboard suffice. */
   .clues { display: none; }

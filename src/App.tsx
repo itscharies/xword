@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
-import { loadLastDate, loadProgress, saveProgress } from "./lib/storage.ts";
+import { loadProgress, saveProgress } from "./lib/storage.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
@@ -49,14 +49,9 @@ export default function App() {
     return <Archive index={index} onPick={(d) => goTo(d)} />;
   }
 
-  // A valid date in the hash, else fall back to the last-played or newest.
+  // A valid date in the hash, else default to the latest crossword.
   const isValidDate = /^\d{6}$/.test(route) && index.some((p) => p.date === route);
-  const last = loadLastDate();
-  const date = isValidDate
-    ? route
-    : last && index.some((p) => p.date === last)
-      ? last
-      : index[0].date;
+  const date = isValidDate ? route : index[0].date;
 
   return (
     <PuzzleView key={date} date={date} onOpenArchive={() => goTo("list")} />
