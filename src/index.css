@@ -422,7 +422,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 700;
   line-height: 1;
   /* Dim a touch vs the letters, but keep it legible on any cell colour. */
-  color: color-mix(in srgb, currentColor 78%, transparent);
+  color: color-mix(in srgb, currentColor 55%, transparent);
   z-index: 1; /* above the circle, which sits behind at z-index 0 */
 }
 /* The entered letter sits on top of the number if they ever overlap. */
@@ -525,7 +525,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* ---- on-screen keyboard ------------------------------------------------- */
 
-.keyboard { display: none; flex-direction: column; gap: 7px; width: 100%; }
+.keyboard {
+  display: none;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+}
 .kb-row { display: flex; gap: 6px; width: 100%; }
 .kb-key {
   flex: 1 1 0;
@@ -538,7 +545,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 17px;
   font-weight: 700;
   text-transform: uppercase;
+  /* whole key is the tap target; no text selection / tap highlight */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
+.kb-key > * { pointer-events: none; }
 .kb-key.wide { flex: 1.5 1 0; }
 .kb-key.active { background: var(--accent-2); color: #000; }
 .kb-key:active {

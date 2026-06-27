@@ -280,22 +280,6 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     [isOpen, width, height],
   );
 
-  /** Move to the next still-empty cell in the current word (else next cell). */
-  const advanceInWord = useCallback(() => {
-    const clue = clueThrough(activeRef.current, directionRef.current);
-    if (!clue) return;
-    const cells = clueCells(clue);
-    const cur = activeRef.current;
-    const i = cells.findIndex((p) => p.row === cur.row && p.col === cur.col);
-    for (let j = i + 1; j < cells.length; j++) {
-      if (!entriesRef.current[cells[j].row][cells[j].col]) {
-        setActive(cells[j]);
-        return;
-      }
-    }
-    if (i + 1 < cells.length) setActive(cells[i + 1]);
-  }, [clueThrough]);
-
   /** Jump to the first empty cell of the next clue (in order) that has one. */
   const advanceToNextWord = useCallback(() => {
     const cur = clueThrough(activeRef.current, directionRef.current);
@@ -318,9 +302,22 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     // Whole puzzle is filled — leave the cursor where it is.
   }, [clueThrough, orderedClues]);
 
-  /** True when every cell of a clue has an entry. */
-  const wordIsFull = (clue: DirClue) =>
-    clueCells(clue).every((p) => entriesRef.current[p.row][p.col]);
+  /** Advance to the next empty cell in the word; if there's none ahead (incl.
+   * after typing the last cell), jump to the next word. */
+  const advanceInWord = useCallback(() => {
+    const clue = clueThrough(activeRef.current, directionRef.current);
+    if (!clue) return;
+    const cells = clueCells(clue);
+    const cur = activeRef.current;
+    const i = cells.findIndex((p) => p.row === cur.row && p.col === cur.col);
+    for (let j = i + 1; j < cells.length; j++) {
+      if (!entriesRef.current[cells[j].row][cells[j].col]) {
+        setActive(cells[j]);
+        return;
+      }
+    }
+    advanceToNextWord();
+  }, [clueThrough, advanceToNextWord]);
 
   // ---- editing ------------------------------------------------------------
 
@@ -366,12 +363,9 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       writeCell(row, col, ch.toUpperCase());
       clearWrongAt(row, col);
       clearRevealedAt(row, col);
-      // If that completed the word, jump to the next word; else advance within.
-      const clue = clueThrough(activeRef.current, directionRef.current);
-      if (clue && wordIsFull(clue)) advanceToNextWord();
-      else advanceInWord();
+      advanceInWord();
     },
-    [isOpen, advanceInWord, advanceToNextWord, clueThrough],
+    [isOpen, advanceInWord],
   );
 
   const backspace = useCallback(() => {
