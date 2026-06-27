@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
+import { CheckIcon } from "./icons.tsx";
+import { loadProgress } from "../lib/storage.ts";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -49,12 +51,21 @@ export function Archive({
       <ul className="archive-list">
         {index.map((p) => {
           const theme = themeName(p.title);
+          const done = loadProgress(p.date)?.completed ?? false;
           return (
             <li key={p.date}>
-              <button className="archive-item" onClick={() => onPick(p.date)}>
+              <button
+                className={`archive-item ${done ? "done" : ""}`}
+                onClick={() => onPick(p.date)}
+              >
                 <span className="ai-date">{formatDate(p.isoDate)}</span>
                 {theme && <span className="ai-theme">{theme}</span>}
                 <span className="ai-author">By {p.author}</span>
+                {done && (
+                  <span className="ai-done" title="Solved" aria-label="Solved">
+                    <CheckIcon />
+                  </span>
+                )}
               </button>
             </li>
           );
