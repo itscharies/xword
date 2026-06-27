@@ -51,11 +51,16 @@
 /* Each accent defines: the primary bright colour, a lighter secondary (used
    for the clue bar), and a slightly deeper variant (used for cell highlights
    on mobile, easier on the eyes). */
-[data-accent="yellow"] { --accent: #ffe500; --accent-rgb: 255, 229, 0; --accent-2: #fff170; --accent-deep: #e6cc00; --accent-deep-rgb: 230, 204, 0; }
-[data-accent="cyan"]   { --accent: #00e5ff; --accent-rgb: 0, 229, 255; --accent-2: #79f0ff; --accent-deep: #00c2d9; --accent-deep-rgb: 0, 194, 217; }
-[data-accent="pink"]   { --accent: #ff2d8e; --accent-rgb: 255, 45, 142; --accent-2: #ff77b4; --accent-deep: #e01f78; --accent-deep-rgb: 224, 31, 120; }
-[data-accent="lime"]   { --accent: #3cff52; --accent-rgb: 60, 255, 82; --accent-2: #8cff97; --accent-deep: #2ed943; --accent-deep-rgb: 46, 217, 67; }
+[data-accent="red"]    { --accent: #ff4d4d; --accent-rgb: 255, 77, 77;  --accent-2: #ff8a8a; --accent-deep: #e63b3b; --accent-deep-rgb: 230, 59, 59; }
 [data-accent="orange"] { --accent: #ff7a00; --accent-rgb: 255, 122, 0; --accent-2: #ffa64d; --accent-deep: #db6900; --accent-deep-rgb: 219, 105, 0; }
+[data-accent="yellow"] { --accent: #ffe500; --accent-rgb: 255, 229, 0; --accent-2: #fff170; --accent-deep: #e6cc00; --accent-deep-rgb: 230, 204, 0; }
+[data-accent="lime"]   { --accent: #3cff52; --accent-rgb: 60, 255, 82;  --accent-2: #8cff97; --accent-deep: #2ed943; --accent-deep-rgb: 46, 217, 67; }
+[data-accent="green"]  { --accent: #22c55e; --accent-rgb: 34, 197, 94;  --accent-2: #5fe08c; --accent-deep: #1ba34d; --accent-deep-rgb: 27, 163, 77; }
+[data-accent="cyan"]   { --accent: #00e5ff; --accent-rgb: 0, 229, 255;  --accent-2: #79f0ff; --accent-deep: #00c2d9; --accent-deep-rgb: 0, 194, 217; }
+[data-accent="blue"]   { --accent: #3b82ff; --accent-rgb: 59, 130, 255; --accent-2: #85aaff; --accent-deep: #2f6be0; --accent-deep-rgb: 47, 107, 224; }
+[data-accent="indigo"] { --accent: #8a5cff; --accent-rgb: 138, 92, 255; --accent-2: #b29bff; --accent-deep: #7346e6; --accent-deep-rgb: 115, 70, 230; }
+[data-accent="violet"] { --accent: #cf5cff; --accent-rgb: 207, 92, 255; --accent-2: #e09bff; --accent-deep: #b833e6; --accent-deep-rgb: 184, 51, 230; }
+[data-accent="pink"]   { --accent: #ff2d8e; --accent-rgb: 255, 45, 142; --accent-2: #ff77b4; --accent-deep: #e01f78; --accent-deep-rgb: 224, 31, 120; }
 
 /* Cell-highlight colour (active cell + word tint). Deepened on mobile below. */
 :root { --hl: var(--accent); --hl-rgb: var(--accent-rgb); }
@@ -678,7 +683,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 14px;
   line-height: 1;
 }
-.stars .star.on { color: #f6c33b; }
+.stars .star.on { color: var(--accent); }
 .stars.interactive .star { cursor: pointer; }
 .stars-lg .star { font-size: 32px; }
 .archive-item { gap: 3px; }

@@ -127,7 +127,7 @@ function Solver({
       completed: xw.completed,
       filled,
       total,
-      rating,
+      rating: rating || undefined,
     });
   }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
 

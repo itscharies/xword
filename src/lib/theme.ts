@@ -2,11 +2,16 @@ export type Mode = "light" | "dark";
 
 /** Selectable bright accent colours (kept in sync with [data-accent] in CSS). */
 export const ACCENTS = [
-  { id: "yellow", label: "Yellow", swatch: "#ffe500" },
-  { id: "cyan", label: "Cyan", swatch: "#00e5ff" },
-  { id: "pink", label: "Pink", swatch: "#ff2d8e" },
-  { id: "lime", label: "Lime", swatch: "#3cff52" },
+  { id: "red", label: "Red", swatch: "#ff4d4d" },
   { id: "orange", label: "Orange", swatch: "#ff7a00" },
+  { id: "yellow", label: "Yellow", swatch: "#ffe500" },
+  { id: "lime", label: "Lime", swatch: "#3cff52" },
+  { id: "green", label: "Green", swatch: "#22c55e" },
+  { id: "cyan", label: "Cyan", swatch: "#00e5ff" },
+  { id: "blue", label: "Blue", swatch: "#3b82ff" },
+  { id: "indigo", label: "Indigo", swatch: "#8a5cff" },
+  { id: "violet", label: "Violet", swatch: "#cf5cff" },
+  { id: "pink", label: "Pink", swatch: "#ff2d8e" },
 ] as const;
 
 export type AccentId = (typeof ACCENTS)[number]["id"];
