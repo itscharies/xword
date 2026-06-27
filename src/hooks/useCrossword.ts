@@ -280,44 +280,25 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     [isOpen, width, height],
   );
 
-  /** Jump to the first empty cell of the next clue (in order) that has one. */
-  const advanceToNextWord = useCallback(() => {
-    const cur = clueThrough(activeRef.current, directionRef.current);
-    if (!cur) return;
-    const at = orderedClues.findIndex(
-      (c) => c.number === cur.number && c.direction === cur.direction,
-    );
-    if (at < 0) return;
-    for (let k = 1; k <= orderedClues.length; k++) {
-      const c = orderedClues[(at + k) % orderedClues.length];
-      const empty = clueCells(c).find(
-        (p) => !entriesRef.current[p.row][p.col],
-      );
-      if (empty) {
-        setDirection(c.direction);
-        setActive(empty);
-        return;
-      }
-    }
-    // Whole puzzle is filled — leave the cursor where it is.
-  }, [clueThrough, orderedClues]);
-
-  /** Advance to the next empty cell in the word; if there's none ahead (incl.
-   * after typing the last cell), jump to the next word. */
+  /** Advance within the current word only (never auto-jumps to another word):
+   *  1. next empty cell after the cursor;
+   *  2. else the first empty cell earlier in the word (fill the gaps);
+   *  3. else (word full) step one cell forward to re-write, anchored at the end. */
   const advanceInWord = useCallback(() => {
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
     const cells = clueCells(clue);
+    const empty = (p: Pos) => !entriesRef.current[p.row][p.col];
     const cur = activeRef.current;
     const i = cells.findIndex((p) => p.row === cur.row && p.col === cur.col);
+
     for (let j = i + 1; j < cells.length; j++) {
-      if (!entriesRef.current[cells[j].row][cells[j].col]) {
-        setActive(cells[j]);
-        return;
-      }
+      if (empty(cells[j])) return setActive(cells[j]);
     }
-    advanceToNextWord();
-  }, [clueThrough, advanceToNextWord]);
+    const firstGap = cells.find(empty);
+    if (firstGap) return setActive(firstGap);
+    if (i + 1 < cells.length) setActive(cells[i + 1]);
+  }, [clueThrough]);
 
   // ---- editing ------------------------------------------------------------
 
