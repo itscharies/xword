@@ -13,7 +13,7 @@
 
 [data-theme="dark"] {
   --bg: #000000;
-  --fg: #ffffff;
+  --fg: #e6e6e6; /* soft light-grey instead of harsh pure white */
   --muted: #8a8a8a;
   --surface: #131313;
   --surface-2: #1f1f1f;
@@ -22,7 +22,7 @@
   --line: #3d3d3d;
   --shadow-col: #3d3d3d;
   --cell-bg: #272727; /* open cells: the lighter squares */
-  --cell-fg: #ffffff;
+  --cell-fg: #e6e6e6;
   --cell-block: #0d0d0d; /* blocked: darker than open, just above pure black */
   --grid-line: #3d3d3d;
   --shaded: #343434;
@@ -49,11 +49,17 @@
   color-scheme: light;
 }
 
-[data-accent="yellow"] { --accent: #ffe500; --accent-rgb: 255, 229, 0; --accent-dim: #8a7b00; }
-[data-accent="cyan"]   { --accent: #00e5ff; --accent-rgb: 0, 229, 255; --accent-dim: #00788a; }
-[data-accent="pink"]   { --accent: #ff2d8e; --accent-rgb: 255, 45, 142; --accent-dim: #8a1850; }
-[data-accent="lime"]   { --accent: #3cff52; --accent-rgb: 60, 255, 82; --accent-dim: #1f8a2c; }
-[data-accent="orange"] { --accent: #ff7a00; --accent-rgb: 255, 122, 0; --accent-dim: #8a4200; }
+/* Each accent defines: the primary bright colour, a lighter secondary (used
+   for the clue bar), and a slightly deeper variant (used for cell highlights
+   on mobile, easier on the eyes). */
+[data-accent="yellow"] { --accent: #ffe500; --accent-rgb: 255, 229, 0; --accent-2: #fff170; --accent-deep: #e6cc00; --accent-deep-rgb: 230, 204, 0; }
+[data-accent="cyan"]   { --accent: #00e5ff; --accent-rgb: 0, 229, 255; --accent-2: #79f0ff; --accent-deep: #00c2d9; --accent-deep-rgb: 0, 194, 217; }
+[data-accent="pink"]   { --accent: #ff2d8e; --accent-rgb: 255, 45, 142; --accent-2: #ff77b4; --accent-deep: #e01f78; --accent-deep-rgb: 224, 31, 120; }
+[data-accent="lime"]   { --accent: #3cff52; --accent-rgb: 60, 255, 82; --accent-2: #8cff97; --accent-deep: #2ed943; --accent-deep-rgb: 46, 217, 67; }
+[data-accent="orange"] { --accent: #ff7a00; --accent-rgb: 255, 122, 0; --accent-2: #ffa64d; --accent-deep: #db6900; --accent-deep-rgb: 219, 105, 0; }
+
+/* Cell-highlight colour (active cell + word tint). Deepened on mobile below. */
+:root { --hl: var(--accent); --hl-rgb: var(--accent-rgb); }
 
 * { box-sizing: border-box; border-radius: 0 !important; }
 
@@ -142,24 +148,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-align: center;
 }
 
-.picker {
-  background: var(--surface);
-  color: var(--fg);
-  border: var(--bw) solid var(--line);
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
 /* ---- settings (cog button + modal body) -------------------------------- */
 
-.cog-btn {
+.btn.cog-btn {
   width: 44px;
   height: 44px;
+  padding: 0;
   font-size: 19px;
-  display: grid;
-  place-items: center;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .settings { display: flex; flex-direction: column; gap: 18px; margin-top: 4px; }
@@ -249,8 +248,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--surface);
   border: var(--bw) solid var(--line);
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
-  overflow: hidden;
   min-width: 140px;
+  max-height: 320px; /* scroll long lists (e.g. the date picker) */
+  overflow-y: auto;
 }
 .menu button {
   display: block;
@@ -261,8 +261,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .menu button:hover { background: var(--accent); color: #000; }
+.menu button.active { background: var(--accent); color: #000; }
 
 /* ---- main grid + clues -------------------------------------------------- */
 
@@ -311,22 +313,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .cell.black { background: var(--cell-block); }
 .cell.void { background: var(--bg); }
 .cell.shaded { background: var(--shaded); }
-/* translucent accent composited over the cell background (theme-agnostic) */
+/* translucent highlight composited over the cell background (theme-agnostic) */
 .cell.word {
   background: linear-gradient(
-      rgba(var(--accent-rgb), 0.34),
-      rgba(var(--accent-rgb), 0.34)
+      rgba(var(--hl-rgb), 0.34),
+      rgba(var(--hl-rgb), 0.34)
     ),
     var(--cell-bg);
 }
 .cell.linked {
   background: linear-gradient(
-      rgba(var(--accent-rgb), 0.16),
-      rgba(var(--accent-rgb), 0.16)
+      rgba(var(--hl-rgb), 0.16),
+      rgba(var(--hl-rgb), 0.16)
     ),
     var(--cell-bg);
 }
-.cell.active { background: var(--accent); color: #000; }
+.cell.active { background: var(--hl); color: #000; }
 .cell.wrong { color: var(--wrong); }
 .cell.wrong::after {
   content: "";
@@ -347,6 +349,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: clamp(6px, 1.6vw, 10px);
   font-weight: 700;
   line-height: 1;
+  opacity: 0.6; /* numbers a touch dimmer than the entered letters */
+  z-index: 1;
+}
+/* The entered letter sits on top of the number if they ever overlap. */
+.cell .cell-letter {
+  position: relative;
+  z-index: 2;
 }
 .cell .circle {
   position: absolute;
@@ -355,6 +364,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-radius: 50% !important;
   opacity: 0.6;
   pointer-events: none;
+  z-index: 0;
 }
 
 /* ---- active clue banner ------------------------------------------------- */
@@ -362,7 +372,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .clue-banner {
   display: flex;
   align-items: stretch;
-  background: var(--accent);
+  background: var(--accent-2);
   color: #000;
   border: var(--bw) solid var(--line);
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
@@ -372,7 +382,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .clue-banner .nav {
   background: #000;
-  color: var(--accent);
+  color: var(--accent-2);
   border: 0;
   padding: 0 16px;
   font-size: 20px;
@@ -523,6 +533,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* ---- responsive --------------------------------------------------------- */
 
 @media (max-width: 820px) {
+  /* Slightly deeper cell highlights — easier on the eyes on a bright phone. */
+  :root { --hl: var(--accent-deep); --hl-rgb: var(--accent-deep-rgb); }
+  /* The keyboard already carries the rebus toggle, so drop the toolbar one. */
+  .rebus-btn { display: none; }
+
   /* Fill the viewport: header + toolbar fixed, the grid area scrolls, and the
      clue bar + keyboard are anchored at the bottom. This guarantees the whole
      grid can scroll into view above the bar (no clipped bottom rows). */
