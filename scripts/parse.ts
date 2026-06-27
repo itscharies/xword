@@ -113,12 +113,20 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
     grid.push(row);
   }
 
-  // Drop trailing rows that are entirely void ('.' filler) — they aren't part
-  // of the puzzle and otherwise render as an odd blacked-out bottom row.
-  while (grid.length > 1 && grid[grid.length - 1].every((c) => c.void)) {
-    grid.pop();
+  // Some payloads (notably oversized/Sunday grids) pad the real puzzle into a
+  // larger bounding box with '.' void filler on the edges. Trim any fully-void
+  // border row or column so the visible grid is tight — interior voids (genuine
+  // holes in a non-rectangular puzzle) are left untouched.
+  const rowAllVoid = (row: Cell[]) => row.every((c) => c.void);
+  const colAllVoid = (c: number) => grid.every((row) => row[c]?.void);
+  while (grid.length > 1 && rowAllVoid(grid[0])) grid.shift();
+  while (grid.length > 1 && rowAllVoid(grid[grid.length - 1])) grid.pop();
+  while (grid[0].length > 1 && colAllVoid(0)) grid.forEach((row) => row.shift());
+  while (grid[0].length > 1 && colAllVoid(grid[0].length - 1)) {
+    grid.forEach((row) => row.pop());
   }
   const gridHeight = grid.length;
+  const gridWidth = grid[0].length;
 
   // Clues follow, across then down, each list in clue-number order.
   const acrossClueText = tokens.slice(i, i + acrossCount);
@@ -165,7 +173,7 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
     title,
     author,
     editor,
-    width,
+    width: gridWidth,
     height: gridHeight,
     grid,
     clues: { across, down },
