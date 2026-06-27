@@ -232,7 +232,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .toolbar { display: flex; gap: 12px; flex-wrap: wrap; }
 .tb-group { position: relative; }
 
+/* The action bar holds the toolbar (Check/Reveal/Reset) and the
+   pause/timer/settings controls on one row. */
+.actionbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.actionbar-controls { display: flex; align-items: center; gap: 10px; }
+
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   background: var(--surface);
   color: var(--fg);
   border: var(--bw) solid var(--line);
@@ -242,6 +257,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 700;
   transition: transform 0.08s, box-shadow 0.08s;
 }
+/* Icons replace the labels only on mobile. */
+.btn-icon { display: none; align-items: center; justify-content: center; }
+.btn-icon svg { display: block; }
 .btn:hover { background: var(--accent); color: #000; }
 .btn:active { transform: translate(var(--sh), var(--sh)); box-shadow: 0 0 0 var(--shadow-col); }
 /* Toggle buttons (rebus) that are switched on. */
@@ -613,27 +631,43 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .banner-desktop { display: none; }
   .keyboard { display: flex; }
 
-  /* Compact, single-row chrome — slimmer buttons, controls on one line. */
+  /* Compact chrome — title scrolls; actions collapse to icons. */
   .byline { display: none; }
-  .title-block { flex-basis: 100%; }
   .title-block h1 {
     font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .header { gap: 10px; }
-  .header-right { flex-wrap: nowrap; gap: 6px; }
-  .timer-group { gap: 6px; }
-  .header .btn,
-  .toolbar .btn {
-    padding: 7px 11px;
-    font-size: 13px;
+  .timer-group { gap: 8px; }
+  .actionbar-controls { gap: 8px; }
+  .toolbar { gap: 8px; }
+
+  /* Sticky action bar at the top, mirroring the bottom keyboard bar. */
+  .actionbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    flex-wrap: nowrap;
+    margin: 0 -14px;
+    padding: 8px 14px;
+    background: var(--bg);
+    border-bottom: 2px solid var(--line);
+  }
+
+  .actionbar .btn {
     border-width: 2px;
     box-shadow: 3px 3px 0 var(--shadow-col);
   }
   .btn.icon-btn,
   .btn.cog-btn { width: 34px; height: 34px; padding: 0; font-size: 14px; }
+
+  /* Check / Reveal / Reset become square icon buttons. */
+  .toolbar .btn { width: 34px; height: 34px; padding: 0; }
+  .toolbar .btn .btn-label,
+  .toolbar .btn .btn-caret { display: none; }
+  .toolbar .btn .btn-icon { display: inline-flex; }
+
   .timer {
     padding: 5px 9px;
     font-size: 15px;
@@ -660,6 +694,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
     margin: 0 -14px;
     padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
-    border-top: var(--bw) solid var(--line);
+    border-top: 2px solid var(--line);
   }
 }

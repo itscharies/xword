@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Crossword, RevealScope } from "../hooks/useCrossword.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
+import { CheckIcon, EyeIcon, ResetIcon } from "./icons.tsx";
 
 function Dropdown({
   label,
-  danger,
+  icon,
   onPick,
 }: {
   label: string;
-  danger?: boolean;
+  icon: ReactNode;
   onPick: (scope: RevealScope) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -25,11 +26,10 @@ function Dropdown({
 
   return (
     <div className="tb-group" ref={ref}>
-      <button
-        className={`btn ${danger ? "danger" : ""}`}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {label} ▾
+      <button className="btn" onClick={() => setOpen((o) => !o)} aria-label={label}>
+        <span className="btn-icon">{icon}</span>
+        <span className="btn-label">{label}</span>
+        <span className="btn-caret">▾</span>
       </button>
       {open && (
         <div className="menu">
@@ -59,8 +59,8 @@ export function Toolbar({
 }) {
   return (
     <div className="toolbar">
-      <Dropdown label="Check" onPick={xw.check} />
-      <Dropdown label="Reveal" onPick={xw.reveal} />
+      <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} />
+      <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} />
       <button
         className={`btn rebus-btn ${xw.rebus ? "active" : ""}`}
         onClick={() => xw.toggleRebus()}
@@ -69,8 +69,11 @@ export function Toolbar({
       >
         <RebusIcon />
       </button>
-      <button className="btn" onClick={onRequestReset}>
-        Reset
+      <button className="btn" onClick={onRequestReset} aria-label="Reset">
+        <span className="btn-icon">
+          <ResetIcon />
+        </span>
+        <span className="btn-label">Reset</span>
       </button>
     </div>
   );

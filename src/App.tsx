@@ -161,7 +161,11 @@ function Solver({
             {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
           </div>
         </button>
-        <div className="header-right">
+      </header>
+
+      <div className="actionbar">
+        <Toolbar xw={xw} onRequestReset={() => setShowReset(true)} />
+        <div className="actionbar-controls">
           <div className="timer-group">
             <button
               className="btn icon-btn"
@@ -184,9 +188,7 @@ function Solver({
             ⚙
           </button>
         </div>
-      </header>
-
-      <Toolbar xw={xw} onRequestReset={() => setShowReset(true)} />
+      </div>
 
       <div className="main" onPointerDown={resume}>
         <div className="board">

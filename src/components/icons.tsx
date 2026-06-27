@@ -1,0 +1,34 @@
+// Monochrome line icons (inherit currentColor). Shown on mobile in place of
+// the Check / Reveal / Reset text labels.
+
+const base = {
+  viewBox: "0 0 24 24",
+  width: 20,
+  height: 20,
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2.4,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+export const CheckIcon = () => (
+  <svg {...base}>
+    <path d="M4 12.5l5 5L20 6.5" />
+  </svg>
+);
+
+export const EyeIcon = () => (
+  <svg {...base} strokeWidth={2}>
+    <path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" />
+    <circle cx="12" cy="12" r="3.1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const ResetIcon = () => (
+  <svg {...base}>
+    <path d="M3.5 12a8.5 8.5 0 1 0 2.4-5.9" />
+    <path d="M3 4v4h4" />
+  </svg>
+);
