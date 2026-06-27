@@ -12,19 +12,19 @@
 }
 
 [data-theme="dark"] {
-  --bg: #000000;
+  /* Dark-grey page so black borders/shadows have real contrast. */
+  --bg: #1c1c1c;
   --fg: #e6e6e6; /* soft light-grey instead of harsh pure white */
-  --muted: #8a8a8a;
-  --surface: #131313;
-  --surface-2: #1f1f1f;
-  /* borders + shadows: a deep grey over the black background */
-  --line: #1c1c1c;
-  --shadow-col: #1c1c1c;
-  --cell-bg: #272727; /* open cells: the lighter squares */
+  --muted: #8f8f8f;
+  --surface: #2b2b2b; /* panels/buttons: lighter tiles on the grey page */
+  --surface-2: #383838;
+  --line: #000000; /* borders + gridlines + circles: black */
+  --shadow-col: #000000; /* shadows: black */
+  --cell-bg: #2b2b2b; /* open cells */
   --cell-fg: #e6e6e6;
-  --cell-block: #0d0d0d; /* blocked: darker than open, just above pure black */
-  --grid-line: #1c1c1c; /* grid border + gridlines + circles (darker than cells) */
-  --shaded: #343434;
+  --cell-block: #000000; /* blocked squares: solid black, like the gridlines */
+  --grid-line: #000000;
+  --shaded: #3c3c3c;
   --wrong: #ff5247;
   --revealed: #4aabff;
   color-scheme: dark;
