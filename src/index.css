@@ -449,7 +449,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-align: left;
   cursor: pointer;
 }
-.clue-banner .text b { white-space: nowrap; font-weight: 800; }
+/* Bold but secondary — the clue number/direction sits behind the clue text. */
+.clue-banner .text b { white-space: nowrap; font-weight: 800; color: rgba(0, 0, 0, 0.5); }
 
 /* ---- clue lists --------------------------------------------------------- */
 

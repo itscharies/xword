@@ -15,7 +15,8 @@ export function ClueBanner({ xw }: { xw: Crossword }) {
         {clue ? (
           <>
             <b>
-              {clue.number} {clue.direction === "across" ? "A" : "D"}
+              {clue.number}
+              {clue.direction === "across" ? "A" : "D"}
             </b>
             <span>{clue.clue}</span>
           </>

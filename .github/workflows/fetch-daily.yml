@@ -2,10 +2,8 @@ name: Fetch daily puzzle
 
 on:
   schedule:
-    # Run a few times a day (UTC) so a new puzzle is picked up soon after it
-    # appears on the source, regardless of timezone.
-    - cron: "0 13 * * *"
-    - cron: "0 20 * * *"
+    # Once daily at 19:00 UTC — 5am in Sydney (AEST; 6am during AEDT).
+    - cron: "0 19 * * *"
   workflow_dispatch: {}
 
 permissions:
