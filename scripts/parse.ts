@@ -28,6 +28,16 @@ function titleFromIso(iso: string): string {
   return `NY Times, ${weekdayFromIso(iso)}, ${MONTHS[m - 1]} ${d}, ${y}`;
 }
 
+/** Pull an ISO date out of a payload title like "NY Times, Sun, Jun 28, 2026 …",
+ * or null if it has no recognisable date. */
+function isoFromTitle(title: string): string | null {
+  const m = title.match(/,\s*([A-Za-z]{3})[a-z]*\s+(\d{1,2}),\s*(\d{4})/);
+  if (!m) return null;
+  const mon = MONTHS.indexOf(m[1].slice(0, 3));
+  if (mon < 0) return null;
+  return `${m[3]}-${String(mon + 1).padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+}
+
 /**
  * Parse the raw pzzl.com text payload for a single date into a Puzzle.
  *
@@ -49,6 +59,18 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
   if (/^\d+$/.test(tokens[i])) i++; // edition id
 
   const title = tokens[i++] ?? titleFromIso(dateToIso(date));
+
+  // The source returns the latest available puzzle (HTTP 200) for any date that
+  // isn't published yet, rather than a 404. Reject a payload whose own title
+  // date disagrees with the date we asked for, so we never save a duplicate of
+  // the newest puzzle under a future date.
+  const titleIso = isoFromTitle(title);
+  if (titleIso && titleIso !== dateToIso(date)) {
+    throw new Error(
+      `${date}: payload is for ${titleIso} (not yet published) — skipping`,
+    );
+  }
+
   const byline = tokens[i++] ?? "";
   const [author = "", editor = ""] = byline.split(" / ").map((s) => s.trim());
 
