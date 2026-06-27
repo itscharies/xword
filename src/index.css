@@ -380,6 +380,26 @@ button { font: inherit; cursor: pointer; color: inherit; }
     var(--cell-bg);
 }
 .cell.active { background: var(--hl); color: #000; }
+/* Highlighting a shaded cell composites over the shade so it stays
+   distinguishable from highlighted-but-unshaded cells. */
+.cell.word.shaded {
+  background: linear-gradient(
+      rgba(var(--hl-rgb), 0.34),
+      rgba(var(--hl-rgb), 0.34)
+    ),
+    var(--shaded);
+}
+.cell.linked.shaded {
+  background: linear-gradient(
+      rgba(var(--hl-rgb), 0.16),
+      rgba(var(--hl-rgb), 0.16)
+    ),
+    var(--shaded);
+}
+.cell.active.shaded {
+  background: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
+    var(--hl);
+}
 .cell.wrong { color: var(--wrong); }
 .cell.wrong::after {
   content: "";
