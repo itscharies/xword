@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import {
   loadLastDate,
   loadProgress,
+  loadZoomMode,
   saveLastDate,
   saveProgress,
+  saveZoomMode,
 } from "./lib/storage.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
@@ -92,7 +94,28 @@ function Solver({
 }) {
   const saved = useMemo(() => loadProgress(puzzle.date), [puzzle.date]);
   const xw = useCrossword(puzzle, saved);
-  const { elapsed, setElapsed } = useTimer(!xw.completed, saved?.elapsed ?? 0);
+
+  const [paused, setPausedState] = useState(false);
+  const pausedRef = useRef(paused);
+  const setPaused = (v: boolean) => {
+    pausedRef.current = v;
+    setPausedState(v);
+  };
+  // Resume the moment the solver touches the grid, clues or keyboard again.
+  const resume = () => {
+    if (pausedRef.current) setPaused(false);
+  };
+
+  const { elapsed, setElapsed } = useTimer(
+    !xw.completed && !paused,
+    saved?.elapsed ?? 0,
+  );
+
+  // Fit (everything on one screen) vs scroll (whole page scrolls, only the
+  // clue bar + keyboard stay pinned). Mobile only; remembered across sessions.
+  const [scrollMode, setScrollMode] = useState(
+    () => loadZoomMode() === "scroll",
+  );
 
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -100,6 +123,22 @@ function Solver({
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
 
   const modalOpen = showModal || showSettings || showReset;
+
+  const barRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<HTMLDivElement>(null);
+  // Track the pinned bottom bar's height so scroll-mode can pad the page by
+  // exactly that much (so the last grid rows clear it).
+  useEffect(() => {
+    const bar = barRef.current;
+    const app = appRef.current;
+    if (!bar || !app) return;
+    const update = () =>
+      app.style.setProperty("--bar-h", `${bar.offsetHeight}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
 
   // Persist progress whenever it changes.
   useEffect(() => {
@@ -123,15 +162,22 @@ function Solver({
   // into the grid behind it.
   useEffect(() => {
     if (modalOpen) return;
-    const handler = (e: KeyboardEvent) => xw.handleKeyDown(e);
+    const handler = (e: KeyboardEvent) => {
+      resume();
+      xw.handleKeyDown(e);
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [xw.handleKeyDown, modalOpen]);
 
-  void setElapsed; // reserved for future manual adjustments
+  const toggleScroll = () => {
+    const next = !scrollMode;
+    setScrollMode(next);
+    saveZoomMode(next ? "scroll" : "fit");
+  };
 
   return (
-    <div className="app">
+    <div className={`app ${scrollMode ? "scroll-mode" : "fit-mode"}`} ref={appRef}>
       <header className="header">
         <div className="title-block">
           <h1>{puzzle.title}</h1>
@@ -142,7 +188,28 @@ function Solver({
         </div>
         <div className="header-right">
           <PuzzlePicker index={index} value={puzzle.date} onChange={onPickDate} />
-          <div className="timer">{formatTime(elapsed)}</div>
+          <div className="timer-group">
+            <button
+              className="btn icon-btn"
+              onClick={() => setPaused(!paused)}
+              aria-label={paused ? "Resume timer" : "Pause timer"}
+              title={paused ? "Resume" : "Pause"}
+            >
+              {paused ? "▶" : "❚❚"}
+            </button>
+            <div className={`timer ${paused ? "paused" : ""}`}>
+              {formatTime(elapsed)}
+            </div>
+          </div>
+          <button
+            className={`btn icon-btn zoom-btn ${scrollMode ? "active" : ""}`}
+            onClick={toggleScroll}
+            aria-pressed={scrollMode}
+            aria-label="Toggle fit / scroll"
+            title={scrollMode ? "Fit to screen" : "Scroll mode"}
+          >
+            {scrollMode ? "⤡" : "⤢"}
+          </button>
           <button
             className="btn cog-btn"
             onClick={() => setShowSettings(true)}
@@ -156,7 +223,7 @@ function Solver({
 
       <Toolbar xw={xw} onRequestReset={() => setShowReset(true)} />
 
-      <div className="main">
+      <div className="main" onPointerDown={resume}>
         <div className="board">
           {/* Banner above the grid on desktop; hidden on mobile (shown in the
               anchored bottom bar instead). */}
@@ -168,9 +235,9 @@ function Solver({
         <ClueList puzzle={puzzle} xw={xw} />
       </div>
 
-      {/* Mobile only: clue bar + keyboard, anchored to the bottom of the
-          viewport while the grid above scrolls. */}
-      <div className="mobile-bar">
+      {/* Mobile only: clue bar + keyboard, pinned to the bottom of the viewport
+          while the rest of the page scrolls. */}
+      <div className="mobile-bar" ref={barRef} onPointerDown={resume}>
         <ClueBanner xw={xw} />
         <MobileKeyboard xw={xw} />
       </div>
@@ -200,6 +267,9 @@ function Solver({
               className="btn btn-accent"
               onClick={() => {
                 xw.reset();
+                setElapsed(0);
+                setPaused(false);
+                setCelebrated(false);
                 setShowReset(false);
               }}
             >

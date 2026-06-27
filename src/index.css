@@ -135,6 +135,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   flex-wrap: wrap;
 }
 
+.timer-group { display: flex; align-items: center; gap: 8px; }
+
 .timer {
   font-variant-numeric: tabular-nums;
   font-size: 18px;
@@ -146,6 +148,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 7px 14px;
   min-width: 74px;
   text-align: center;
+}
+.timer.paused { opacity: 0.45; }
+
+/* Square icon buttons (pause, zoom). */
+.btn.icon-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ---- settings (cog button + modal body) -------------------------------- */
@@ -538,37 +553,52 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* The keyboard already carries the rebus toggle, so drop the toolbar one. */
   .rebus-btn { display: none; }
 
-  /* Fill the viewport: header + toolbar fixed, the grid area scrolls, and the
-     clue bar + keyboard are anchored at the bottom. This guarantees the whole
-     grid can scroll into view above the bar (no clipped bottom rows). */
-  .app {
-    height: 100dvh;
-    padding: 14px;
-    gap: 12px;
-  }
-  .header, .toolbar { flex: 0 0 auto; }
-  .main {
-    grid-template-columns: 1fr;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-  }
+  .app { padding: 14px; gap: 12px; }
+  .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; }
   .clue-banner { width: 100%; }
   /* Full clue lists are redundant on mobile — the banner + keyboard suffice. */
   .clues { display: none; }
-  /* The desktop banner is replaced by the one in the anchored bottom bar. */
+  /* The desktop banner is replaced by the one in the mobile bar. */
   .banner-desktop { display: none; }
-
   .keyboard { display: flex; }
+
   .mobile-bar {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex: 0 0 auto;
     padding-top: 10px;
     background: var(--bg);
     border-top: var(--bw) solid var(--line);
   }
+
+  /* Fit mode: header + toolbar pinned, the grid area scrolls, bottom bar in
+     flow at the base — the whole UI fits on one screen. */
+  .app.fit-mode { height: 100dvh; }
+  .fit-mode .header,
+  .fit-mode .toolbar { flex: 0 0 auto; }
+  .fit-mode .main { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .fit-mode .mobile-bar { flex: 0 0 auto; }
+
+  /* Scroll mode: zoom the grid to a comfortable cell size and let the whole
+     page (header, toolbar, grid) scroll together; only the clue bar + keyboard
+     stay pinned to the bottom. The grid pans horizontally within the board. */
+  .app.scroll-mode { height: auto; min-height: 100dvh; padding-bottom: var(--bar-h, 240px); }
+  .scroll-mode .board { overflow-x: auto; }
+  .scroll-mode .grid { width: calc(var(--cols) * 34px); }
+  .scroll-mode .mobile-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 10px 14px;
+  }
+}
+
+/* The fit/scroll toggle is only meaningful on mobile. */
+.btn.zoom-btn { display: none; }
+@media (max-width: 820px) {
+  .btn.zoom-btn { display: flex; }
 }

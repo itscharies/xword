@@ -54,3 +54,22 @@ export function saveLastDate(date: string): void {
     /* ignore */
   }
 }
+
+const ZOOM_KEY = "xword:zoom";
+export type ZoomMode = "fit" | "scroll";
+
+export function loadZoomMode(): ZoomMode {
+  try {
+    return localStorage.getItem(ZOOM_KEY) === "scroll" ? "scroll" : "fit";
+  } catch {
+    return "fit";
+  }
+}
+
+export function saveZoomMode(mode: ZoomMode): void {
+  try {
+    localStorage.setItem(ZOOM_KEY, mode);
+  } catch {
+    /* ignore */
+  }
+}
