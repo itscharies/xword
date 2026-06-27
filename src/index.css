@@ -673,14 +673,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .banner-desktop { display: none; }
   .keyboard { display: flex; }
 
-  /* Compact chrome — title scrolls; actions collapse to icons. */
-  .byline { display: none; }
-  .title-block h1 {
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  /* Title + author show in the header (they scroll away above the sticky
+     action bar); actions collapse to icons. */
   .timer-group { gap: 8px; }
   .actionbar-controls { gap: 8px; }
   .toolbar { gap: 8px; }
