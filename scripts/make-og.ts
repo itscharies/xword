@@ -23,9 +23,9 @@ async function loadSnPro(): Promise<string[]> {
   const dir = mkdtempSync(join(tmpdir(), "snpro-"));
   const files: string[] = [];
   for (let i = 0; i < urls.length; i++) {
-    const buf = Buffer.from(await fetch(urls[i]).then((r) => r.arrayBuffer()));
+    const ab = await fetch(urls[i]).then((r) => r.arrayBuffer());
     const p = join(dir, `snpro-${i}.ttf`);
-    writeFileSync(p, buf);
+    writeFileSync(p, new Uint8Array(ab));
     files.push(p);
   }
   return files;
