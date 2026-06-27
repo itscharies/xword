@@ -2,13 +2,13 @@ name: Fetch daily puzzle
 
 on:
   schedule:
-    # The syndicator publishes a given day's puzzle the evening before in UTC
-    # (e.g. Jun 28's puzzle is live by ~23:00 UTC on Jun 27). A 5am-Sydney run
-    # (19:00 UTC) fired too early and always missed the current day's puzzle, so
-    # run after publication: 23:00 UTC (~9am Sydney AEST) with a 02:00 UTC
-    # (~12pm) backstop for late publication. No-op runs don't commit.
-    - cron: "0 23 * * *"
-    - cron: "0 2 * * *"
+    # The syndicator publishes a given day's puzzle the evening before in UTC —
+    # usually live around 20:00 UTC (~6am Sydney AEST), but the exact time
+    # drifts day to day. Rather than guess a single time, poll hourly from
+    # 19:00–23:00 UTC (~5am–9am Sydney) and grab it the moment it lands. The
+    # first run that finds the puzzle commits; the rest are no-ops (git diff
+    # guard), so the extra runs cost nothing.
+    - cron: "0 19-23 * * *"
   workflow_dispatch: {}
 
 permissions:
