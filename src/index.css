@@ -141,7 +141,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-variant-numeric: tabular-nums;
   font-size: 18px;
   font-weight: 700;
-  background: var(--accent);
+  background: var(--accent-2);
   color: #000;
   border: var(--bw) solid var(--line);
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
@@ -206,7 +206,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .seg-btn + .seg-btn { border-left: var(--bw) solid var(--line); }
 /* Selected = pressed-in (accent fill + inset shadow), no ring. */
 .seg-btn.active {
-  background: var(--accent);
+  background: var(--accent-2);
   color: #000;
   box-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
 }
@@ -260,10 +260,16 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Icons replace the labels only on mobile. */
 .btn-icon { display: none; align-items: center; justify-content: center; }
 .btn-icon svg { display: block; }
-.btn:hover { background: var(--accent); color: #000; }
-.btn:active { transform: translate(var(--sh), var(--sh)); box-shadow: 0 0 0 var(--shadow-col); }
+.btn:hover { background: var(--accent-2); color: #000; }
 /* Toggle buttons (rebus) that are switched on. */
-.btn.active { background: var(--accent); color: #000; }
+.btn.active { background: var(--accent-2); color: #000; }
+/* A press uses the full tone — placed last so it wins over hover/.active. */
+.btn:active {
+  background: var(--accent);
+  color: #000;
+  transform: translate(var(--sh), var(--sh));
+  box-shadow: 0 0 0 var(--shadow-col);
+}
 
 /* The 2x2 "AB/CD" rebus glyph, a touch smaller than the surrounding text. */
 .rebus-btn { padding: 5px 16px; }
@@ -302,8 +308,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 600;
   white-space: nowrap;
 }
-.menu button:hover { background: var(--accent); color: #000; }
-.menu button.active { background: var(--accent); color: #000; }
+.menu button:hover { background: var(--accent-2); color: #000; }
+.menu button.active { background: var(--accent-2); color: #000; }
 
 /* ---- main grid + clues -------------------------------------------------- */
 
@@ -461,7 +467,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   letter-spacing: 1px;
   font-weight: 800;
   color: #000;
-  background: var(--accent);
+  background: var(--accent-2);
   border: var(--bw) solid var(--line);
   margin: 0 0 8px;
   padding: 6px 10px;
@@ -485,11 +491,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .clue-col li:hover { background: var(--surface-2); }
 .clue-col li.active {
   background: var(--surface-2);
-  border-left-color: var(--accent);
+  border-left-color: var(--accent-2);
   font-weight: 700;
 }
 .clue-col li.crossing { background: var(--surface-2); }
-.clue-col li.linked { border-left-color: var(--accent); border-left-style: dashed; }
+.clue-col li.linked { border-left-color: var(--accent-2); border-left-style: dashed; }
 .clue-col li .cn { font-weight: 800; color: var(--muted); min-width: 24px; text-align: right; }
 .clue-col li.done .ct { color: var(--muted); text-decoration: line-through; }
 
@@ -510,7 +516,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-transform: uppercase;
 }
 .kb-key.wide { flex: 1.5 1 0; }
-.kb-key.active { background: var(--accent); color: #000; }
+.kb-key.active { background: var(--accent-2); color: #000; }
 .kb-key:active {
   background: var(--accent);
   color: #000;
@@ -555,20 +561,20 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 700;
   line-height: 1;
 }
-.modal-close:hover { background: var(--accent); color: #000; }
+.modal-close:hover { background: var(--accent-2); color: #000; }
 .modal-actions {
   display: flex;
   gap: 12px;
   justify-content: center;
   margin-top: 20px;
 }
-.btn-accent { background: var(--accent); color: #000; }
-.btn-accent:hover { background: var(--accent); color: #000; }
+.btn-accent { background: var(--accent-2); color: #000; }
+.btn-accent:hover { background: var(--accent-2); color: #000; }
 .modal .big-time {
   font-size: 34px;
   font-weight: 800;
   margin: 14px 0;
-  background: var(--accent);
+  background: var(--accent-2);
   color: #000;
   display: inline-block;
   padding: 4px 16px;
@@ -587,7 +593,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   cursor: pointer;
   color: inherit;
 }
-.title-link:hover h1 { color: var(--accent); }
+.title-link:hover h1 { color: var(--accent-2); }
 
 /* ---- archive page ------------------------------------------------------- */
 
@@ -613,7 +619,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 14px 16px;
   transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
 }
-.archive-item:hover { background: var(--accent); color: #000; }
+.archive-item:hover { background: var(--accent-2); color: #000; }
 .archive-item:active {
   transform: translate(var(--sh), var(--sh));
   box-shadow: 0 0 0 var(--shadow-col);
