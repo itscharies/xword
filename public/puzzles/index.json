@@ -243,5 +243,1006 @@
     "weekday": "Sun",
     "title": "NY Times, Sun, May 24, 2026 Nuclear Fusion",
     "author": "Michael Lieberman"
+  },
+  {
+    "date": "260523",
+    "isoDate": "2026-05-23",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, May 23, 2026",
+    "author": "Jesse Cohn"
+  },
+  {
+    "date": "260522",
+    "isoDate": "2026-05-22",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, May 22, 2026",
+    "author": "Rachel Fabi"
+  },
+  {
+    "date": "260521",
+    "isoDate": "2026-05-21",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, May 21, 2026",
+    "author": "Rafael Musa and Sala Wanetick"
+  },
+  {
+    "date": "260520",
+    "isoDate": "2026-05-20",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, May 20, 2026",
+    "author": "Adam Wagner"
+  },
+  {
+    "date": "260519",
+    "isoDate": "2026-05-19",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, May 19, 2026",
+    "author": "Mark Diehl"
+  },
+  {
+    "date": "260518",
+    "isoDate": "2026-05-18",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, May 18, 2026",
+    "author": "Brad Wiegmann"
+  },
+  {
+    "date": "260517",
+    "isoDate": "2026-05-17",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, May 17, 2026 Initial Thoughts",
+    "author": "Lance Enfinger and John Kugelman"
+  },
+  {
+    "date": "260516",
+    "isoDate": "2026-05-16",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, May 16, 2026",
+    "author": "Kareem Ayas"
+  },
+  {
+    "date": "260515",
+    "isoDate": "2026-05-15",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, May 15, 2026",
+    "author": "Erica Hsiung Wojcik"
+  },
+  {
+    "date": "260514",
+    "isoDate": "2026-05-14",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, May 14, 2026",
+    "author": "Barbara Lin"
+  },
+  {
+    "date": "260513",
+    "isoDate": "2026-05-13",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, May 13, 2026",
+    "author": "Philippe Monfiston"
+  },
+  {
+    "date": "260512",
+    "isoDate": "2026-05-12",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, May 12, 2026",
+    "author": "Adryel W. Robles Ojeda"
+  },
+  {
+    "date": "260511",
+    "isoDate": "2026-05-11",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, May 11, 2026",
+    "author": "John Ewbank"
+  },
+  {
+    "date": "260510",
+    "isoDate": "2026-05-10",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, May 10, 2026 Badvertising",
+    "author": "Samuel A. Donaldson"
+  },
+  {
+    "date": "260509",
+    "isoDate": "2026-05-09",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, May 9, 2026",
+    "author": "Royce Ferguson"
+  },
+  {
+    "date": "260508",
+    "isoDate": "2026-05-08",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, May 8, 2026",
+    "author": "Carolyn Davies Lynch and Brian Callahan"
+  },
+  {
+    "date": "260507",
+    "isoDate": "2026-05-07",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, May 7, 2026",
+    "author": "Joe Marquez"
+  },
+  {
+    "date": "260506",
+    "isoDate": "2026-05-06",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, May 6, 2026",
+    "author": "Jess Shulman and Amie Walker"
+  },
+  {
+    "date": "260505",
+    "isoDate": "2026-05-05",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, May 5, 2026",
+    "author": "Ryan Patrick Smith"
+  },
+  {
+    "date": "260504",
+    "isoDate": "2026-05-04",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, May 4, 2026",
+    "author": "Gary Cee"
+  },
+  {
+    "date": "260503",
+    "isoDate": "2026-05-03",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, May 3, 2026 Roundabouts",
+    "author": "Michael and Oliver Schlossberg"
+  },
+  {
+    "date": "260502",
+    "isoDate": "2026-05-02",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, May 2, 2026",
+    "author": "Katie Hoody"
+  },
+  {
+    "date": "260501",
+    "isoDate": "2026-05-01",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, May 1, 2026",
+    "author": "Zachary David Levy"
+  },
+  {
+    "date": "260430",
+    "isoDate": "2026-04-30",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Apr 30, 2026",
+    "author": "Alex Murphy"
+  },
+  {
+    "date": "260429",
+    "isoDate": "2026-04-29",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Apr 29, 2026",
+    "author": "Jeff Stillman"
+  },
+  {
+    "date": "260428",
+    "isoDate": "2026-04-28",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Apr 28, 2026",
+    "author": "Killian Olson"
+  },
+  {
+    "date": "260427",
+    "isoDate": "2026-04-27",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Apr 27, 2026",
+    "author": "Matthew Luter"
+  },
+  {
+    "date": "260426",
+    "isoDate": "2026-04-26",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Apr 26, 2026 Sound It Out",
+    "author": "Alex Eaton-Salners"
+  },
+  {
+    "date": "260425",
+    "isoDate": "2026-04-25",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Apr 25, 2026",
+    "author": "Boaz Moser"
+  },
+  {
+    "date": "260424",
+    "isoDate": "2026-04-24",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Apr 24, 2026",
+    "author": "Rafael Musa and Rebecca Goldstein"
+  },
+  {
+    "date": "260423",
+    "isoDate": "2026-04-23",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Apr 23, 2026",
+    "author": "John Kugelman"
+  },
+  {
+    "date": "260422",
+    "isoDate": "2026-04-22",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Apr 22, 2026",
+    "author": "Adam Vincent"
+  },
+  {
+    "date": "260421",
+    "isoDate": "2026-04-21",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Apr 21, 2026",
+    "author": "Kiran Pandey"
+  },
+  {
+    "date": "260420",
+    "isoDate": "2026-04-20",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Apr 20, 2026",
+    "author": "Jamey Smith"
+  },
+  {
+    "date": "260419",
+    "isoDate": "2026-04-19",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Apr 19, 2026 History Course",
+    "author": "Miranda Kany"
+  },
+  {
+    "date": "260418",
+    "isoDate": "2026-04-18",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Apr 18, 2026",
+    "author": "Kameron Austin Collins"
+  },
+  {
+    "date": "260417",
+    "isoDate": "2026-04-17",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Apr 17, 2026",
+    "author": "James McCarron and Rachel Souza"
+  },
+  {
+    "date": "260416",
+    "isoDate": "2026-04-16",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Apr 16, 2026",
+    "author": "Joe Marquez"
+  },
+  {
+    "date": "260415",
+    "isoDate": "2026-04-15",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Apr 15, 2026",
+    "author": "John Guzzetta"
+  },
+  {
+    "date": "260414",
+    "isoDate": "2026-04-14",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Apr 14, 2026",
+    "author": "Daniel Bodily"
+  },
+  {
+    "date": "260413",
+    "isoDate": "2026-04-13",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Apr 13, 2026",
+    "author": "Christina Iverson and Andrea Carla Michaels"
+  },
+  {
+    "date": "260412",
+    "isoDate": "2026-04-12",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Apr 12, 2026 Join Together",
+    "author": "Kelly Richardson"
+  },
+  {
+    "date": "260411",
+    "isoDate": "2026-04-11",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Apr 11, 2026",
+    "author": "Fritz Juhnke"
+  },
+  {
+    "date": "260410",
+    "isoDate": "2026-04-10",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Apr 10, 2026",
+    "author": "Adrian Johnson"
+  },
+  {
+    "date": "260409",
+    "isoDate": "2026-04-09",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Apr 9, 2026",
+    "author": "Hanh Huynh"
+  },
+  {
+    "date": "260408",
+    "isoDate": "2026-04-08",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Apr 8, 2026",
+    "author": "Wayne Bergman"
+  },
+  {
+    "date": "260407",
+    "isoDate": "2026-04-07",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Apr 7, 2026",
+    "author": "Drew Schmenner"
+  },
+  {
+    "date": "260406",
+    "isoDate": "2026-04-06",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Apr 6, 2026",
+    "author": "Leslie Benson"
+  },
+  {
+    "date": "260405",
+    "isoDate": "2026-04-05",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Apr 5, 2026 Going Down Fast",
+    "author": "Matt Proulx and Jeffrey Martinovic"
+  },
+  {
+    "date": "260404",
+    "isoDate": "2026-04-04",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Apr 4, 2026",
+    "author": "Adam Levav"
+  },
+  {
+    "date": "260403",
+    "isoDate": "2026-04-03",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Apr 3, 2026",
+    "author": "Caroline Hand"
+  },
+  {
+    "date": "260402",
+    "isoDate": "2026-04-02",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Apr 2, 2026",
+    "author": "Yitzi Snow"
+  },
+  {
+    "date": "260401",
+    "isoDate": "2026-04-01",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Apr 1, 2026",
+    "author": "Brad Lively"
+  },
+  {
+    "date": "260331",
+    "isoDate": "2026-03-31",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Mar 31, 2026",
+    "author": "Adam Aaronson"
+  },
+  {
+    "date": "260330",
+    "isoDate": "2026-03-30",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Mar 30, 2026",
+    "author": "Hannah Binney"
+  },
+  {
+    "date": "260329",
+    "isoDate": "2026-03-29",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Mar 29, 2026 Books of the Bible",
+    "author": "Jill Rafaloff and Michelle Sontarp"
+  },
+  {
+    "date": "260328",
+    "isoDate": "2026-03-28",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Mar 28, 2026",
+    "author": "Josh Knapp"
+  },
+  {
+    "date": "260327",
+    "isoDate": "2026-03-27",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Mar 27, 2026",
+    "author": "Kate Hawkins"
+  },
+  {
+    "date": "260326",
+    "isoDate": "2026-03-26",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Mar 26, 2026",
+    "author": "John Ewbank"
+  },
+  {
+    "date": "260325",
+    "isoDate": "2026-03-25",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Mar 25, 2026",
+    "author": "Victor Schmitt"
+  },
+  {
+    "date": "260324",
+    "isoDate": "2026-03-24",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Mar 24, 2026",
+    "author": "Stephan Prock and Jeff Chen"
+  },
+  {
+    "date": "260323",
+    "isoDate": "2026-03-23",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Mar 23, 2026",
+    "author": "Ian Livengood"
+  },
+  {
+    "date": "260322",
+    "isoDate": "2026-03-22",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Mar 22, 2026 Good to the Last Drop",
+    "author": "Michael Lieberman and Rebecca Goldstein"
+  },
+  {
+    "date": "260321",
+    "isoDate": "2026-03-21",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Mar 21, 2026",
+    "author": "David Karp"
+  },
+  {
+    "date": "260320",
+    "isoDate": "2026-03-20",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Mar 20, 2026",
+    "author": "Evan Mulvihill"
+  },
+  {
+    "date": "260319",
+    "isoDate": "2026-03-19",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Mar 19, 2026",
+    "author": "Kareem Ayas"
+  },
+  {
+    "date": "260318",
+    "isoDate": "2026-03-18",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Mar 18, 2026",
+    "author": "Joseph Gangi"
+  },
+  {
+    "date": "260317",
+    "isoDate": "2026-03-17",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Mar 17, 2026",
+    "author": "Sarah Sinclair and Amie Walker"
+  },
+  {
+    "date": "260316",
+    "isoDate": "2026-03-16",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Mar 16, 2026",
+    "author": "Matthew Stock"
+  },
+  {
+    "date": "260315",
+    "isoDate": "2026-03-15",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Mar 15, 2026 Who's In Charge Here?",
+    "author": "Chloe Revery"
+  },
+  {
+    "date": "260314",
+    "isoDate": "2026-03-14",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Mar 14, 2026",
+    "author": "Mark Diehl"
+  },
+  {
+    "date": "260313",
+    "isoDate": "2026-03-13",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Mar 13, 2026",
+    "author": "Geoffrey Schorkopf and Rafael Musa"
+  },
+  {
+    "date": "260312",
+    "isoDate": "2026-03-12",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Mar 12, 2026",
+    "author": "Dario Salvucci"
+  },
+  {
+    "date": "260311",
+    "isoDate": "2026-03-11",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Mar 11, 2026",
+    "author": "Hanh Huynh and Ted Mayer"
+  },
+  {
+    "date": "260310",
+    "isoDate": "2026-03-10",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Mar 10, 2026",
+    "author": "Nate Cardin"
+  },
+  {
+    "date": "260309",
+    "isoDate": "2026-03-09",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Mar 9, 2026",
+    "author": "John Ewbank and Colin Thomas"
+  },
+  {
+    "date": "260308",
+    "isoDate": "2026-03-08",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Mar 8, 2026 Comical Mutation",
+    "author": "Lance Enfinger and John Kugelman"
+  },
+  {
+    "date": "260307",
+    "isoDate": "2026-03-07",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Mar 7, 2026",
+    "author": "Nick Maritz"
+  },
+  {
+    "date": "260306",
+    "isoDate": "2026-03-06",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Mar 6, 2026",
+    "author": "Robyn Weintraub"
+  },
+  {
+    "date": "260305",
+    "isoDate": "2026-03-05",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Mar 5, 2026",
+    "author": "Kit Sheffield"
+  },
+  {
+    "date": "260304",
+    "isoDate": "2026-03-04",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Mar 4, 2026",
+    "author": "Kevin Curry"
+  },
+  {
+    "date": "260303",
+    "isoDate": "2026-03-03",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Mar 3, 2026",
+    "author": "Miranda Kany and Tracy Bennett"
+  },
+  {
+    "date": "260302",
+    "isoDate": "2026-03-02",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Mar 2, 2026",
+    "author": "Erica Hsiung Wojcik"
+  },
+  {
+    "date": "260301",
+    "isoDate": "2026-03-01",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Mar 1, 2026 Alert! Alert!",
+    "author": "Mark MacLachlan"
+  },
+  {
+    "date": "260228",
+    "isoDate": "2026-02-28",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Feb 28, 2026",
+    "author": "Adrian Johnson and Ryan McCarty"
+  },
+  {
+    "date": "260227",
+    "isoDate": "2026-02-27",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Feb 27, 2026",
+    "author": "Joyce Keller"
+  },
+  {
+    "date": "260226",
+    "isoDate": "2026-02-26",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Feb 26, 2026",
+    "author": "Joe DiPietro"
+  },
+  {
+    "date": "260225",
+    "isoDate": "2026-02-25",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Feb 25, 2026",
+    "author": "Ginny Too and Avery Gee Katz"
+  },
+  {
+    "date": "260224",
+    "isoDate": "2026-02-24",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Feb 24, 2026",
+    "author": "Jonathan Raksin"
+  },
+  {
+    "date": "260223",
+    "isoDate": "2026-02-23",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Feb 23, 2026",
+    "author": "Peter Gorman"
+  },
+  {
+    "date": "260222",
+    "isoDate": "2026-02-22",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Feb 22, 2026 Use Your Words",
+    "author": "Rena Cohen"
+  },
+  {
+    "date": "260221",
+    "isoDate": "2026-02-21",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Feb 21, 2026",
+    "author": "Adam Aaronson"
+  },
+  {
+    "date": "260220",
+    "isoDate": "2026-02-20",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Feb 20, 2026",
+    "author": "Kyle Dolan"
+  },
+  {
+    "date": "260219",
+    "isoDate": "2026-02-19",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Feb 19, 2026",
+    "author": "Wendy L. Brandes and Barbara Lin"
+  },
+  {
+    "date": "260218",
+    "isoDate": "2026-02-18",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Feb 18, 2026 (See Notepad)",
+    "author": "<NOTEPAD>When the puzzle is completed, starting with the letter at square 39, connect the circled letters to create an apt image that spells out a famous lyric from this puzzle's theme subject.</NOTEPAD>Joseph Gangi"
+  },
+  {
+    "date": "260217",
+    "isoDate": "2026-02-17",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Feb 17, 2026",
+    "author": "Nate Hall"
+  },
+  {
+    "date": "260216",
+    "isoDate": "2026-02-16",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Feb 16, 2026",
+    "author": "Carolyn Davies Lynch and Christina Iverson"
+  },
+  {
+    "date": "260215",
+    "isoDate": "2026-02-15",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Feb 15, 2026 It's All Greek",
+    "author": "Dylan Schiff"
+  },
+  {
+    "date": "260214",
+    "isoDate": "2026-02-14",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Feb 14, 2026",
+    "author": "Kameron Austin Collins"
+  },
+  {
+    "date": "260213",
+    "isoDate": "2026-02-13",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Feb 13, 2026",
+    "author": "Greg Snitkin and Glenn Davis"
+  },
+  {
+    "date": "260212",
+    "isoDate": "2026-02-12",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Feb 12, 2026",
+    "author": "Mallory Montgomery and Zhou Zhang"
+  },
+  {
+    "date": "260211",
+    "isoDate": "2026-02-11",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Feb 11, 2026",
+    "author": "Adrianne Baik"
+  },
+  {
+    "date": "260210",
+    "isoDate": "2026-02-10",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Feb 10, 2026",
+    "author": "Paul Coulter"
+  },
+  {
+    "date": "260209",
+    "isoDate": "2026-02-09",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Feb 9, 2026",
+    "author": "Lynn Lempel"
+  },
+  {
+    "date": "260208",
+    "isoDate": "2026-02-08",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Feb 8, 2026 Base Pairs",
+    "author": "Gene Louise De Vera"
+  },
+  {
+    "date": "260207",
+    "isoDate": "2026-02-07",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Feb 7, 2026",
+    "author": "Hannah Slovut-Einertson"
+  },
+  {
+    "date": "260206",
+    "isoDate": "2026-02-06",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Feb 6, 2026",
+    "author": "Adam Wagner and Rafael Musa"
+  },
+  {
+    "date": "260205",
+    "isoDate": "2026-02-05",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Feb 5, 2026",
+    "author": "Topher Booth"
+  },
+  {
+    "date": "260204",
+    "isoDate": "2026-02-04",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Feb 4, 2026",
+    "author": "Jeffrey Martinovic"
+  },
+  {
+    "date": "260203",
+    "isoDate": "2026-02-03",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Feb 3, 2026",
+    "author": "Geoffrey Schorkopf and Will Eisenberg"
+  },
+  {
+    "date": "260202",
+    "isoDate": "2026-02-02",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Feb 2, 2026",
+    "author": "Chase Dittrich"
+  },
+  {
+    "date": "260201",
+    "isoDate": "2026-02-01",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Feb 1, 2026 Off Broadway Musicals",
+    "author": "Alex Eaton-Salners"
+  },
+  {
+    "date": "260131",
+    "isoDate": "2026-01-31",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Jan 31, 2026",
+    "author": "Katie Hoody"
+  },
+  {
+    "date": "260130",
+    "isoDate": "2026-01-30",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jan 30, 2026",
+    "author": "Andrew Spooner"
+  },
+  {
+    "date": "260129",
+    "isoDate": "2026-01-29",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jan 29, 2026",
+    "author": "Sam Ezersky"
+  },
+  {
+    "date": "260128",
+    "isoDate": "2026-01-28",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Jan 28, 2026",
+    "author": "Ella Dershowitz"
+  },
+  {
+    "date": "260127",
+    "isoDate": "2026-01-27",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Jan 27, 2026",
+    "author": "Nathan Hale"
+  },
+  {
+    "date": "260126",
+    "isoDate": "2026-01-26",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Jan 26, 2026",
+    "author": "Suzanne Oliver"
+  },
+  {
+    "date": "260125",
+    "isoDate": "2026-01-25",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Jan 25, 2026 Present Time (See Notepad)",
+    "author": "<NOTEPAD>Once the puzzle is complete, the circled letters, when read from left to right, will spell a punny two-word phrase.</NOTEPAD>David Kwong"
+  },
+  {
+    "date": "260124",
+    "isoDate": "2026-01-24",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Jan 24, 2026",
+    "author": "Robert S. Gard"
+  },
+  {
+    "date": "260123",
+    "isoDate": "2026-01-23",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jan 23, 2026",
+    "author": "Hemant Mehta"
+  },
+  {
+    "date": "260122",
+    "isoDate": "2026-01-22",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jan 22, 2026",
+    "author": "Joseph Gangi"
+  },
+  {
+    "date": "260121",
+    "isoDate": "2026-01-21",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Jan 21, 2026",
+    "author": "Gary Larson and Doug Peterson"
+  },
+  {
+    "date": "260120",
+    "isoDate": "2026-01-20",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Jan 20, 2026",
+    "author": "Jason Reich"
+  },
+  {
+    "date": "260119",
+    "isoDate": "2026-01-19",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Jan 19, 2026",
+    "author": "Jeff Jerome and Andrea Carla Michaels"
+  },
+  {
+    "date": "260118",
+    "isoDate": "2026-01-18",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Jan 18, 2026 Change Locations",
+    "author": "Zachary Edward-Brown and John Kugelman"
+  },
+  {
+    "date": "260117",
+    "isoDate": "2026-01-17",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Jan 17, 2026",
+    "author": "Gene Louise De Vera"
+  },
+  {
+    "date": "260116",
+    "isoDate": "2026-01-16",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jan 16, 2026",
+    "author": "Adrian Johnson and Jess Rucks"
+  },
+  {
+    "date": "260115",
+    "isoDate": "2026-01-15",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jan 15, 2026",
+    "author": "Kevin Curry"
+  },
+  {
+    "date": "260114",
+    "isoDate": "2026-01-14",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Jan 14, 2026",
+    "author": "Kareem Ayas"
+  },
+  {
+    "date": "260113",
+    "isoDate": "2026-01-13",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Jan 13, 2026",
+    "author": "Kate Hawkins"
+  },
+  {
+    "date": "260112",
+    "isoDate": "2026-01-12",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Jan 12, 2026",
+    "author": "Dan Kammann and Zhouqin Burnikel"
+  },
+  {
+    "date": "260111",
+    "isoDate": "2026-01-11",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Jan 11, 2026 Original Thinkers",
+    "author": "Kate Jensen"
+  },
+  {
+    "date": "260110",
+    "isoDate": "2026-01-10",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Jan 10, 2026",
+    "author": "Marshal Herrmann"
+  },
+  {
+    "date": "260109",
+    "isoDate": "2026-01-09",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jan 9, 2026",
+    "author": "James McCarron"
+  },
+  {
+    "date": "260108",
+    "isoDate": "2026-01-08",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jan 8, 2026",
+    "author": "Stephan Prock and Jeff Chen"
+  },
+  {
+    "date": "260107",
+    "isoDate": "2026-01-07",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Jan 7, 2026",
+    "author": "Victor Barocas"
+  },
+  {
+    "date": "260106",
+    "isoDate": "2026-01-06",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Jan 6, 2026",
+    "author": "Jonathan Baude"
+  },
+  {
+    "date": "260105",
+    "isoDate": "2026-01-05",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Jan 5, 2026",
+    "author": "Hannah Binney"
+  },
+  {
+    "date": "260104",
+    "isoDate": "2026-01-04",
+    "weekday": "Sun",
+    "title": "NY Times, Sun, Jan 4, 2026 Hog Wild",
+    "author": "Natan Last"
+  },
+  {
+    "date": "260103",
+    "isoDate": "2026-01-03",
+    "weekday": "Sat",
+    "title": "NY Times, Sat, Jan 3, 2026",
+    "author": "Adrian Johnson"
+  },
+  {
+    "date": "260102",
+    "isoDate": "2026-01-02",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jan 2, 2026",
+    "author": "Jacob McDermott"
+  },
+  {
+    "date": "260101",
+    "isoDate": "2026-01-01",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jan 1, 2026",
+    "author": "Alexander Liebeskind"
   }
 ]
