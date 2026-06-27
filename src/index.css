@@ -274,8 +274,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   letter-spacing: 1.5px;
   font-weight: 800;
   text-align: center;
-  transform: translateY(2px); /* nudge for the font's vertical metrics */
 }
+/* The keyboard key needs a small nudge for the font's vertical metrics; the
+   smaller toolbar button stays geometrically centered. */
+.kb-key .rebus-icon { transform: translateY(2px); }
 
 .menu {
   position: absolute;
@@ -328,6 +330,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   aspect-ratio: var(--cols) / var(--rows);
   touch-action: manipulation;
   user-select: none;
+  /* Make the grid a query container so cells can size their text relative to
+     each square's width (cqw = 1% of grid width; cell width = 100/cols cqw). */
+  container-type: inline-size;
 }
 
 .cell {
@@ -342,10 +347,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: center;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: clamp(9px, 2.9vw, 18px);
+  /* ~48% of a single square's width */
+  font-size: clamp(8px, calc(48cqw / var(--cols)), 20px);
   line-height: 1;
 }
-.cell.multi { font-size: clamp(6px, 1.7vw, 11px); letter-spacing: -0.5px; }
+.cell.multi {
+  font-size: clamp(5px, calc(30cqw / var(--cols)), 12px);
+  letter-spacing: -0.5px;
+}
 .cell.black { background: var(--cell-block); }
 .cell.void { background: var(--bg); }
 .cell.shaded { background: var(--shaded); }
@@ -382,7 +391,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: absolute;
   top: 1px;
   left: 2px;
-  font-size: clamp(6px, 1.6vw, 10px);
+  /* ~24% of a single square's width */
+  font-size: clamp(5px, calc(24cqw / var(--cols)), 10px);
   font-weight: 700;
   line-height: 1;
   opacity: 0.6; /* numbers a touch dimmer than the entered letters */
