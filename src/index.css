@@ -404,10 +404,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: clamp(5px, calc(24cqw / var(--cols)), 10px);
   font-weight: 700;
   line-height: 1;
-  /* Dim the glyph (not the whole element) so the halo below stays opaque. */
+  /* Dim the number a touch relative to the entered letters. */
   color: color-mix(in srgb, currentColor 62%, transparent);
-  /* Cell-coloured halo so the number stays legible over the circle line. */
-  text-shadow: 0 0 2px var(--cell-bg), 0 0 2px var(--cell-bg);
   z-index: 1; /* above the circle, which sits behind at z-index 0 */
 }
 /* The entered letter sits on top of the number if they ever overlap. */
