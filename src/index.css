@@ -404,8 +404,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: clamp(5px, calc(24cqw / var(--cols)), 10px);
   font-weight: 700;
   line-height: 1;
-  /* Dim the number a touch relative to the entered letters. */
-  color: color-mix(in srgb, currentColor 62%, transparent);
+  /* Dim a touch vs the letters, but keep it legible on any cell colour. */
+  color: color-mix(in srgb, currentColor 78%, transparent);
   z-index: 1; /* above the circle, which sits behind at z-index 0 */
 }
 /* The entered letter sits on top of the number if they ever overlap. */
@@ -416,7 +416,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .cell .circle {
   position: absolute;
   inset: 0; /* circle inscribed in the tile, touching the edges */
-  border: 2px solid var(--grid-line);
+  /* currentColor (the cell's text colour) always contrasts with the cell,
+     unlike a fixed gridline colour. */
+  border: 2px solid color-mix(in srgb, currentColor 55%, transparent);
   border-radius: 50% !important;
   pointer-events: none;
   z-index: 0;
