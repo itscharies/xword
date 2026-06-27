@@ -564,6 +564,36 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .banner-desktop { display: none; }
   .keyboard { display: flex; }
 
+  /* Compact, single-row chrome — slimmer buttons, controls on one line. */
+  .byline { display: none; }
+  .title-block { flex-basis: 100%; }
+  .title-block h1 {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header { gap: 10px; }
+  .header-right { flex-wrap: nowrap; gap: 6px; }
+  .timer-group { gap: 6px; }
+  .header .btn,
+  .toolbar .btn,
+  .picker-btn {
+    padding: 7px 11px;
+    font-size: 13px;
+    border-width: 2px;
+    box-shadow: 3px 3px 0 var(--shadow-col);
+  }
+  .btn.icon-btn,
+  .btn.cog-btn { width: 34px; height: 34px; padding: 0; font-size: 14px; }
+  .timer {
+    padding: 5px 9px;
+    font-size: 15px;
+    min-width: 52px;
+    border-width: 2px;
+    box-shadow: 3px 3px 0 var(--shadow-col);
+  }
+
   .mobile-bar {
     display: flex;
     flex-direction: column;
