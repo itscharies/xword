@@ -85,6 +85,15 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     return { row: 0, col: 0 };
   }, [grid, width, height]);
 
+  // All non-black cells in reading order (for the clue-bar scrubber).
+  const openCells = useMemo<Pos[]>(() => {
+    const out: Pos[] = [];
+    for (let r = 0; r < height; r++)
+      for (let c = 0; c < width; c++)
+        if (!grid[r][c].black) out.push({ row: r, col: c });
+    return out;
+  }, [grid, width, height]);
+
   // ---- state (mirrored by refs) ------------------------------------------
 
   const blank = () => grid.map((row) => row.map(() => ""));
@@ -210,6 +219,14 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       setActive({ row: r, col: c });
     },
     [isOpen, lookup],
+  );
+
+  // Move the cursor without changing the across/down orientation (scrubber).
+  const moveTo = useCallback(
+    (r: number, c: number) => {
+      if (isOpen(r, c)) setActive({ row: r, col: c });
+    },
+    [isOpen],
   );
 
   const toggleDirection = useCallback(() => {
@@ -485,13 +502,16 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     linkedNumbers,
     rebus,
     completed,
+    openCells,
     // derived helpers
     clueAt,
     solutionAt,
     // actions
     selectCell,
     selectClue,
+    moveTo,
     toggleDirection,
+    setDirection,
     toggleRebus,
     moveToClue,
     typeLetter,
