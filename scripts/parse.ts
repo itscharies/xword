@@ -63,22 +63,17 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
 
   // Grid rows. Special characters in the source:
   //   '#' black square, '.' void cell (outside the puzzle),
-  //   '^' circle marker, '%' shade marker (both prefix the next letter),
+  //   '^' and '%' both mark a shaded (greyed) cell, prefixing the next letter,
   //   ',' rebus join — connects the surrounding letters into one multi-letter
   //       cell, e.g. "ICEB,L,O,C,KERS" -> [ICE][BLOCK][ERS].
   const grid: Cell[][] = [];
   for (let r = 0; r < height; r++) {
     const rowText = tokens[i++] ?? "";
     const row: Cell[] = [];
-    let circledNext = false;
     let shadedNext = false;
     let mergeNext = false; // a ',' was seen — fold the next letter into the last cell
     for (const ch of rowText) {
-      if (ch === "^") {
-        circledNext = true;
-        continue;
-      }
-      if (ch === "%") {
+      if (ch === "^" || ch === "%") {
         shadedNext = true;
         continue;
       }
@@ -95,15 +90,12 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
         const prev = row[row.length - 1];
         prev.solution = (prev.solution ?? "") + ch.toUpperCase();
         prev.rebus = true;
-        if (circledNext) prev.circled = true;
         if (shadedNext) prev.shaded = true;
       } else {
         const cell: Cell = { solution: ch.toUpperCase() };
-        if (circledNext) cell.circled = true;
         if (shadedNext) cell.shaded = true;
         row.push(cell);
       }
-      circledNext = false;
       shadedNext = false;
       mergeNext = false;
     }

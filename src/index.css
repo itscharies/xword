@@ -42,7 +42,7 @@
   --cell-fg: #000000;
   --cell-block: #000000;
   --grid-line: #000000;
-  --shaded: #d8def0;
+  --shaded: #d9d9d9; /* slightly greyed-in themed cells */
   --wrong: #e0192b;
   --revealed: #0a59d0;
   color-scheme: light;
@@ -412,16 +412,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .cell .cell-letter {
   position: relative;
   z-index: 2;
-}
-.cell .circle {
-  position: absolute;
-  inset: 0; /* circle inscribed in the tile, touching the edges */
-  /* currentColor (the cell's text colour) always contrasts with the cell,
-     unlike a fixed gridline colour. */
-  border: 2px solid color-mix(in srgb, currentColor 55%, transparent);
-  border-radius: 50% !important;
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ---- active clue banner ------------------------------------------------- */
