@@ -113,6 +113,13 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
     grid.push(row);
   }
 
+  // Drop trailing rows that are entirely void ('.' filler) — they aren't part
+  // of the puzzle and otherwise render as an odd blacked-out bottom row.
+  while (grid.length > 1 && grid[grid.length - 1].every((c) => c.void)) {
+    grid.pop();
+  }
+  const gridHeight = grid.length;
+
   // Clues follow, across then down, each list in clue-number order.
   const acrossClueText = tokens.slice(i, i + acrossCount);
   i += acrossCount;
@@ -159,7 +166,7 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
     author,
     editor,
     width,
-    height,
+    height: gridHeight,
     grid,
     clues: { across, down },
   };

@@ -24,8 +24,7 @@
   --cell-bg: #272727; /* open cells: the lighter squares */
   --cell-fg: #e6e6e6;
   --cell-block: #0d0d0d; /* blocked: darker than open, just above pure black */
-  /* Darker than the cells so the gridlines recede and letters stand out. */
-  --grid-line: #141414;
+  --grid-line: #3d3d3d; /* same as the border + circles */
   --shaded: #343434;
   --wrong: #ff5247;
   --revealed: #4aabff;
