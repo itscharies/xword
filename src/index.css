@@ -149,7 +149,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   min-width: 74px;
   text-align: center;
 }
-.timer.paused { opacity: 0.45; }
+.timer.paused {
+  background: var(--surface);
+  color: color-mix(in srgb, var(--fg) 45%, transparent);
+}
 
 /* Square icon buttons (pause, zoom). */
 .btn.icon-btn {
@@ -253,6 +256,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   letter-spacing: 1.5px;
   font-weight: 800;
   text-align: center;
+  transform: translateY(2px); /* nudge for the font's vertical metrics */
 }
 
 .menu {
