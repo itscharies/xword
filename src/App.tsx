@@ -2,72 +2,73 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
-import {
-  loadLastDate,
-  loadProgress,
-  loadZoomMode,
-  saveLastDate,
-  saveProgress,
-  saveZoomMode,
-} from "./lib/storage.ts";
+import { loadLastDate, loadProgress, saveProgress } from "./lib/storage.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
-import { PuzzlePicker } from "./components/PuzzlePicker.tsx";
 import { MobileKeyboard } from "./components/MobileKeyboard.tsx";
 import { CompletionModal } from "./components/CompletionModal.tsx";
 import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
+import { Archive } from "./components/Archive.tsx";
 
 const BASE = import.meta.env.BASE_URL;
 
+const hashRoute = () => window.location.hash.replace(/^#\/?/, "");
+const goTo = (route: string) => {
+  window.location.hash = route;
+};
+
 export default function App() {
   const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
-  const [date, setDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [route, setRoute] = useState(hashRoute);
 
-  // Load the puzzle index once.
+  useEffect(() => {
+    const onHash = () => setRoute(hashRoute());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   useEffect(() => {
     fetch(`${BASE}puzzles/index.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`index.json ${r.status}`);
         return r.json() as Promise<PuzzleIndexEntry[]>;
       })
-      .then((idx) => {
-        setIndex(idx);
-        const last = loadLastDate();
-        const initial =
-          last && idx.some((p) => p.date === last) ? last : idx[0]?.date ?? null;
-        setDate(initial);
-      })
+      .then(setIndex)
       .catch((e) => setError(String(e)));
   }, []);
 
   if (error) return <div className="error">Failed to load puzzles: {error}</div>;
-  if (!index || !date) return <div className="loading">Loading…</div>;
+  if (!index || index.length === 0)
+    return <div className="loading">Loading…</div>;
+
+  if (route === "list") {
+    return <Archive index={index} onPick={(d) => goTo(d)} />;
+  }
+
+  // A valid date in the hash, else fall back to the last-played or newest.
+  const isValidDate = /^\d{6}$/.test(route) && index.some((p) => p.date === route);
+  const last = loadLastDate();
+  const date = isValidDate
+    ? route
+    : last && index.some((p) => p.date === last)
+      ? last
+      : index[0].date;
 
   return (
-    <PuzzleView
-      key={date}
-      date={date}
-      index={index}
-      onPickDate={(d) => {
-        saveLastDate(d);
-        setDate(d);
-      }}
-    />
+    <PuzzleView key={date} date={date} onOpenArchive={() => goTo("list")} />
   );
 }
 
 function PuzzleView({
   date,
-  index,
-  onPickDate,
+  onOpenArchive,
 }: {
   date: string;
-  index: PuzzleIndexEntry[];
-  onPickDate: (date: string) => void;
+  onOpenArchive: () => void;
 }) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
 
@@ -80,17 +81,15 @@ function PuzzleView({
   }, [date]);
 
   if (!puzzle) return <div className="loading">Loading puzzle…</div>;
-  return <Solver puzzle={puzzle} index={index} onPickDate={onPickDate} />;
+  return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
 }
 
 function Solver({
   puzzle,
-  index,
-  onPickDate,
+  onOpenArchive,
 }: {
   puzzle: Puzzle;
-  index: PuzzleIndexEntry[];
-  onPickDate: (date: string) => void;
+  onOpenArchive: () => void;
 }) {
   const saved = useMemo(() => loadProgress(puzzle.date), [puzzle.date]);
   const xw = useCrossword(puzzle, saved);
@@ -111,34 +110,12 @@ function Solver({
     saved?.elapsed ?? 0,
   );
 
-  // Fit (everything on one screen) vs scroll (whole page scrolls, only the
-  // clue bar + keyboard stay pinned). Mobile only; remembered across sessions.
-  const [scrollMode, setScrollMode] = useState(
-    () => loadZoomMode() === "scroll",
-  );
-
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
 
   const modalOpen = showModal || showSettings || showReset;
-
-  const barRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<HTMLDivElement>(null);
-  // Track the pinned bottom bar's height so scroll-mode can pad the page by
-  // exactly that much (so the last grid rows clear it).
-  useEffect(() => {
-    const bar = barRef.current;
-    const app = appRef.current;
-    if (!bar || !app) return;
-    const update = () =>
-      app.style.setProperty("--bar-h", `${bar.offsetHeight}px`);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(bar);
-    return () => ro.disconnect();
-  }, []);
 
   // Persist progress whenever it changes.
   useEffect(() => {
@@ -170,24 +147,21 @@ function Solver({
     return () => window.removeEventListener("keydown", handler);
   }, [xw.handleKeyDown, modalOpen]);
 
-  const toggleScroll = () => {
-    const next = !scrollMode;
-    setScrollMode(next);
-    saveZoomMode(next ? "scroll" : "fit");
-  };
-
   return (
-    <div className={`app ${scrollMode ? "scroll-mode" : "fit-mode"}`} ref={appRef}>
+    <div className="app">
       <header className="header">
-        <div className="title-block">
+        <button
+          className="title-block title-link"
+          onClick={onOpenArchive}
+          title="Browse all puzzles"
+        >
           <h1>{puzzle.title}</h1>
           <div className="byline">
             By {puzzle.author}
             {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
           </div>
-        </div>
+        </button>
         <div className="header-right">
-          <PuzzlePicker index={index} value={puzzle.date} onChange={onPickDate} />
           <div className="timer-group">
             <button
               className="btn icon-btn"
@@ -201,15 +175,6 @@ function Solver({
               {formatTime(elapsed)}
             </div>
           </div>
-          <button
-            className={`btn icon-btn zoom-btn ${scrollMode ? "active" : ""}`}
-            onClick={toggleScroll}
-            aria-pressed={scrollMode}
-            aria-label="Toggle fit / scroll"
-            title={scrollMode ? "Fit to screen" : "Scroll mode"}
-          >
-            {scrollMode ? "⤡" : "⤢"}
-          </button>
           <button
             className="btn cog-btn"
             onClick={() => setShowSettings(true)}
@@ -226,7 +191,7 @@ function Solver({
       <div className="main" onPointerDown={resume}>
         <div className="board">
           {/* Banner above the grid on desktop; hidden on mobile (shown in the
-              anchored bottom bar instead). */}
+              sticky bottom bar instead). */}
           <div className="banner-desktop">
             <ClueBanner xw={xw} />
           </div>
@@ -235,9 +200,9 @@ function Solver({
         <ClueList puzzle={puzzle} xw={xw} />
       </div>
 
-      {/* Mobile only: clue bar + keyboard, pinned to the bottom of the viewport
+      {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
           while the rest of the page scrolls. */}
-      <div className="mobile-bar" ref={barRef} onPointerDown={resume}>
+      <div className="mobile-bar" onPointerDown={resume}>
         <ClueBanner xw={xw} />
         <MobileKeyboard xw={xw} />
       </div>
