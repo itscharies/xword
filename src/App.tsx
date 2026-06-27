@@ -114,13 +114,20 @@ function Solver({
 
   // Persist progress whenever it changes.
   useEffect(() => {
+    const total = xw.openCells.length;
+    const filled = xw.openCells.reduce(
+      (n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0),
+      0,
+    );
     saveProgress(puzzle.date, {
       entries: xw.entries,
       revealed: [...xw.revealed],
       elapsed,
       completed: xw.completed,
+      filled,
+      total,
     });
-  }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed]);
+  }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells]);
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {

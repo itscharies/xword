@@ -8,6 +8,9 @@ export interface Progress {
   /** Elapsed solving time in seconds. */
   elapsed: number;
   completed: boolean;
+  /** Open cells filled, and total open cells — for the archive % badge. */
+  filled?: number;
+  total?: number;
 }
 
 const key = (date: string) => `xword:progress:${date}`;

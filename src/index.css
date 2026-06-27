@@ -654,23 +654,31 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ai-author { font-size: 13px; color: var(--muted); }
 .archive-item:hover .ai-author { color: #000; }
 
-/* "Solved" check badge in the corner of finished puzzles. */
-.ai-done {
+/* Corner badge: a check for solved puzzles, a % for in-progress ones. */
+.ai-done,
+.ai-pct {
   position: absolute;
   top: 0;
   right: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
   height: 28px;
   background: var(--accent-2);
   color: #000;
   border-left: var(--bw) solid var(--line);
   border-bottom: var(--bw) solid var(--line);
 }
+.ai-done { width: 28px; }
 .ai-done svg { width: 17px; height: 17px; }
-.archive-item:hover .ai-done { background: var(--surface); color: var(--fg); }
+.ai-pct {
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.archive-item:hover .ai-done,
+.archive-item:hover .ai-pct { background: var(--surface); color: var(--fg); }
 
 /* ---- responsive --------------------------------------------------------- */
 

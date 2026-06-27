@@ -51,7 +51,12 @@ export function Archive({
       <ul className="archive-list">
         {index.map((p) => {
           const theme = themeName(p.title);
-          const done = loadProgress(p.date)?.completed ?? false;
+          const prog = loadProgress(p.date);
+          const done = prog?.completed ?? false;
+          const pct =
+            !done && prog?.total
+              ? Math.round((100 * (prog.filled ?? 0)) / prog.total)
+              : 0;
           return (
             <li key={p.date}>
               <button
@@ -61,11 +66,15 @@ export function Archive({
                 <span className="ai-date">{formatDate(p.isoDate)}</span>
                 {theme && <span className="ai-theme">{theme}</span>}
                 <span className="ai-author">By {p.author}</span>
-                {done && (
+                {done ? (
                   <span className="ai-done" title="Solved" aria-label="Solved">
                     <CheckIcon />
                   </span>
-                )}
+                ) : pct > 0 ? (
+                  <span className="ai-pct" title={`${pct}% filled`}>
+                    {pct}%
+                  </span>
+                ) : null}
               </button>
             </li>
           );
