@@ -353,8 +353,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: center;
   font-weight: 700;
   text-transform: uppercase;
-  /* ~52% of a single square's width */
-  font-size: clamp(9px, calc(52cqw / var(--cols)), 22px);
+  /* ~75% of a single square's width */
+  font-size: clamp(10px, calc(75cqw / var(--cols)), 30px);
   line-height: 1;
 }
 .cell.multi {
@@ -415,7 +415,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .cell .num {
   position: absolute;
-  top: 0;
+  top: 1px;
   left: 1px;
   /* ~24% of a single square's width */
   font-size: clamp(5px, calc(24cqw / var(--cols)), 10px);
