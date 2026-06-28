@@ -15,6 +15,7 @@ export type PuzzleSource =
   | "gdn-quiptic"
   | "gdn-quick-cryptic"
   | "gdn-prize"
+  | "gdn-mini"
   | "tny-mini";
 
 export interface SourceMeta {
@@ -22,8 +23,8 @@ export interface SourceMeta {
   label: string;
   /** Publisher — drives the "Paper" filter. */
   paper: string;
-  /** Coarse kind — drives the "Type" filter. Just Crossword vs Cryptic. */
-  type: "Crossword" | "Cryptic";
+  /** Coarse kind — drives the "Type" filter: Crossword, Mini, or Cryptic. */
+  type: "Crossword" | "Mini" | "Cryptic";
 }
 
 export const SOURCES: Record<PuzzleSource, SourceMeta> = {
@@ -35,7 +36,7 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
     type: "Crossword",
   },
   "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", type: "Crossword" },
-  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", type: "Crossword" },
+  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", type: "Mini" },
   "gdn-quick": { label: "Guardian Quick", paper: "Guardian", type: "Crossword" },
   "gdn-cryptic": { label: "Guardian Cryptic", paper: "Guardian", type: "Cryptic" },
   "gdn-quiptic": { label: "Guardian Quiptic", paper: "Guardian", type: "Cryptic" },
@@ -45,10 +46,13 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
     type: "Cryptic",
   },
   "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Cryptic" },
-  "tny-mini": { label: "New Yorker Mini", paper: "New Yorker", type: "Crossword" },
+  "gdn-mini": { label: "Guardian Mini", paper: "Guardian", type: "Mini" },
+  "tny-mini": { label: "New Yorker Mini", paper: "New Yorker", type: "Mini" },
 };
 
-/** Display + tie-break order when several puzzles share a date. */
+/** Display + tie-break order when several puzzles share a date. The first
+ * appearance of each `type` here also sets the Type filter order, so a Mini
+ * source sits before the first Cryptic to land Mini between Crossword/Cryptic. */
 export const SOURCE_ORDER: PuzzleSource[] = [
   "nyt",
   "latimes",
@@ -60,6 +64,7 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "gdn-quiptic",
   "gdn-quick-cryptic",
   "gdn-prize",
+  "gdn-mini",
   "tny-mini",
 ];
 

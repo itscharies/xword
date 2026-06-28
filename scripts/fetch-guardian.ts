@@ -20,6 +20,7 @@ const TYPES: Array<{ source: PuzzleSource; slug: string }> = [
   { source: "gdn-quiptic", slug: "quiptic" },
   { source: "gdn-quick-cryptic", slug: "quick-cryptic" },
   { source: "gdn-prize", slug: "prize" },
+  { source: "gdn-mini", slug: "mini" },
 ];
 
 const DAYS = Number(process.argv[2]) || 14;
@@ -33,13 +34,25 @@ async function fetchText(url: string): Promise<string> {
   return res.text();
 }
 
-/** Highest (most recent) puzzle number for a type, from its series page. */
-async function headNumber(slug: string): Promise<number | null> {
-  const html = await fetchText(`${SITE}/series/${slug}`);
+let landingHtml: string | null = null;
+async function landing(): Promise<string> {
+  if (landingHtml == null) landingHtml = await fetchText(SITE).catch(() => "");
+  return landingHtml;
+}
+
+const maxNum = (html: string, slug: string): number | null => {
   const nums = [...html.matchAll(new RegExp(`/crosswords/${slug}/(\\d+)`, "g"))].map(
     (m) => Number(m[1]),
   );
   return nums.length ? Math.max(...nums) : null;
+};
+
+/** Highest (most recent) puzzle number for a type. The per-type series page is
+ * the fullest source, but some types (e.g. the mini) have none — fall back to
+ * the main crosswords landing, which lists the latest of every type. */
+async function headNumber(slug: string): Promise<number | null> {
+  const series = await fetchText(`${SITE}/series/${slug}`).catch(() => "");
+  return maxNum(series, slug) ?? maxNum(await landing(), slug);
 }
 
 /** YYYYMMDD `days` ago (UTC). */
