@@ -16,6 +16,7 @@ export type PuzzleSource =
   | "gdn-quick-cryptic"
   | "gdn-prize"
   | "gdn-mini"
+  | "tny-crossword"
   | "tny-mini";
 
 export interface SourceMeta {
@@ -47,6 +48,11 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
   },
   "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Cryptic" },
   "gdn-mini": { label: "Guardian Mini", paper: "Guardian", type: "Mini" },
+  "tny-crossword": {
+    label: "New Yorker Crossword",
+    paper: "New Yorker",
+    type: "Crossword",
+  },
   "tny-mini": { label: "New Yorker Mini", paper: "New Yorker", type: "Mini" },
 };
 
@@ -65,6 +71,7 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "gdn-quick-cryptic",
   "gdn-prize",
   "gdn-mini",
+  "tny-crossword",
   "tny-mini",
 ];
 

@@ -37,8 +37,9 @@ Sources span four papers:
   `gdn-prize`, `gdn-mini`; each puzzle's data is embedded in its page `.json`,
   walked back by number per type. (Everyman is an Observer puzzle, gone from
   the Guardian since ~April 2025, so it isn't available.)
-- **New Yorker** (`tny-mini`) — each date's page embeds a game UUID; the puzzle
-  comes from the Condé puzzles API as a small markdown payload (grid + clues).
+- **New Yorker** (`tny-crossword`, `tny-mini`) — each date's page embeds a game
+  UUID; the puzzle comes from the Condé puzzles API as a markdown payload
+  (grid + clues).
 
 Each source has a `paper` and a `type`, which drive the archive's two filters.
 

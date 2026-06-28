@@ -336,6 +336,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260624",
+    "isoDate": "2026-06-24",
+    "weekday": "Wed",
+    "title": "New Yorker Crossword",
+    "author": "Rebecca Goldstein"
+  },
+  {
     "source": "nyt",
     "date": "260623",
     "isoDate": "2026-06-23",
@@ -400,6 +408,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260623",
+    "isoDate": "2026-06-23",
+    "weekday": "Tue",
+    "title": "New Yorker Crossword",
+    "author": "Aimee Lucido"
+  },
+  {
     "source": "nyt",
     "date": "260622",
     "isoDate": "2026-06-22",
@@ -462,6 +478,14 @@
     "weekday": "Mon",
     "title": "Guardian Mini",
     "author": "The Guardian"
+  },
+  {
+    "source": "tny-crossword",
+    "date": "20260622",
+    "isoDate": "2026-06-22",
+    "weekday": "Mon",
+    "title": "New Yorker Crossword",
+    "author": "Brooke Husic"
   },
   {
     "source": "nyt",
@@ -760,6 +784,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260617",
+    "isoDate": "2026-06-17",
+    "weekday": "Wed",
+    "title": "New Yorker Crossword",
+    "author": "Robyn Weintraub"
+  },
+  {
     "source": "nyt",
     "date": "260616",
     "isoDate": "2026-06-16",
@@ -816,6 +848,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260616",
+    "isoDate": "2026-06-16",
+    "weekday": "Tue",
+    "title": "New Yorker Crossword",
+    "author": "Erik Agard"
+  },
+  {
     "source": "nyt",
     "date": "260615",
     "isoDate": "2026-06-15",
@@ -870,6 +910,14 @@
     "weekday": "Mon",
     "title": "Guardian Mini",
     "author": "The Guardian"
+  },
+  {
+    "source": "tny-crossword",
+    "date": "20260615",
+    "isoDate": "2026-06-15",
+    "weekday": "Mon",
+    "title": "New Yorker Crossword",
+    "author": "Elizabeth C. Gorski"
   },
   {
     "source": "nyt",
@@ -1064,6 +1112,14 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260610",
+    "isoDate": "2026-06-10",
+    "weekday": "Wed",
+    "title": "New Yorker Crossword",
+    "author": "Caitlin Reid"
+  },
+  {
     "source": "nyt",
     "date": "260609",
     "isoDate": "2026-06-09",
@@ -1096,6 +1152,14 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260609",
+    "isoDate": "2026-06-09",
+    "weekday": "Tue",
+    "title": "New Yorker Crossword",
+    "author": "Will Nediger"
+  },
+  {
     "source": "nyt",
     "date": "260608",
     "isoDate": "2026-06-08",
@@ -1126,6 +1190,14 @@
     "weekday": "Mon",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "tny-crossword",
+    "date": "20260608",
+    "isoDate": "2026-06-08",
+    "weekday": "Mon",
+    "title": "New Yorker Crossword",
+    "author": "Patrick Berry"
   },
   {
     "source": "nyt",
