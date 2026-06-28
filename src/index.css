@@ -756,6 +756,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  /* Keep each label on one line — don't let it shrink/wrap (e.g. "NY Times"
+     splitting in two); the row scrolls sideways instead. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .filter-chip:hover { background: var(--accent-2); color: #000; }
 .filter-chip.on {
