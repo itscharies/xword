@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
+import { getAutoAdvance } from "../lib/theme.ts";
 
 export type RevealScope = "cell" | "word" | "puzzle";
 
@@ -300,10 +301,12 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     [isOpen, width, height],
   );
 
-  /** Advance within the current word only (never auto-jumps to another word):
+  /** Advance after typing a letter:
    *  1. next empty cell after the cursor;
    *  2. else the first empty cell earlier in the word (fill the gaps);
-   *  3. else (word full) step one cell forward to re-write, anchored at the end. */
+   *  3. else (word now full) either jump to the next open clue — if the
+   *     "auto-advance" setting is on — or step one cell forward to re-write,
+   *     anchored at the end. */
   const advanceInWord = useCallback(() => {
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
@@ -317,8 +320,10 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     }
     const firstGap = cells.find(empty);
     if (firstGap) return setActive(firstGap);
+    // Word is full.
+    if (getAutoAdvance()) return moveToClue(1);
     if (i + 1 < cells.length) setActive(cells[i + 1]);
-  }, [clueThrough]);
+  }, [clueThrough, moveToClue]);
 
   // ---- editing ------------------------------------------------------------
 

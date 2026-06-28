@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
+import { formatClue } from "../lib/clueFormat.ts";
 
 function Column({
   title,
@@ -60,7 +61,10 @@ function Column({
               onClick={() => xw.selectClue({ ...clue, direction })}
             >
               <span className="cn">{clue.number}</span>
-              <span className="ct">{clue.clue}</span>
+              <span
+                className="ct"
+                dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }}
+              />
             </li>
           );
         })}

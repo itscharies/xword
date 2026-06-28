@@ -19,6 +19,10 @@ export interface Cell {
   shaded?: boolean;
   /** Cell holds more than one letter (a rebus); `solution` is the full string. */
   rebus?: boolean;
+  /** A word-separator (multi-word answer) falls on this cell's right edge… */
+  barRight?: boolean;
+  /** …or its bottom edge. Rendered as a thick bar between the cells. */
+  barBottom?: boolean;
 }
 
 /** A clue + its answer and starting position on the grid. */

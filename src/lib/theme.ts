@@ -46,3 +46,22 @@ export function setAccent(accent: AccentId): void {
     /* ignore */
   }
 }
+
+const ADVANCE_KEY = "xword:autoAdvance";
+
+/** When on, finishing the last letter of a word jumps to the next open clue. */
+export function getAutoAdvance(): boolean {
+  try {
+    return localStorage.getItem(ADVANCE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setAutoAdvance(on: boolean): void {
+  try {
+    localStorage.setItem(ADVANCE_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}

@@ -41,6 +41,8 @@ export function Grid({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
             xw.wrong.has(k) ? "wrong" : "",
             xw.revealed.has(k) ? "revealed" : "",
             entry.length > 1 ? "multi" : "",
+            cell.barRight ? "bar-r" : "",
+            cell.barBottom ? "bar-b" : "",
           ]
             .filter(Boolean)
             .join(" ");

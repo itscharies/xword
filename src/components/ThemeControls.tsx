@@ -2,17 +2,21 @@ import { useState } from "react";
 import {
   ACCENTS,
   getAccent,
+  getAutoAdvance,
   getMode,
   setAccent,
+  setAutoAdvance,
   setMode,
   type AccentId,
   type Mode,
 } from "../lib/theme.ts";
+import { CheckIcon } from "./icons.tsx";
 
 /** Body of the settings modal: theme mode + accent colour pickers. */
 export function ThemeControls() {
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
+  const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
 
   const choose = (m: Mode) => {
     setMode(m);
@@ -21,6 +25,11 @@ export function ThemeControls() {
   const pick = (id: AccentId) => {
     setAccent(id);
     setAccentState(id);
+  };
+  const toggleAdvance = () => {
+    const next = !advance;
+    setAutoAdvance(next);
+    setAdvanceState(next);
   };
 
   return (
@@ -61,6 +70,22 @@ export function ThemeControls() {
             />
           ))}
         </div>
+      </div>
+
+      <div className="setting-row">
+        <span className="setting-label">Typing</span>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={advance}
+          className="check-row"
+          onClick={toggleAdvance}
+        >
+          <span className={`checkbox ${advance ? "on" : ""}`}>
+            {advance && <CheckIcon />}
+          </span>
+          <span>Skip to the next clue when a word is finished</span>
+        </button>
       </div>
     </div>
   );

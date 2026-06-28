@@ -16,6 +16,8 @@ interface GuardianEntry {
   length: number;
   position: { x: number; y: number };
   solution?: string;
+  /** Word breaks within the answer, e.g. {"-":[4]} or {",":[4,9]}. */
+  separatorLocations?: Record<string, number[]>;
 }
 interface GuardianCrossword {
   name?: string;
@@ -69,6 +71,20 @@ export function parseGuardian(jsonText: string, source: PuzzleSource): Puzzle {
     }
     const start = grid[e.position.y]?.[e.position.x];
     if (start) start.number = e.number;
+
+    // Multi-word answers: mark a thick bar on the trailing edge of the letter
+    // before each separator (in this entry's direction).
+    for (const positions of Object.values(e.separatorLocations ?? {})) {
+      for (const pos of positions) {
+        if (pos <= 0 || pos >= e.length) continue;
+        const r = e.direction === "down" ? e.position.y + pos - 1 : e.position.y;
+        const c = e.direction === "across" ? e.position.x + pos - 1 : e.position.x;
+        const cell = grid[r]?.[c];
+        if (!cell || cell.black) continue;
+        if (e.direction === "across") cell.barRight = true;
+        else cell.barBottom = true;
+      }
+    }
   }
 
   const across: Clue[] = [];
