@@ -248,20 +248,40 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     return { row: clue.row, col: clue.col };
   }, []);
 
+  /** A clue is "done" once every one of its cells has a letter. */
+  const isClueFilled = useCallback(
+    (clue: DirClue): boolean =>
+      clueCells(clue).every((p) => entriesRef.current[p.row][p.col]),
+    [],
+  );
+
   const moveToClue = useCallback(
     (delta: number) => {
       const cur = clueThrough(activeRef.current, directionRef.current);
       if (!cur) return;
+      const n = orderedClues.length;
       const idx = orderedClues.findIndex(
         (c) => c.number === cur.number && c.direction === cur.direction,
       );
       if (idx < 0) return;
-      const next =
-        orderedClues[(idx + delta + orderedClues.length) % orderedClues.length];
+      // Walk in the requested direction, skipping clues that are completely
+      // filled, and stop on the first one that still has an empty cell. If
+      // every other clue is full, just step one clue over so the buttons still
+      // do something.
+      let target = (idx + delta + n) % n;
+      for (let k = 1; k <= n; k++) {
+        const j = (idx + delta * k + n) % n;
+        if (j === idx) break; // came full circle — nothing open elsewhere
+        if (!isClueFilled(orderedClues[j])) {
+          target = j;
+          break;
+        }
+      }
+      const next = orderedClues[target];
       setDirection(next.direction);
       setActive(firstEmpty(next));
     },
-    [clueThrough, orderedClues, firstEmpty],
+    [clueThrough, orderedClues, firstEmpty, isClueFilled],
   );
 
   const step = useCallback(

@@ -635,7 +635,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   cursor: pointer;
   color: inherit;
 }
-.title-link:hover h1 { color: var(--accent-2); }
+.title-link h1 {
+  transition: color 0.08s ease, text-shadow 0.08s ease, transform 0.08s ease;
+}
+/* On hover the title goes the accent colour; a hard offset black shadow keeps
+   it legible against a light background and gives it the brutalist "lifted"
+   pop the buttons have. */
+.title-link:hover h1 {
+  color: var(--accent);
+  text-shadow: 3px 3px 0 var(--shadow-col);
+  transform: translate(-1px, -1px);
+}
 
 /* ---- archive page ------------------------------------------------------- */
 
