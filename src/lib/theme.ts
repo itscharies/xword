@@ -65,3 +65,29 @@ export function setAutoAdvance(on: boolean): void {
     /* ignore */
   }
 }
+
+const FILTER_KEY = "xword:filters";
+
+export interface Filters {
+  paper: string;
+  type: string;
+}
+
+/** The archive's last-used Paper/Type filters, so they survive navigation. */
+export function getFilters(): Filters {
+  try {
+    const raw = localStorage.getItem(FILTER_KEY);
+    const f = raw ? (JSON.parse(raw) as Partial<Filters>) : {};
+    return { paper: f.paper ?? "all", type: f.type ?? "all" };
+  } catch {
+    return { paper: "all", type: "all" };
+  }
+}
+
+export function setFilters(f: Filters): void {
+  try {
+    localStorage.setItem(FILTER_KEY, JSON.stringify(f));
+  } catch {
+    /* ignore */
+  }
+}

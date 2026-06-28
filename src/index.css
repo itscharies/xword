@@ -716,19 +716,27 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .archive-heading { margin: 0; font-size: 24px; font-weight: 800; }
 
-/* Source filter chips — one row per dimension (Paper, Size). */
+/* Source filter chips — one row per dimension (Paper, Type). */
 .archive-filters {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 4px 0 20px;
+  gap: 2px;
+  margin: 4px 0 16px;
 }
+/* Each row stays on a single line and scrolls sideways if it overflows; the
+   right/bottom padding leaves room so the chips' hard shadows aren't clipped
+   by the scroll box. */
 .archive-filter {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px var(--sh) var(--sh) 0;
+  scrollbar-width: none;
 }
+.archive-filter::-webkit-scrollbar { display: none; }
 .filter-label {
   font-size: 11px;
   font-weight: 700;
@@ -862,15 +870,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; gap: 1px; }
-
-  /* Filter chips don't all fit on a phone — keep each row on one line and let
-     it scroll sideways instead of wrapping. */
-  .archive-filter {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .archive-filter::-webkit-scrollbar { display: none; }
   /* Thinner circle stroke to match the 1px gridlines on small cells. */
   .cell .circle { border-width: 1px; }
   .clue-banner { width: 100%; }

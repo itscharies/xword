@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
+import { getFilters, setFilters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { CheckIcon } from "./icons.tsx";
@@ -67,8 +68,18 @@ export function Archive({
   onPick: (source: PuzzleSource, date: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
-  const [paper, setPaper] = useState<string>("all");
-  const [type, setType] = useState<string>("all");
+  const [paper, setPaperState] = useState<string>(() => getFilters().paper);
+  const [type, setTypeState] = useState<string>(() => getFilters().type);
+
+  // Persist the filters so navigating into a puzzle and back keeps them.
+  const setPaper = (p: string) => {
+    setPaperState(p);
+    setFilters({ paper: p, type });
+  };
+  const setType = (t: string) => {
+    setTypeState(t);
+    setFilters({ paper, type: t });
+  };
 
   // Group by date (index is pre-sorted newest-first, then by source order, so
   // insertion order into the Map is already what we want to render).

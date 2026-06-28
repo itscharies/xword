@@ -15,34 +15,30 @@ import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 
-const BASE = import.meta.env.BASE_URL;
+const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
 
-const hashRoute = () => window.location.hash.replace(/^#\/?/, "");
-const goTo = (route: string) => {
-  window.location.hash = route;
+/** The route path after the base, e.g. "" (archive) or "gdn-cryptic/20260615". */
+const readRoute = () => {
+  let p = window.location.pathname;
+  if (p.startsWith(BASE)) p = p.slice(BASE.length);
+  return p.replace(/^\/+|\/+$/g, "");
 };
 
-/** Resolve a hash like "nyt/260628" to a puzzle, falling back to the newest. */
-function resolvePuzzle(
-  hash: string,
-  index: PuzzleIndexEntry[],
-): { source: PuzzleSource; date: string } {
-  const [src, date] = hash.split("/");
-  if (isSource(src) && date && index.some((p) => p.source === src && p.date === date)) {
-    return { source: src, date };
-  }
-  return { source: index[0].source, date: index[0].date };
-}
+/** Navigate with real URLs (History API) rather than a hash fragment. */
+const goTo = (route: string) => {
+  window.history.pushState(null, "", BASE + route);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
 
 export default function App() {
   const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [route, setRoute] = useState(hashRoute);
+  const [route, setRoute] = useState(readRoute);
 
   useEffect(() => {
-    const onHash = () => setRoute(hashRoute());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    const onPop = () => setRoute(readRoute());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   useEffect(() => {
@@ -59,22 +55,24 @@ export default function App() {
   if (!index || index.length === 0)
     return <div className="loading">Loading…</div>;
 
-  if (route === "list") {
+  // A valid "<source>/<date>" path shows that puzzle; anything else (including
+  // the root) shows the archive — the default landing now that there are many.
+  const [src, date] = route.split("/");
+  const valid =
+    isSource(src) && date && index.some((p) => p.source === src && p.date === date);
+
+  if (!valid) {
     return (
-      <Archive
-        index={index}
-        onPick={(source, date) => goTo(`${source}/${date}`)}
-      />
+      <Archive index={index} onPick={(source, d) => goTo(`${source}/${d}`)} />
     );
   }
 
-  const { source, date } = resolvePuzzle(route, index);
   return (
     <PuzzleView
-      key={`${source}/${date}`}
-      source={source}
+      key={`${src}/${date}`}
+      source={src as PuzzleSource}
       date={date}
-      onOpenArchive={() => goTo("list")}
+      onOpenArchive={() => goTo("")}
     />
   );
 }

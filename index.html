@@ -41,6 +41,27 @@
       rel="stylesheet"
     />
     <script>
+      // Decode the path that 404.html stashed in the query string, so deep
+      // links (/xword/gdn-cryptic/20260615) restore to a clean URL before the
+      // app reads window.location. (rafgraph/spa-github-pages)
+      (function (l) {
+        if (l.search[1] === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (s) {
+              return s.replace(/~and~/g, "&");
+            })
+            .join("?");
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash,
+          );
+        }
+      })(window.location);
+    </script>
+    <script>
       // Apply saved theme/accent before paint to avoid a flash.
       try {
         var t = localStorage.getItem("xword:theme");
