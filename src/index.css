@@ -630,21 +630,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .title-link {
   background: transparent;
   border: 0;
-  padding: 0;
+  /* Padding gives the hover block some room; the matching negative margin
+     keeps the title aligned with the rest of the header (no layout shift). */
+  padding: 4px 8px;
+  margin: -4px -8px;
   text-align: left;
   cursor: pointer;
   color: inherit;
+  transition: background 0.08s ease;
 }
-.title-link h1 {
-  transition: color 0.08s ease, text-shadow 0.08s ease, transform 0.08s ease;
+/* On hover the whole title becomes a solid accent block with black text. */
+.title-link:hover {
+  background: var(--accent);
 }
-/* On hover the title goes the accent colour; a hard offset black shadow keeps
-   it legible against a light background and gives it the brutalist "lifted"
-   pop the buttons have. */
-.title-link:hover h1 {
-  color: var(--accent);
-  text-shadow: 3px 3px 0 var(--shadow-col);
-  transform: translate(-1px, -1px);
+.title-link:hover h1,
+.title-link:hover .byline {
+  color: #000;
 }
 
 /* ---- archive page ------------------------------------------------------- */
