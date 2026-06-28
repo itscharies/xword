@@ -8,6 +8,30 @@
     "author": "Anthony Grubb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Guardian Cryptic",
+    "author": "Anto"
+  },
+  {
+    "source": "gdn-mini",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Guardian Mini",
+    "author": "The Guardian"
+  },
+  {
     "source": "nyt",
     "date": "260628",
     "isoDate": "2026-06-28",
