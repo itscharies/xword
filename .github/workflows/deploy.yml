@@ -3,11 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # The daily fetch commits with GITHUB_TOKEN, which can't trigger the push
-  # event above — so redeploy when that workflow finishes instead.
-  workflow_run:
-    workflows: ["Fetch daily puzzle"]
-    types: [completed]
+  # The daily fetch can't trigger the push event above (it commits with
+  # GITHUB_TOKEN), so it dispatches this workflow itself — but only when it
+  # actually adds a new puzzle, so hourly no-op fetches never redeploy.
   workflow_dispatch: {}
 
 # Allow the workflow to publish to Pages via OIDC.
@@ -23,12 +21,10 @@ concurrency:
 
 jobs:
   build:
-    # For fetch-triggered runs, only deploy if the fetch actually succeeded.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      # Always build the latest main — for workflow_run the event SHA predates
-      # the fetch's commit, so pin to the branch tip.
+      # Always build the latest main — when dispatched by the fetch, the tip
+      # already includes its just-pushed commit.
       - uses: actions/checkout@v4
         with:
           ref: main

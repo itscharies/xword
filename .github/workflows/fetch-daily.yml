@@ -2,17 +2,17 @@ name: Fetch daily puzzle
 
 on:
   schedule:
-    # The syndicator publishes a given day's puzzle the evening before in UTC —
-    # usually live around 20:00 UTC (~6am Sydney AEST), but the exact time
-    # drifts day to day. Rather than guess a single time, poll hourly from
-    # 19:00–23:00 UTC (~5am–9am Sydney) and grab it the moment it lands. The
-    # first run that finds the puzzle commits; the rest are no-ops (git diff
-    # guard), so the extra runs cost nothing.
-    - cron: "0 19-23 * * *"
+    # Each source publishes once a day, but at times that drift and differ
+    # between sources. Rather than guess, poll hourly all day and grab each new
+    # puzzle the moment it lands. A run with nothing new skips every existing
+    # file and makes no commit (the git-diff guard below), so it never deploys —
+    # only the run that actually finds a new puzzle triggers a build.
+    - cron: "0 * * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: fetch-daily
@@ -35,13 +35,24 @@ jobs:
         run: npm run fetch
 
       - name: Commit new puzzles
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/puzzles
           if git diff --cached --quiet; then
             echo "No new puzzles."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Add puzzles ($(date -u +%Y-%m-%d))"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Only redeploy when we actually committed a puzzle — a bot push with
+      # GITHUB_TOKEN can't trigger deploy's `push` event, so dispatch it here.
+      - name: Trigger deploy
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main
