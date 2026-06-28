@@ -1,6 +1,14 @@
 [
   {
     "source": "nyt",
+    "date": "260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "NY Times, Mon, Jun 29, 2026",
+    "author": "Anthony Grubb"
+  },
+  {
+    "source": "nyt",
     "date": "260628",
     "isoDate": "2026-06-28",
     "weekday": "Sun",
