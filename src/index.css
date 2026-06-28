@@ -358,12 +358,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: center;
   font-weight: 550;
   text-transform: uppercase;
-  /* ~60% of a single square's width */
-  font-size: clamp(9px, calc(60cqw / var(--cols)), 24px);
+  /* ~60% of a single square's width — scales with the cell, no upper cap so
+     small grids (mini/midi) with large cells get proportionally large text. */
+  font-size: max(9px, calc(60cqw / var(--cols)));
   line-height: 1;
 }
 .cell.multi {
-  font-size: clamp(5px, calc(30cqw / var(--cols)), 12px);
+  font-size: max(5px, calc(30cqw / var(--cols)));
   letter-spacing: -0.5px;
 }
 .cell.black { background: var(--cell-block); }
@@ -422,8 +423,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: absolute;
   top: 1px;
   left: 1px;
-  /* ~24% of a single square's width */
-  font-size: clamp(5px, calc(24cqw / var(--cols)), 10px);
+  /* ~24% of a single square's width — scales with the cell, no upper cap. */
+  font-size: max(5px, calc(24cqw / var(--cols)));
   font-weight: 700;
   line-height: 1;
   /* Dim a touch vs the letters, but keep it legible on any cell colour. */
