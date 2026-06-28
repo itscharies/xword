@@ -255,11 +255,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: var(--bw) solid var(--line);
   background: var(--surface);
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .checkbox svg { width: 16px; height: 16px; }
+/* Checked keeps its shadow; only the click animates a push-and-return. */
 .checkbox.on {
-  background: var(--accent);
+  background: var(--accent-2);
   color: #000;
+}
+.check-row:active .checkbox {
   transform: translate(var(--sh), var(--sh));
   box-shadow: 0 0 0 var(--shadow-col);
 }
@@ -400,12 +404,29 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: max(5px, calc(30cqw / var(--cols)));
   letter-spacing: -0.5px;
 }
-/* Word separators in multi-word answers: a thick bar on the cell's trailing
-   edge, drawn inset so it doesn't affect grid layout. */
-.cell.bar-r { box-shadow: inset -3px 0 0 var(--line); }
-.cell.bar-b { box-shadow: inset 0 -3px 0 var(--line); }
-.cell.bar-r.bar-b {
-  box-shadow: inset -3px 0 0 var(--line), inset 0 -3px 0 var(--line);
+/* Word separators in multi-word answers: a thick black bar centred on the
+   boundary between the two cells (a child span so it can straddle the gap). */
+.cell.bar-r,
+.cell.bar-b {
+  overflow: visible;
+  z-index: 1;
+}
+.cell .sep {
+  position: absolute;
+  background: var(--line);
+  z-index: 2;
+}
+.cell .sep-r {
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  width: 4px;
+}
+.cell .sep-b {
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 4px;
 }
 
 .cell.black { background: var(--cell-block); }
@@ -841,6 +862,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; gap: 1px; }
+
+  /* Filter chips don't all fit on a phone — keep each row on one line and let
+     it scroll sideways instead of wrapping. */
+  .archive-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .archive-filter::-webkit-scrollbar { display: none; }
   /* Thinner circle stroke to match the 1px gridlines on small cells. */
   .cell .circle { border-width: 1px; }
   .clue-banner { width: 100%; }

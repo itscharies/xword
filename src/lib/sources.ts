@@ -21,8 +21,8 @@ export interface SourceMeta {
   label: string;
   /** Publisher — drives the "Paper" filter. */
   paper: string;
-  /** Puzzle type (size or variety) — drives the "Type" filter. */
-  type: string;
+  /** Coarse kind — drives the "Type" filter. Just Crossword vs Cryptic. */
+  type: "Crossword" | "Cryptic";
 }
 
 export const SOURCES: Record<PuzzleSource, SourceMeta> = {
@@ -33,17 +33,17 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
     paper: "Seattle Times",
     type: "Crossword",
   },
-  "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", type: "Midi" },
-  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", type: "Mini" },
-  "gdn-quick": { label: "Guardian Quick", paper: "Guardian", type: "Quick" },
+  "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", type: "Crossword" },
+  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", type: "Crossword" },
+  "gdn-quick": { label: "Guardian Quick", paper: "Guardian", type: "Crossword" },
   "gdn-cryptic": { label: "Guardian Cryptic", paper: "Guardian", type: "Cryptic" },
-  "gdn-quiptic": { label: "Guardian Quiptic", paper: "Guardian", type: "Quiptic" },
+  "gdn-quiptic": { label: "Guardian Quiptic", paper: "Guardian", type: "Cryptic" },
   "gdn-quick-cryptic": {
     label: "Guardian Quick Cryptic",
     paper: "Guardian",
-    type: "Quick Cryptic",
+    type: "Cryptic",
   },
-  "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Prize" },
+  "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Cryptic" },
 };
 
 /** Display + tie-break order when several puzzles share a date. */

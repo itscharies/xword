@@ -318,10 +318,15 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     for (let j = i + 1; j < cells.length; j++) {
       if (empty(cells[j])) return setActive(cells[j]);
     }
+    // No empty cell after the cursor. Only jump to the next clue when the
+    // cursor is on the word's *last* cell and the whole word is now full —
+    // filling an earlier gap, or any non-final cell, behaves normally.
+    const lastCell = i === cells.length - 1;
+    if (getAutoAdvance() && lastCell && !cells.some(empty)) {
+      return moveToClue(1);
+    }
     const firstGap = cells.find(empty);
     if (firstGap) return setActive(firstGap);
-    // Word is full.
-    if (getAutoAdvance()) return moveToClue(1);
     if (i + 1 < cells.length) setActive(cells[i + 1]);
   }, [clueThrough, moveToClue]);
 

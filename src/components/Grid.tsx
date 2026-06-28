@@ -57,6 +57,8 @@ export function Grid({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
                 <span className="num">{cell.number}</span>
               )}
               {cell.circled && <span className="circle" />}
+              {cell.barRight && <span className="sep sep-r" />}
+              {cell.barBottom && <span className="sep sep-b" />}
               {entry && <span className="cell-letter">{entry}</span>}
             </div>
           );
