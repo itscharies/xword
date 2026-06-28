@@ -1,5 +1,6 @@
 [
   {
+    "source": "nyt",
     "date": "260628",
     "isoDate": "2026-06-28",
     "weekday": "Sun",
@@ -7,6 +8,15 @@
     "author": "David Steinberg"
   },
   {
+    "source": "st-large",
+    "date": "20260628",
+    "isoDate": "2026-06-28",
+    "weekday": "Sun",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260627",
     "isoDate": "2026-06-27",
     "weekday": "Sat",
@@ -14,6 +24,15 @@
     "author": "Kameron Austin Collins"
   },
   {
+    "source": "st-large",
+    "date": "20260627",
+    "isoDate": "2026-06-27",
+    "weekday": "Sat",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260626",
     "isoDate": "2026-06-26",
     "weekday": "Fri",
@@ -21,6 +40,15 @@
     "author": "Gene Louise De Vera"
   },
   {
+    "source": "st-large",
+    "date": "20260626",
+    "isoDate": "2026-06-26",
+    "weekday": "Fri",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260625",
     "isoDate": "2026-06-25",
     "weekday": "Thu",
@@ -28,6 +56,15 @@
     "author": "Zhou Zhang and Mallory Montgomery"
   },
   {
+    "source": "st-large",
+    "date": "20260625",
+    "isoDate": "2026-06-25",
+    "weekday": "Thu",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260624",
     "isoDate": "2026-06-24",
     "weekday": "Wed",
@@ -35,6 +72,15 @@
     "author": "Kathleen Duncan"
   },
   {
+    "source": "st-large",
+    "date": "20260624",
+    "isoDate": "2026-06-24",
+    "weekday": "Wed",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260623",
     "isoDate": "2026-06-23",
     "weekday": "Tue",
@@ -42,6 +88,15 @@
     "author": "Brad Wiegmann"
   },
   {
+    "source": "st-large",
+    "date": "20260623",
+    "isoDate": "2026-06-23",
+    "weekday": "Tue",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260622",
     "isoDate": "2026-06-22",
     "weekday": "Mon",
@@ -49,6 +104,15 @@
     "author": "Rena Cohen"
   },
   {
+    "source": "st-large",
+    "date": "20260622",
+    "isoDate": "2026-06-22",
+    "weekday": "Mon",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260621",
     "isoDate": "2026-06-21",
     "weekday": "Sun",
@@ -56,6 +120,15 @@
     "author": "Derrick Niederman"
   },
   {
+    "source": "st-large",
+    "date": "20260621",
+    "isoDate": "2026-06-21",
+    "weekday": "Sun",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260620",
     "isoDate": "2026-06-20",
     "weekday": "Sat",
@@ -63,6 +136,15 @@
     "author": "Byron Walden"
   },
   {
+    "source": "st-large",
+    "date": "20260620",
+    "isoDate": "2026-06-20",
+    "weekday": "Sat",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260619",
     "isoDate": "2026-06-19",
     "weekday": "Fri",
@@ -70,6 +152,15 @@
     "author": "Maddy Ziegler"
   },
   {
+    "source": "st-large",
+    "date": "20260619",
+    "isoDate": "2026-06-19",
+    "weekday": "Fri",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260618",
     "isoDate": "2026-06-18",
     "weekday": "Thu",
@@ -77,6 +168,15 @@
     "author": "Simeon Seigel"
   },
   {
+    "source": "st-large",
+    "date": "20260618",
+    "isoDate": "2026-06-18",
+    "weekday": "Thu",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260617",
     "isoDate": "2026-06-17",
     "weekday": "Wed",
@@ -84,6 +184,15 @@
     "author": "Brian Keller"
   },
   {
+    "source": "st-large",
+    "date": "20260617",
+    "isoDate": "2026-06-17",
+    "weekday": "Wed",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260616",
     "isoDate": "2026-06-16",
     "weekday": "Tue",
@@ -91,6 +200,15 @@
     "author": "John Ruff"
   },
   {
+    "source": "st-large",
+    "date": "20260616",
+    "isoDate": "2026-06-16",
+    "weekday": "Tue",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260615",
     "isoDate": "2026-06-15",
     "weekday": "Mon",
@@ -98,6 +216,15 @@
     "author": "Joel Woodford"
   },
   {
+    "source": "st-large",
+    "date": "20260615",
+    "isoDate": "2026-06-15",
+    "weekday": "Mon",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260614",
     "isoDate": "2026-06-14",
     "weekday": "Sun",
@@ -105,6 +232,15 @@
     "author": "Rachel Fabi and Adam Wagner"
   },
   {
+    "source": "st-large",
+    "date": "20260614",
+    "isoDate": "2026-06-14",
+    "weekday": "Sun",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260613",
     "isoDate": "2026-06-13",
     "weekday": "Sat",
@@ -112,6 +248,15 @@
     "author": "Katie Hoody"
   },
   {
+    "source": "st-large",
+    "date": "20260613",
+    "isoDate": "2026-06-13",
+    "weekday": "Sat",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260612",
     "isoDate": "2026-06-12",
     "weekday": "Fri",
@@ -119,6 +264,15 @@
     "author": "Rafael Musa and Geoffrey Schorkopf"
   },
   {
+    "source": "st-large",
+    "date": "20260612",
+    "isoDate": "2026-06-12",
+    "weekday": "Fri",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260611",
     "isoDate": "2026-06-11",
     "weekday": "Thu",
@@ -126,6 +280,15 @@
     "author": "John Guzzetta and Jeff Chen"
   },
   {
+    "source": "st-large",
+    "date": "20260611",
+    "isoDate": "2026-06-11",
+    "weekday": "Thu",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260610",
     "isoDate": "2026-06-10",
     "weekday": "Wed",
@@ -133,6 +296,15 @@
     "author": "James Mattina"
   },
   {
+    "source": "st-large",
+    "date": "20260610",
+    "isoDate": "2026-06-10",
+    "weekday": "Wed",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260609",
     "isoDate": "2026-06-09",
     "weekday": "Tue",
@@ -140,6 +312,15 @@
     "author": "Max Schlenker"
   },
   {
+    "source": "st-large",
+    "date": "20260609",
+    "isoDate": "2026-06-09",
+    "weekday": "Tue",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260608",
     "isoDate": "2026-06-08",
     "weekday": "Mon",
@@ -147,6 +328,15 @@
     "author": "Kate Schutzengel"
   },
   {
+    "source": "st-large",
+    "date": "20260608",
+    "isoDate": "2026-06-08",
+    "weekday": "Mon",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "nyt",
     "date": "260607",
     "isoDate": "2026-06-07",
     "weekday": "Sun",
@@ -154,6 +344,7 @@
     "author": "Mark Diehl"
   },
   {
+    "source": "nyt",
     "date": "260606",
     "isoDate": "2026-06-06",
     "weekday": "Sat",
@@ -161,6 +352,7 @@
     "author": "Hannah Slovut-Einertson"
   },
   {
+    "source": "nyt",
     "date": "260605",
     "isoDate": "2026-06-05",
     "weekday": "Fri",
@@ -168,6 +360,7 @@
     "author": "Rena Cohen"
   },
   {
+    "source": "nyt",
     "date": "260604",
     "isoDate": "2026-06-04",
     "weekday": "Thu",
@@ -175,6 +368,7 @@
     "author": "Lance Enfinger and John Kugelman"
   },
   {
+    "source": "nyt",
     "date": "260603",
     "isoDate": "2026-06-03",
     "weekday": "Wed",
@@ -182,6 +376,7 @@
     "author": "Joseph Gangi"
   },
   {
+    "source": "nyt",
     "date": "260602",
     "isoDate": "2026-06-02",
     "weekday": "Tue",
@@ -189,6 +384,7 @@
     "author": "Hal Moore"
   },
   {
+    "source": "nyt",
     "date": "260601",
     "isoDate": "2026-06-01",
     "weekday": "Mon",
@@ -196,6 +392,7 @@
     "author": "Neville Fogarty"
   },
   {
+    "source": "nyt",
     "date": "260531",
     "isoDate": "2026-05-31",
     "weekday": "Sun",
@@ -203,6 +400,7 @@
     "author": "Rebecca Goldstein"
   },
   {
+    "source": "nyt",
     "date": "260530",
     "isoDate": "2026-05-30",
     "weekday": "Sat",
@@ -210,6 +408,7 @@
     "author": "Sam Ezersky"
   },
   {
+    "source": "nyt",
     "date": "260529",
     "isoDate": "2026-05-29",
     "weekday": "Fri",
@@ -217,6 +416,7 @@
     "author": "Andrew Spooner"
   },
   {
+    "source": "nyt",
     "date": "260528",
     "isoDate": "2026-05-28",
     "weekday": "Thu",
@@ -224,6 +424,7 @@
     "author": "Zhou Zhang and Kevin Curry"
   },
   {
+    "source": "nyt",
     "date": "260527",
     "isoDate": "2026-05-27",
     "weekday": "Wed",
@@ -231,6 +432,7 @@
     "author": "Hoang-Kim Vu"
   },
   {
+    "source": "nyt",
     "date": "260526",
     "isoDate": "2026-05-26",
     "weekday": "Tue",
@@ -238,6 +440,7 @@
     "author": "Victoria Fernandez Grande"
   },
   {
+    "source": "nyt",
     "date": "260525",
     "isoDate": "2026-05-25",
     "weekday": "Mon",
@@ -245,6 +448,7 @@
     "author": "Freddie Cheng"
   },
   {
+    "source": "nyt",
     "date": "260524",
     "isoDate": "2026-05-24",
     "weekday": "Sun",
@@ -252,6 +456,7 @@
     "author": "Michael Lieberman"
   },
   {
+    "source": "nyt",
     "date": "260523",
     "isoDate": "2026-05-23",
     "weekday": "Sat",
@@ -259,6 +464,7 @@
     "author": "Jesse Cohn"
   },
   {
+    "source": "nyt",
     "date": "260522",
     "isoDate": "2026-05-22",
     "weekday": "Fri",
@@ -266,6 +472,7 @@
     "author": "Rachel Fabi"
   },
   {
+    "source": "nyt",
     "date": "260521",
     "isoDate": "2026-05-21",
     "weekday": "Thu",
@@ -273,6 +480,7 @@
     "author": "Rafael Musa and Sala Wanetick"
   },
   {
+    "source": "nyt",
     "date": "260520",
     "isoDate": "2026-05-20",
     "weekday": "Wed",
@@ -280,6 +488,7 @@
     "author": "Adam Wagner"
   },
   {
+    "source": "nyt",
     "date": "260519",
     "isoDate": "2026-05-19",
     "weekday": "Tue",
@@ -287,6 +496,7 @@
     "author": "Mark Diehl"
   },
   {
+    "source": "nyt",
     "date": "260518",
     "isoDate": "2026-05-18",
     "weekday": "Mon",
@@ -294,6 +504,7 @@
     "author": "Brad Wiegmann"
   },
   {
+    "source": "nyt",
     "date": "260517",
     "isoDate": "2026-05-17",
     "weekday": "Sun",
@@ -301,6 +512,7 @@
     "author": "Lance Enfinger and John Kugelman"
   },
   {
+    "source": "nyt",
     "date": "260516",
     "isoDate": "2026-05-16",
     "weekday": "Sat",
@@ -308,6 +520,7 @@
     "author": "Kareem Ayas"
   },
   {
+    "source": "nyt",
     "date": "260515",
     "isoDate": "2026-05-15",
     "weekday": "Fri",
@@ -315,6 +528,7 @@
     "author": "Erica Hsiung Wojcik"
   },
   {
+    "source": "nyt",
     "date": "260514",
     "isoDate": "2026-05-14",
     "weekday": "Thu",
@@ -322,6 +536,7 @@
     "author": "Barbara Lin"
   },
   {
+    "source": "nyt",
     "date": "260513",
     "isoDate": "2026-05-13",
     "weekday": "Wed",
@@ -329,6 +544,7 @@
     "author": "Philippe Monfiston"
   },
   {
+    "source": "nyt",
     "date": "260512",
     "isoDate": "2026-05-12",
     "weekday": "Tue",
@@ -336,6 +552,7 @@
     "author": "Adryel W. Robles Ojeda"
   },
   {
+    "source": "nyt",
     "date": "260511",
     "isoDate": "2026-05-11",
     "weekday": "Mon",
@@ -343,6 +560,7 @@
     "author": "John Ewbank"
   },
   {
+    "source": "nyt",
     "date": "260510",
     "isoDate": "2026-05-10",
     "weekday": "Sun",
@@ -350,6 +568,7 @@
     "author": "Samuel A. Donaldson"
   },
   {
+    "source": "nyt",
     "date": "260509",
     "isoDate": "2026-05-09",
     "weekday": "Sat",
@@ -357,6 +576,7 @@
     "author": "Royce Ferguson"
   },
   {
+    "source": "nyt",
     "date": "260508",
     "isoDate": "2026-05-08",
     "weekday": "Fri",
@@ -364,6 +584,7 @@
     "author": "Carolyn Davies Lynch and Brian Callahan"
   },
   {
+    "source": "nyt",
     "date": "260507",
     "isoDate": "2026-05-07",
     "weekday": "Thu",
@@ -371,6 +592,7 @@
     "author": "Joe Marquez"
   },
   {
+    "source": "nyt",
     "date": "260506",
     "isoDate": "2026-05-06",
     "weekday": "Wed",
@@ -378,6 +600,7 @@
     "author": "Jess Shulman and Amie Walker"
   },
   {
+    "source": "nyt",
     "date": "260505",
     "isoDate": "2026-05-05",
     "weekday": "Tue",
@@ -385,6 +608,7 @@
     "author": "Ryan Patrick Smith"
   },
   {
+    "source": "nyt",
     "date": "260504",
     "isoDate": "2026-05-04",
     "weekday": "Mon",
@@ -392,6 +616,7 @@
     "author": "Gary Cee"
   },
   {
+    "source": "nyt",
     "date": "260503",
     "isoDate": "2026-05-03",
     "weekday": "Sun",
@@ -399,6 +624,7 @@
     "author": "Michael and Oliver Schlossberg"
   },
   {
+    "source": "nyt",
     "date": "260502",
     "isoDate": "2026-05-02",
     "weekday": "Sat",
@@ -406,6 +632,7 @@
     "author": "Katie Hoody"
   },
   {
+    "source": "nyt",
     "date": "260501",
     "isoDate": "2026-05-01",
     "weekday": "Fri",
@@ -413,6 +640,7 @@
     "author": "Zachary David Levy"
   },
   {
+    "source": "nyt",
     "date": "260430",
     "isoDate": "2026-04-30",
     "weekday": "Thu",
@@ -420,6 +648,7 @@
     "author": "Alex Murphy"
   },
   {
+    "source": "nyt",
     "date": "260429",
     "isoDate": "2026-04-29",
     "weekday": "Wed",
@@ -427,6 +656,7 @@
     "author": "Jeff Stillman"
   },
   {
+    "source": "nyt",
     "date": "260428",
     "isoDate": "2026-04-28",
     "weekday": "Tue",
@@ -434,6 +664,7 @@
     "author": "Killian Olson"
   },
   {
+    "source": "nyt",
     "date": "260427",
     "isoDate": "2026-04-27",
     "weekday": "Mon",
@@ -441,6 +672,7 @@
     "author": "Matthew Luter"
   },
   {
+    "source": "nyt",
     "date": "260426",
     "isoDate": "2026-04-26",
     "weekday": "Sun",
@@ -448,6 +680,7 @@
     "author": "Alex Eaton-Salners"
   },
   {
+    "source": "nyt",
     "date": "260425",
     "isoDate": "2026-04-25",
     "weekday": "Sat",
@@ -455,6 +688,7 @@
     "author": "Boaz Moser"
   },
   {
+    "source": "nyt",
     "date": "260424",
     "isoDate": "2026-04-24",
     "weekday": "Fri",
@@ -462,6 +696,7 @@
     "author": "Rafael Musa and Rebecca Goldstein"
   },
   {
+    "source": "nyt",
     "date": "260423",
     "isoDate": "2026-04-23",
     "weekday": "Thu",
@@ -469,6 +704,7 @@
     "author": "John Kugelman"
   },
   {
+    "source": "nyt",
     "date": "260422",
     "isoDate": "2026-04-22",
     "weekday": "Wed",
@@ -476,6 +712,7 @@
     "author": "Adam Vincent"
   },
   {
+    "source": "nyt",
     "date": "260421",
     "isoDate": "2026-04-21",
     "weekday": "Tue",
@@ -483,6 +720,7 @@
     "author": "Kiran Pandey"
   },
   {
+    "source": "nyt",
     "date": "260420",
     "isoDate": "2026-04-20",
     "weekday": "Mon",
@@ -490,6 +728,7 @@
     "author": "Jamey Smith"
   },
   {
+    "source": "nyt",
     "date": "260419",
     "isoDate": "2026-04-19",
     "weekday": "Sun",
@@ -497,6 +736,7 @@
     "author": "Miranda Kany"
   },
   {
+    "source": "nyt",
     "date": "260418",
     "isoDate": "2026-04-18",
     "weekday": "Sat",
@@ -504,6 +744,7 @@
     "author": "Kameron Austin Collins"
   },
   {
+    "source": "nyt",
     "date": "260417",
     "isoDate": "2026-04-17",
     "weekday": "Fri",
@@ -511,6 +752,7 @@
     "author": "James McCarron and Rachel Souza"
   },
   {
+    "source": "nyt",
     "date": "260416",
     "isoDate": "2026-04-16",
     "weekday": "Thu",
@@ -518,6 +760,7 @@
     "author": "Joe Marquez"
   },
   {
+    "source": "nyt",
     "date": "260415",
     "isoDate": "2026-04-15",
     "weekday": "Wed",
@@ -525,6 +768,7 @@
     "author": "John Guzzetta"
   },
   {
+    "source": "nyt",
     "date": "260414",
     "isoDate": "2026-04-14",
     "weekday": "Tue",
@@ -532,6 +776,7 @@
     "author": "Daniel Bodily"
   },
   {
+    "source": "nyt",
     "date": "260413",
     "isoDate": "2026-04-13",
     "weekday": "Mon",
@@ -539,6 +784,7 @@
     "author": "Christina Iverson and Andrea Carla Michaels"
   },
   {
+    "source": "nyt",
     "date": "260412",
     "isoDate": "2026-04-12",
     "weekday": "Sun",
@@ -546,6 +792,7 @@
     "author": "Kelly Richardson"
   },
   {
+    "source": "nyt",
     "date": "260411",
     "isoDate": "2026-04-11",
     "weekday": "Sat",
@@ -553,6 +800,7 @@
     "author": "Fritz Juhnke"
   },
   {
+    "source": "nyt",
     "date": "260410",
     "isoDate": "2026-04-10",
     "weekday": "Fri",
@@ -560,6 +808,7 @@
     "author": "Adrian Johnson"
   },
   {
+    "source": "nyt",
     "date": "260409",
     "isoDate": "2026-04-09",
     "weekday": "Thu",
@@ -567,6 +816,7 @@
     "author": "Hanh Huynh"
   },
   {
+    "source": "nyt",
     "date": "260408",
     "isoDate": "2026-04-08",
     "weekday": "Wed",
@@ -574,6 +824,7 @@
     "author": "Wayne Bergman"
   },
   {
+    "source": "nyt",
     "date": "260407",
     "isoDate": "2026-04-07",
     "weekday": "Tue",
@@ -581,6 +832,7 @@
     "author": "Drew Schmenner"
   },
   {
+    "source": "nyt",
     "date": "260406",
     "isoDate": "2026-04-06",
     "weekday": "Mon",
@@ -588,6 +840,7 @@
     "author": "Leslie Benson"
   },
   {
+    "source": "nyt",
     "date": "260405",
     "isoDate": "2026-04-05",
     "weekday": "Sun",
@@ -595,6 +848,7 @@
     "author": "Matt Proulx and Jeffrey Martinovic"
   },
   {
+    "source": "nyt",
     "date": "260404",
     "isoDate": "2026-04-04",
     "weekday": "Sat",
@@ -602,6 +856,7 @@
     "author": "Adam Levav"
   },
   {
+    "source": "nyt",
     "date": "260403",
     "isoDate": "2026-04-03",
     "weekday": "Fri",
@@ -609,6 +864,7 @@
     "author": "Caroline Hand"
   },
   {
+    "source": "nyt",
     "date": "260402",
     "isoDate": "2026-04-02",
     "weekday": "Thu",
@@ -616,6 +872,7 @@
     "author": "Yitzi Snow"
   },
   {
+    "source": "nyt",
     "date": "260401",
     "isoDate": "2026-04-01",
     "weekday": "Wed",
@@ -623,6 +880,7 @@
     "author": "Brad Lively"
   },
   {
+    "source": "nyt",
     "date": "260331",
     "isoDate": "2026-03-31",
     "weekday": "Tue",
@@ -630,6 +888,7 @@
     "author": "Adam Aaronson"
   },
   {
+    "source": "nyt",
     "date": "260330",
     "isoDate": "2026-03-30",
     "weekday": "Mon",
@@ -637,6 +896,7 @@
     "author": "Hannah Binney"
   },
   {
+    "source": "nyt",
     "date": "260329",
     "isoDate": "2026-03-29",
     "weekday": "Sun",
@@ -644,6 +904,7 @@
     "author": "Jill Rafaloff and Michelle Sontarp"
   },
   {
+    "source": "nyt",
     "date": "260328",
     "isoDate": "2026-03-28",
     "weekday": "Sat",
@@ -651,6 +912,7 @@
     "author": "Josh Knapp"
   },
   {
+    "source": "nyt",
     "date": "260327",
     "isoDate": "2026-03-27",
     "weekday": "Fri",
@@ -658,6 +920,7 @@
     "author": "Kate Hawkins"
   },
   {
+    "source": "nyt",
     "date": "260326",
     "isoDate": "2026-03-26",
     "weekday": "Thu",
@@ -665,6 +928,7 @@
     "author": "John Ewbank"
   },
   {
+    "source": "nyt",
     "date": "260325",
     "isoDate": "2026-03-25",
     "weekday": "Wed",
@@ -672,6 +936,7 @@
     "author": "Victor Schmitt"
   },
   {
+    "source": "nyt",
     "date": "260324",
     "isoDate": "2026-03-24",
     "weekday": "Tue",
@@ -679,6 +944,7 @@
     "author": "Stephan Prock and Jeff Chen"
   },
   {
+    "source": "nyt",
     "date": "260323",
     "isoDate": "2026-03-23",
     "weekday": "Mon",
@@ -686,6 +952,7 @@
     "author": "Ian Livengood"
   },
   {
+    "source": "nyt",
     "date": "260322",
     "isoDate": "2026-03-22",
     "weekday": "Sun",
@@ -693,6 +960,7 @@
     "author": "Michael Lieberman and Rebecca Goldstein"
   },
   {
+    "source": "nyt",
     "date": "260321",
     "isoDate": "2026-03-21",
     "weekday": "Sat",
@@ -700,6 +968,7 @@
     "author": "David Karp"
   },
   {
+    "source": "nyt",
     "date": "260320",
     "isoDate": "2026-03-20",
     "weekday": "Fri",
@@ -707,6 +976,7 @@
     "author": "Evan Mulvihill"
   },
   {
+    "source": "nyt",
     "date": "260319",
     "isoDate": "2026-03-19",
     "weekday": "Thu",
@@ -714,6 +984,7 @@
     "author": "Kareem Ayas"
   },
   {
+    "source": "nyt",
     "date": "260318",
     "isoDate": "2026-03-18",
     "weekday": "Wed",
@@ -721,6 +992,7 @@
     "author": "Joseph Gangi"
   },
   {
+    "source": "nyt",
     "date": "260317",
     "isoDate": "2026-03-17",
     "weekday": "Tue",
@@ -728,6 +1000,7 @@
     "author": "Sarah Sinclair and Amie Walker"
   },
   {
+    "source": "nyt",
     "date": "260316",
     "isoDate": "2026-03-16",
     "weekday": "Mon",
@@ -735,6 +1008,7 @@
     "author": "Matthew Stock"
   },
   {
+    "source": "nyt",
     "date": "260315",
     "isoDate": "2026-03-15",
     "weekday": "Sun",
@@ -742,6 +1016,7 @@
     "author": "Chloe Revery"
   },
   {
+    "source": "nyt",
     "date": "260314",
     "isoDate": "2026-03-14",
     "weekday": "Sat",
@@ -749,6 +1024,7 @@
     "author": "Mark Diehl"
   },
   {
+    "source": "nyt",
     "date": "260313",
     "isoDate": "2026-03-13",
     "weekday": "Fri",
@@ -756,6 +1032,7 @@
     "author": "Geoffrey Schorkopf and Rafael Musa"
   },
   {
+    "source": "nyt",
     "date": "260312",
     "isoDate": "2026-03-12",
     "weekday": "Thu",
@@ -763,6 +1040,7 @@
     "author": "Dario Salvucci"
   },
   {
+    "source": "nyt",
     "date": "260311",
     "isoDate": "2026-03-11",
     "weekday": "Wed",
@@ -770,6 +1048,7 @@
     "author": "Hanh Huynh and Ted Mayer"
   },
   {
+    "source": "nyt",
     "date": "260310",
     "isoDate": "2026-03-10",
     "weekday": "Tue",
@@ -777,6 +1056,7 @@
     "author": "Nate Cardin"
   },
   {
+    "source": "nyt",
     "date": "260309",
     "isoDate": "2026-03-09",
     "weekday": "Mon",
@@ -784,6 +1064,7 @@
     "author": "John Ewbank and Colin Thomas"
   },
   {
+    "source": "nyt",
     "date": "260308",
     "isoDate": "2026-03-08",
     "weekday": "Sun",
@@ -791,6 +1072,7 @@
     "author": "Lance Enfinger and John Kugelman"
   },
   {
+    "source": "nyt",
     "date": "260307",
     "isoDate": "2026-03-07",
     "weekday": "Sat",
@@ -798,6 +1080,7 @@
     "author": "Nick Maritz"
   },
   {
+    "source": "nyt",
     "date": "260306",
     "isoDate": "2026-03-06",
     "weekday": "Fri",
@@ -805,6 +1088,7 @@
     "author": "Robyn Weintraub"
   },
   {
+    "source": "nyt",
     "date": "260305",
     "isoDate": "2026-03-05",
     "weekday": "Thu",
@@ -812,6 +1096,7 @@
     "author": "Kit Sheffield"
   },
   {
+    "source": "nyt",
     "date": "260304",
     "isoDate": "2026-03-04",
     "weekday": "Wed",
@@ -819,6 +1104,7 @@
     "author": "Kevin Curry"
   },
   {
+    "source": "nyt",
     "date": "260303",
     "isoDate": "2026-03-03",
     "weekday": "Tue",
@@ -826,6 +1112,7 @@
     "author": "Miranda Kany and Tracy Bennett"
   },
   {
+    "source": "nyt",
     "date": "260302",
     "isoDate": "2026-03-02",
     "weekday": "Mon",
@@ -833,6 +1120,7 @@
     "author": "Erica Hsiung Wojcik"
   },
   {
+    "source": "nyt",
     "date": "260301",
     "isoDate": "2026-03-01",
     "weekday": "Sun",
@@ -840,6 +1128,7 @@
     "author": "Mark MacLachlan"
   },
   {
+    "source": "nyt",
     "date": "260228",
     "isoDate": "2026-02-28",
     "weekday": "Sat",
@@ -847,6 +1136,7 @@
     "author": "Adrian Johnson and Ryan McCarty"
   },
   {
+    "source": "nyt",
     "date": "260227",
     "isoDate": "2026-02-27",
     "weekday": "Fri",
@@ -854,6 +1144,7 @@
     "author": "Joyce Keller"
   },
   {
+    "source": "nyt",
     "date": "260226",
     "isoDate": "2026-02-26",
     "weekday": "Thu",
@@ -861,6 +1152,7 @@
     "author": "Joe DiPietro"
   },
   {
+    "source": "nyt",
     "date": "260225",
     "isoDate": "2026-02-25",
     "weekday": "Wed",
@@ -868,6 +1160,7 @@
     "author": "Ginny Too and Avery Gee Katz"
   },
   {
+    "source": "nyt",
     "date": "260224",
     "isoDate": "2026-02-24",
     "weekday": "Tue",
@@ -875,6 +1168,7 @@
     "author": "Jonathan Raksin"
   },
   {
+    "source": "nyt",
     "date": "260223",
     "isoDate": "2026-02-23",
     "weekday": "Mon",
@@ -882,6 +1176,7 @@
     "author": "Peter Gorman"
   },
   {
+    "source": "nyt",
     "date": "260222",
     "isoDate": "2026-02-22",
     "weekday": "Sun",
@@ -889,6 +1184,7 @@
     "author": "Rena Cohen"
   },
   {
+    "source": "nyt",
     "date": "260221",
     "isoDate": "2026-02-21",
     "weekday": "Sat",
@@ -896,6 +1192,7 @@
     "author": "Adam Aaronson"
   },
   {
+    "source": "nyt",
     "date": "260220",
     "isoDate": "2026-02-20",
     "weekday": "Fri",
@@ -903,6 +1200,7 @@
     "author": "Kyle Dolan"
   },
   {
+    "source": "nyt",
     "date": "260219",
     "isoDate": "2026-02-19",
     "weekday": "Thu",
@@ -910,6 +1208,7 @@
     "author": "Wendy L. Brandes and Barbara Lin"
   },
   {
+    "source": "nyt",
     "date": "260218",
     "isoDate": "2026-02-18",
     "weekday": "Wed",
@@ -917,6 +1216,7 @@
     "author": "<NOTEPAD>When the puzzle is completed, starting with the letter at square 39, connect the circled letters to create an apt image that spells out a famous lyric from this puzzle's theme subject.</NOTEPAD>Joseph Gangi"
   },
   {
+    "source": "nyt",
     "date": "260217",
     "isoDate": "2026-02-17",
     "weekday": "Tue",
@@ -924,6 +1224,7 @@
     "author": "Nate Hall"
   },
   {
+    "source": "nyt",
     "date": "260216",
     "isoDate": "2026-02-16",
     "weekday": "Mon",
@@ -931,6 +1232,7 @@
     "author": "Carolyn Davies Lynch and Christina Iverson"
   },
   {
+    "source": "nyt",
     "date": "260215",
     "isoDate": "2026-02-15",
     "weekday": "Sun",
@@ -938,6 +1240,7 @@
     "author": "Dylan Schiff"
   },
   {
+    "source": "nyt",
     "date": "260214",
     "isoDate": "2026-02-14",
     "weekday": "Sat",
@@ -945,6 +1248,7 @@
     "author": "Kameron Austin Collins"
   },
   {
+    "source": "nyt",
     "date": "260213",
     "isoDate": "2026-02-13",
     "weekday": "Fri",
@@ -952,6 +1256,7 @@
     "author": "Greg Snitkin and Glenn Davis"
   },
   {
+    "source": "nyt",
     "date": "260212",
     "isoDate": "2026-02-12",
     "weekday": "Thu",
@@ -959,6 +1264,7 @@
     "author": "Mallory Montgomery and Zhou Zhang"
   },
   {
+    "source": "nyt",
     "date": "260211",
     "isoDate": "2026-02-11",
     "weekday": "Wed",
@@ -966,6 +1272,7 @@
     "author": "Adrianne Baik"
   },
   {
+    "source": "nyt",
     "date": "260210",
     "isoDate": "2026-02-10",
     "weekday": "Tue",
@@ -973,6 +1280,7 @@
     "author": "Paul Coulter"
   },
   {
+    "source": "nyt",
     "date": "260209",
     "isoDate": "2026-02-09",
     "weekday": "Mon",
@@ -980,6 +1288,7 @@
     "author": "Lynn Lempel"
   },
   {
+    "source": "nyt",
     "date": "260208",
     "isoDate": "2026-02-08",
     "weekday": "Sun",
@@ -987,6 +1296,7 @@
     "author": "Gene Louise De Vera"
   },
   {
+    "source": "nyt",
     "date": "260207",
     "isoDate": "2026-02-07",
     "weekday": "Sat",
@@ -994,6 +1304,7 @@
     "author": "Hannah Slovut-Einertson"
   },
   {
+    "source": "nyt",
     "date": "260206",
     "isoDate": "2026-02-06",
     "weekday": "Fri",
@@ -1001,6 +1312,7 @@
     "author": "Adam Wagner and Rafael Musa"
   },
   {
+    "source": "nyt",
     "date": "260205",
     "isoDate": "2026-02-05",
     "weekday": "Thu",
@@ -1008,6 +1320,7 @@
     "author": "Topher Booth"
   },
   {
+    "source": "nyt",
     "date": "260204",
     "isoDate": "2026-02-04",
     "weekday": "Wed",
@@ -1015,6 +1328,7 @@
     "author": "Jeffrey Martinovic"
   },
   {
+    "source": "nyt",
     "date": "260203",
     "isoDate": "2026-02-03",
     "weekday": "Tue",
@@ -1022,6 +1336,7 @@
     "author": "Geoffrey Schorkopf and Will Eisenberg"
   },
   {
+    "source": "nyt",
     "date": "260202",
     "isoDate": "2026-02-02",
     "weekday": "Mon",
@@ -1029,6 +1344,7 @@
     "author": "Chase Dittrich"
   },
   {
+    "source": "nyt",
     "date": "260201",
     "isoDate": "2026-02-01",
     "weekday": "Sun",
@@ -1036,6 +1352,7 @@
     "author": "Alex Eaton-Salners"
   },
   {
+    "source": "nyt",
     "date": "260131",
     "isoDate": "2026-01-31",
     "weekday": "Sat",
@@ -1043,6 +1360,7 @@
     "author": "Katie Hoody"
   },
   {
+    "source": "nyt",
     "date": "260130",
     "isoDate": "2026-01-30",
     "weekday": "Fri",
@@ -1050,6 +1368,7 @@
     "author": "Andrew Spooner"
   },
   {
+    "source": "nyt",
     "date": "260129",
     "isoDate": "2026-01-29",
     "weekday": "Thu",
@@ -1057,6 +1376,7 @@
     "author": "Sam Ezersky"
   },
   {
+    "source": "nyt",
     "date": "260128",
     "isoDate": "2026-01-28",
     "weekday": "Wed",
@@ -1064,6 +1384,7 @@
     "author": "Ella Dershowitz"
   },
   {
+    "source": "nyt",
     "date": "260127",
     "isoDate": "2026-01-27",
     "weekday": "Tue",
@@ -1071,6 +1392,7 @@
     "author": "Nathan Hale"
   },
   {
+    "source": "nyt",
     "date": "260126",
     "isoDate": "2026-01-26",
     "weekday": "Mon",
@@ -1078,6 +1400,7 @@
     "author": "Suzanne Oliver"
   },
   {
+    "source": "nyt",
     "date": "260125",
     "isoDate": "2026-01-25",
     "weekday": "Sun",
@@ -1085,6 +1408,7 @@
     "author": "<NOTEPAD>Once the puzzle is complete, the circled letters, when read from left to right, will spell a punny two-word phrase.</NOTEPAD>David Kwong"
   },
   {
+    "source": "nyt",
     "date": "260124",
     "isoDate": "2026-01-24",
     "weekday": "Sat",
@@ -1092,6 +1416,7 @@
     "author": "Robert S. Gard"
   },
   {
+    "source": "nyt",
     "date": "260123",
     "isoDate": "2026-01-23",
     "weekday": "Fri",
@@ -1099,6 +1424,7 @@
     "author": "Hemant Mehta"
   },
   {
+    "source": "nyt",
     "date": "260122",
     "isoDate": "2026-01-22",
     "weekday": "Thu",
@@ -1106,6 +1432,7 @@
     "author": "Joseph Gangi"
   },
   {
+    "source": "nyt",
     "date": "260121",
     "isoDate": "2026-01-21",
     "weekday": "Wed",
@@ -1113,6 +1440,7 @@
     "author": "Gary Larson and Doug Peterson"
   },
   {
+    "source": "nyt",
     "date": "260120",
     "isoDate": "2026-01-20",
     "weekday": "Tue",
@@ -1120,6 +1448,7 @@
     "author": "Jason Reich"
   },
   {
+    "source": "nyt",
     "date": "260119",
     "isoDate": "2026-01-19",
     "weekday": "Mon",
@@ -1127,6 +1456,7 @@
     "author": "Jeff Jerome and Andrea Carla Michaels"
   },
   {
+    "source": "nyt",
     "date": "260118",
     "isoDate": "2026-01-18",
     "weekday": "Sun",
@@ -1134,6 +1464,7 @@
     "author": "Zachary Edward-Brown and John Kugelman"
   },
   {
+    "source": "nyt",
     "date": "260117",
     "isoDate": "2026-01-17",
     "weekday": "Sat",
@@ -1141,6 +1472,7 @@
     "author": "Gene Louise De Vera"
   },
   {
+    "source": "nyt",
     "date": "260116",
     "isoDate": "2026-01-16",
     "weekday": "Fri",
@@ -1148,6 +1480,7 @@
     "author": "Adrian Johnson and Jess Rucks"
   },
   {
+    "source": "nyt",
     "date": "260115",
     "isoDate": "2026-01-15",
     "weekday": "Thu",
@@ -1155,6 +1488,7 @@
     "author": "Kevin Curry"
   },
   {
+    "source": "nyt",
     "date": "260114",
     "isoDate": "2026-01-14",
     "weekday": "Wed",
@@ -1162,6 +1496,7 @@
     "author": "Kareem Ayas"
   },
   {
+    "source": "nyt",
     "date": "260113",
     "isoDate": "2026-01-13",
     "weekday": "Tue",
@@ -1169,6 +1504,7 @@
     "author": "Kate Hawkins"
   },
   {
+    "source": "nyt",
     "date": "260112",
     "isoDate": "2026-01-12",
     "weekday": "Mon",
@@ -1176,6 +1512,7 @@
     "author": "Dan Kammann and Zhouqin Burnikel"
   },
   {
+    "source": "nyt",
     "date": "260111",
     "isoDate": "2026-01-11",
     "weekday": "Sun",
@@ -1183,6 +1520,7 @@
     "author": "Kate Jensen"
   },
   {
+    "source": "nyt",
     "date": "260110",
     "isoDate": "2026-01-10",
     "weekday": "Sat",
@@ -1190,6 +1528,7 @@
     "author": "Marshal Herrmann"
   },
   {
+    "source": "nyt",
     "date": "260109",
     "isoDate": "2026-01-09",
     "weekday": "Fri",
@@ -1197,6 +1536,7 @@
     "author": "James McCarron"
   },
   {
+    "source": "nyt",
     "date": "260108",
     "isoDate": "2026-01-08",
     "weekday": "Thu",
@@ -1204,6 +1544,7 @@
     "author": "Stephan Prock and Jeff Chen"
   },
   {
+    "source": "nyt",
     "date": "260107",
     "isoDate": "2026-01-07",
     "weekday": "Wed",
@@ -1211,6 +1552,7 @@
     "author": "Victor Barocas"
   },
   {
+    "source": "nyt",
     "date": "260106",
     "isoDate": "2026-01-06",
     "weekday": "Tue",
@@ -1218,6 +1560,7 @@
     "author": "Jonathan Baude"
   },
   {
+    "source": "nyt",
     "date": "260105",
     "isoDate": "2026-01-05",
     "weekday": "Mon",
@@ -1225,6 +1568,7 @@
     "author": "Hannah Binney"
   },
   {
+    "source": "nyt",
     "date": "260104",
     "isoDate": "2026-01-04",
     "weekday": "Sun",
@@ -1232,6 +1576,7 @@
     "author": "Natan Last"
   },
   {
+    "source": "nyt",
     "date": "260103",
     "isoDate": "2026-01-03",
     "weekday": "Sat",
@@ -1239,6 +1584,7 @@
     "author": "Adrian Johnson"
   },
   {
+    "source": "nyt",
     "date": "260102",
     "isoDate": "2026-01-02",
     "weekday": "Fri",
@@ -1246,6 +1592,7 @@
     "author": "Jacob McDermott"
   },
   {
+    "source": "nyt",
     "date": "260101",
     "isoDate": "2026-01-01",
     "weekday": "Thu",

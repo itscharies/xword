@@ -15,28 +15,47 @@ export interface Progress {
   rating?: number;
 }
 
-const key = (date: string) => `xword:progress:${date}`;
+import type { PuzzleSource } from "./sources.ts";
 
-export function loadProgress(date: string): Progress | null {
+const key = (source: PuzzleSource, date: string) =>
+  `xword:progress:${source}:${date}`;
+
+export function loadProgress(
+  source: PuzzleSource,
+  date: string,
+): Progress | null {
   try {
-    const raw = localStorage.getItem(key(date));
+    let raw = localStorage.getItem(key(source, date));
+    // Migrate pre-multi-source NYT progress, which was keyed by bare date.
+    if (!raw && source === "nyt") {
+      const legacy = localStorage.getItem(`xword:progress:${date}`);
+      if (legacy) {
+        localStorage.setItem(key(source, date), legacy);
+        localStorage.removeItem(`xword:progress:${date}`);
+        raw = legacy;
+      }
+    }
     return raw ? (JSON.parse(raw) as Progress) : null;
   } catch {
     return null;
   }
 }
 
-export function saveProgress(date: string, progress: Progress): void {
+export function saveProgress(
+  source: PuzzleSource,
+  date: string,
+  progress: Progress,
+): void {
   try {
-    localStorage.setItem(key(date), JSON.stringify(progress));
+    localStorage.setItem(key(source, date), JSON.stringify(progress));
   } catch {
     // Storage full or unavailable — solving still works in-memory.
   }
 }
 
-export function clearProgress(date: string): void {
+export function clearProgress(source: PuzzleSource, date: string): void {
   try {
-    localStorage.removeItem(key(date));
+    localStorage.removeItem(key(source, date));
   } catch {
     /* ignore */
   }

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
+import { isSource } from "./lib/sources.ts";
+import type { PuzzleSource } from "./lib/sources.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import { loadProgress, saveProgress } from "./lib/storage.ts";
@@ -19,6 +21,18 @@ const hashRoute = () => window.location.hash.replace(/^#\/?/, "");
 const goTo = (route: string) => {
   window.location.hash = route;
 };
+
+/** Resolve a hash like "nyt/260628" to a puzzle, falling back to the newest. */
+function resolvePuzzle(
+  hash: string,
+  index: PuzzleIndexEntry[],
+): { source: PuzzleSource; date: string } {
+  const [src, date] = hash.split("/");
+  if (isSource(src) && date && index.some((p) => p.source === src && p.date === date)) {
+    return { source: src, date };
+  }
+  return { source: index[0].source, date: index[0].date };
+}
 
 export default function App() {
   const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
@@ -46,22 +60,31 @@ export default function App() {
     return <div className="loading">Loading…</div>;
 
   if (route === "list") {
-    return <Archive index={index} onPick={(d) => goTo(d)} />;
+    return (
+      <Archive
+        index={index}
+        onPick={(source, date) => goTo(`${source}/${date}`)}
+      />
+    );
   }
 
-  // A valid date in the hash, else default to the latest crossword.
-  const isValidDate = /^\d{6}$/.test(route) && index.some((p) => p.date === route);
-  const date = isValidDate ? route : index[0].date;
-
+  const { source, date } = resolvePuzzle(route, index);
   return (
-    <PuzzleView key={date} date={date} onOpenArchive={() => goTo("list")} />
+    <PuzzleView
+      key={`${source}/${date}`}
+      source={source}
+      date={date}
+      onOpenArchive={() => goTo("list")}
+    />
   );
 }
 
 function PuzzleView({
+  source,
   date,
   onOpenArchive,
 }: {
+  source: PuzzleSource;
   date: string;
   onOpenArchive: () => void;
 }) {
@@ -69,11 +92,11 @@ function PuzzleView({
 
   useEffect(() => {
     setPuzzle(null);
-    fetch(`${BASE}puzzles/${date}.json`)
+    fetch(`${BASE}puzzles/${source}/${date}.json`)
       .then((r) => r.json() as Promise<Puzzle>)
       .then(setPuzzle)
       .catch(() => setPuzzle(null));
-  }, [date]);
+  }, [source, date]);
 
   if (!puzzle) return <div className="loading">Loading puzzle…</div>;
   return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
@@ -86,7 +109,10 @@ function Solver({
   puzzle: Puzzle;
   onOpenArchive: () => void;
 }) {
-  const saved = useMemo(() => loadProgress(puzzle.date), [puzzle.date]);
+  const saved = useMemo(
+    () => loadProgress(puzzle.source, puzzle.date),
+    [puzzle.source, puzzle.date],
+  );
   const xw = useCrossword(puzzle, saved);
 
   const [paused, setPausedState] = useState(false);
@@ -120,7 +146,7 @@ function Solver({
       (n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0),
       0,
     );
-    saveProgress(puzzle.date, {
+    saveProgress(puzzle.source, puzzle.date, {
       entries: xw.entries,
       revealed: [...xw.revealed],
       elapsed,
@@ -129,7 +155,7 @@ function Solver({
       total,
       rating: rating || undefined,
     });
-  }, [puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
+  }, [puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {

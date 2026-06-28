@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "fetch": "tsx scripts/fetch-puzzles.ts",
+    "fetch": "tsx scripts/fetch-puzzles.ts && tsx scripts/fetch-amuse.ts",
+    "fetch:nyt": "tsx scripts/fetch-puzzles.ts",
+    "fetch:amuse": "tsx scripts/fetch-amuse.ts",
     "parse:test": "tsx scripts/parse.test.ts",
     "og": "tsx scripts/make-og.ts"
   },

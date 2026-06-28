@@ -189,6 +189,7 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
 
   const iso = dateToIso(date);
   return {
+    source: "nyt",
     date,
     isoDate: iso,
     weekday: weekdayFromIso(iso),

@@ -3,19 +3,17 @@
 // archive only ever grows even after the source list rotates old dates out.
 //
 // Run: npm run fetch
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { parsePuzzle } from "./parse.ts";
-import type { Puzzle, PuzzleIndexEntry } from "../src/types.ts";
+import { rebuildIndex, PUZZLE_DIR } from "./build-index.ts";
 
 const BASE =
   "https://nytsyn.pzzl.com/nytsyn-crossword-mh/nytsyncrossword?date=";
 const LIST_URL = `${BASE}list&get=archivecurrent`;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PUZZLE_DIR = join(__dirname, "..", "public", "puzzles");
+const NYT_DIR = join(PUZZLE_DIR, "nyt");
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,7 +59,7 @@ function recentDates(n: number): string[] {
 const BACKFILL_DAYS = Number(process.argv[2]) || 35;
 
 async function main(): Promise<void> {
-  await mkdir(PUZZLE_DIR, { recursive: true });
+  await mkdir(NYT_DIR, { recursive: true });
 
   const listed = parseList(await fetchText(LIST_URL));
   console.log(`List endpoint returned ${listed.length} dates.`);
@@ -73,7 +71,7 @@ async function main(): Promise<void> {
 
   let added = 0;
   for (const date of dates) {
-    const file = join(PUZZLE_DIR, `${date}.json`);
+    const file = join(NYT_DIR, `${date}.json`);
     if (existsSync(file)) {
       console.log(`  ${date} — already have it, skipping`);
       continue;
@@ -91,35 +89,8 @@ async function main(): Promise<void> {
     await sleep(400); // be polite to the source
   }
 
-  await rebuildIndex();
-  console.log(`Done. ${added} new puzzle(s) added.`);
-}
-
-/** Rebuild index.json from every <date>.json on disk, newest first. */
-async function rebuildIndex(): Promise<void> {
-  const files = (await readdir(PUZZLE_DIR))
-    .filter((f) => /^\d{6}\.json$/.test(f))
-    .sort()
-    .reverse();
-
-  const entries: PuzzleIndexEntry[] = [];
-  for (const f of files) {
-    const p: Puzzle = JSON.parse(await readFile(join(PUZZLE_DIR, f), "utf8"));
-    entries.push({
-      date: p.date,
-      isoDate: p.isoDate,
-      weekday: p.weekday,
-      title: p.title,
-      author: p.author,
-    });
-  }
-
-  await writeFile(
-    join(PUZZLE_DIR, "index.json"),
-    JSON.stringify(entries, null, 2),
-    "utf8",
-  );
-  console.log(`Index rebuilt with ${entries.length} puzzle(s).`);
+  const total = await rebuildIndex();
+  console.log(`Done. ${added} new puzzle(s) added. Index has ${total}.`);
 }
 
 main().catch((err) => {

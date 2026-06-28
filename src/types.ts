@@ -1,5 +1,7 @@
 // Shared types used by both the fetch/parse scripts and the React app.
 
+import type { PuzzleSource } from "./lib/sources.ts";
+
 export type Direction = "across" | "down";
 
 /** A single grid cell. Black squares have `black: true` and no solution. */
@@ -29,9 +31,11 @@ export interface Clue {
   len: number;
 }
 
-/** A fully parsed puzzle, as stored in public/puzzles/<date>.json. */
+/** A fully parsed puzzle, as stored in public/puzzles/<source>/<date>.json. */
 export interface Puzzle {
-  /** Source date as YYMMDD. */
+  /** Which collection this came from. */
+  source: PuzzleSource;
+  /** Source-native id: YYMMDD for nyt, YYYYMMDD for the Seattle Times sets. */
   date: string;
   /** ISO date, e.g. "2026-06-27". */
   isoDate: string;
@@ -51,6 +55,7 @@ export interface Puzzle {
 
 /** One entry in public/puzzles/index.json. */
 export interface PuzzleIndexEntry {
+  source: PuzzleSource;
   date: string;
   isoDate: string;
   weekday: string;

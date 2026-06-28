@@ -1,7 +1,10 @@
 # xword
 
-A self-hosted, fully playable crossword app for the New York Times syndicated
-puzzle (as published by the Seattle Times via `nytsyn.pzzl.com`).
+A self-hosted, fully playable crossword app. It pulls from two sources:
+
+- **NY Times syndicated** — as published by the Seattle Times via `nytsyn.pzzl.com`.
+- **Seattle Times Crossword** — the Penny Press puzzle served through AmuseLabs
+  (PuzzleMe), decoded from its scrambled `rawc` payload.
 
 Puzzles are fetched and parsed into clean JSON ahead of time, then served as a
 static React site — so the browser only ever reads our own JSON (no CORS issues,
@@ -10,13 +13,21 @@ no answers shipped raw from the source).
 ## How it works
 
 ```
-scripts/fetch-puzzles.ts   fetch the list + each new date, parse, write JSON
-scripts/parse.ts           decode the raw pzzl.com text format -> Puzzle JSON
-public/puzzles/<date>.json  one parsed puzzle per date (YYMMDD)
-public/puzzles/index.json   the catalogue the app loads first (newest first)
-src/                        the React + TypeScript solving UI
-.github/workflows/          a daily cron that runs the fetch and commits new JSON
+scripts/fetch-puzzles.ts          fetch NYT (pzzl): list + each new date
+scripts/parse.ts                  decode the raw pzzl.com text format -> Puzzle JSON
+scripts/fetch-amuse.ts            fetch Seattle Times (AmuseLabs) by date
+scripts/parse-amuse.ts            descramble + decode the rawc payload -> Puzzle JSON
+scripts/build-index.ts            rebuild the unified index across all sources
+public/puzzles/<source>/<date>.json  one parsed puzzle per source+date
+public/puzzles/index.json            the catalogue the app loads first (newest first)
+src/lib/sources.ts                the source registry (labels, order)
+src/                              the React + TypeScript solving UI
+.github/workflows/                a daily cron that runs the fetch and commits new JSON
 ```
+
+Sources: `nyt` (date id `YYMMDD`) and `st-large` (date id `YYYYMMDD`). The
+Seattle Times non-large AmuseLabs set is deactivated upstream, so only the
+large-print set is pulled.
 
 ### The source format
 

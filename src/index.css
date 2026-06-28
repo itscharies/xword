@@ -653,6 +653,45 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .archive-heading { margin: 0; font-size: 24px; font-weight: 800; }
 
+/* Source filter chips. */
+.archive-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 20px;
+}
+.filter-chip {
+  background: var(--surface);
+  color: var(--fg);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.filter-chip:hover { background: var(--accent-2); color: #000; }
+.filter-chip.on {
+  background: var(--accent);
+  color: #000;
+  transform: translate(var(--sh), var(--sh));
+  box-shadow: 0 0 0 var(--shadow-col);
+}
+
+/* One section per date. */
+.archive-day { margin-bottom: 22px; }
+.archive-day-head {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: var(--bw) solid var(--line);
+  padding-bottom: 5px;
+}
+
 .archive-list {
   list-style: none;
   margin: 0;
@@ -680,6 +719,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   box-shadow: 0 0 0 var(--shadow-col);
 }
 .ai-date { font-size: 16px; font-weight: 700; }
+.ai-source { font-size: 16px; font-weight: 700; }
 .ai-theme { font-size: 14px; font-weight: 600; }
 .ai-author { font-size: 13px; color: var(--muted); }
 .archive-item:hover .ai-author { color: #000; }
