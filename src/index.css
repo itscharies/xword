@@ -654,12 +654,27 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .archive-heading { margin: 0; font-size: 24px; font-weight: 800; }
 
-/* Source filter chips. */
+/* Source filter chips — one row per dimension (Paper, Size). */
+.archive-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 20px;
+}
 .archive-filter {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin: 4px 0 20px;
+}
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  width: 48px;
+  flex-shrink: 0;
 }
 .filter-chip {
   background: var(--surface);

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
-import { SOURCES, SOURCE_ORDER } from "../lib/sources.ts";
+import { SOURCES, PAPERS, SIZES } from "../lib/sources.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { CheckIcon } from "./icons.tsx";
@@ -25,10 +25,40 @@ function themeName(title: string): string | null {
   return m ? m[1] : null;
 }
 
-type Filter = PuzzleSource | "all";
+/** A labelled row of "All + each option" filter chips. */
+function FilterRow({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  // Nothing to filter on if there's only one option.
+  if (options.length < 2) return null;
+  return (
+    <div className="archive-filter" role="tablist" aria-label={`Filter by ${label}`}>
+      <span className="filter-label">{label}</span>
+      {["all", ...options].map((opt) => (
+        <button
+          key={opt}
+          className={`filter-chip ${value === opt ? "on" : ""}`}
+          onClick={() => onChange(opt)}
+          role="tab"
+          aria-selected={value === opt}
+        >
+          {opt === "all" ? "All" : opt}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** The puzzle archive: a section per date, each holding that day's puzzles
- * across sources, with a source filter. */
+ * across sources, with independent Paper and Size filters. */
 export function Archive({
   index,
   onPick,
@@ -37,20 +67,23 @@ export function Archive({
   onPick: (source: PuzzleSource, date: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [paper, setPaper] = useState<string>("all");
+  const [size, setSize] = useState<string>("all");
 
   // Group by date (index is pre-sorted newest-first, then by source order, so
   // insertion order into the Map is already what we want to render).
   const days = useMemo(() => {
     const byDate = new Map<string, PuzzleIndexEntry[]>();
     for (const p of index) {
-      if (filter !== "all" && p.source !== filter) continue;
+      const meta = SOURCES[p.source];
+      if (paper !== "all" && meta.paper !== paper) continue;
+      if (size !== "all" && meta.size !== size) continue;
       const arr = byDate.get(p.isoDate);
       if (arr) arr.push(p);
       else byDate.set(p.isoDate, [p]);
     }
     return [...byDate.entries()];
-  }, [index, filter]);
+  }, [index, paper, size]);
 
   return (
     <div className="app archive">
@@ -68,26 +101,14 @@ export function Archive({
         </div>
       </header>
 
-      <div className="archive-filter" role="tablist" aria-label="Filter by source">
-        <button
-          className={`filter-chip ${filter === "all" ? "on" : ""}`}
-          onClick={() => setFilter("all")}
-          role="tab"
-          aria-selected={filter === "all"}
-        >
-          All
-        </button>
-        {SOURCE_ORDER.map((s) => (
-          <button
-            key={s}
-            className={`filter-chip ${filter === s ? "on" : ""}`}
-            onClick={() => setFilter(s)}
-            role="tab"
-            aria-selected={filter === s}
-          >
-            {SOURCES[s].short}
-          </button>
-        ))}
+      <div className="archive-filters">
+        <FilterRow
+          label="Paper"
+          options={PAPERS}
+          value={paper}
+          onChange={setPaper}
+        />
+        <FilterRow label="Size" options={SIZES} value={size} onChange={setSize} />
       </div>
 
       {days.map(([iso, items]) => (
