@@ -95,7 +95,16 @@ export function Archive({
           <h2 className="archive-day-head">{formatDate(iso)}</h2>
           <ul className="archive-list">
             {items.map((p) => {
-              const theme = p.source === "nyt" ? themeName(p.title) : null;
+              // NYT bakes the theme into a long title; the AmuseLabs sets use
+              // the theme as the title outright (date-only titles were already
+              // replaced with the source label at parse time, so a title that
+              // still differs from the label is a real theme — e.g. midi).
+              const theme =
+                p.source === "nyt"
+                  ? themeName(p.title)
+                  : p.title !== SOURCES[p.source].label
+                    ? p.title
+                    : null;
               const prog = loadProgress(p.source, p.date);
               const done = prog?.completed ?? false;
               const rating = prog?.rating ?? 0;

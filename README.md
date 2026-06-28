@@ -25,9 +25,11 @@ src/                              the React + TypeScript solving UI
 .github/workflows/                a daily cron that runs the fetch and commits new JSON
 ```
 
-Sources: `nyt` (date id `YYMMDD`) and `st-large` (date id `YYYYMMDD`). The
-Seattle Times non-large AmuseLabs set is deactivated upstream, so only the
-large-print set is pulled.
+Sources: `nyt` (pzzl, id `YYMMDD`) plus three Seattle Times AmuseLabs sets —
+`st-large` and `st-mini` (dated ids `YYYYMMDD`) and `st-midi` (a sequential
+`midi-crossword-<N>` id, anchored and labelled by each puzzle's publishTime).
+The Seattle Times non-large *regular* set is deactivated upstream, so it isn't
+pulled.
 
 ### The source format
 
