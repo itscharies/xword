@@ -14,7 +14,8 @@ export type PuzzleSource =
   | "gdn-cryptic"
   | "gdn-quiptic"
   | "gdn-quick-cryptic"
-  | "gdn-prize";
+  | "gdn-prize"
+  | "tny-mini";
 
 export interface SourceMeta {
   /** Full name, shown in the solver header and archive cards. */
@@ -44,6 +45,7 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
     type: "Cryptic",
   },
   "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Cryptic" },
+  "tny-mini": { label: "New Yorker Mini", paper: "New Yorker", type: "Crossword" },
 };
 
 /** Display + tie-break order when several puzzles share a date. */
@@ -58,6 +60,7 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "gdn-quiptic",
   "gdn-quick-cryptic",
   "gdn-prize",
+  "tny-mini",
 ];
 
 /** Distinct papers / types in display order, for the archive filters. */

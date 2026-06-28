@@ -168,6 +168,14 @@
     "author": "Pangakupu"
   },
   {
+    "source": "tny-mini",
+    "date": "20260626",
+    "isoDate": "2026-06-26",
+    "weekday": "Fri",
+    "title": "New Yorker Mini",
+    "author": "Kate Chin Park"
+  },
+  {
     "source": "nyt",
     "date": "260625",
     "isoDate": "2026-06-25",
@@ -222,6 +230,14 @@
     "weekday": "Thu",
     "title": "Guardian Cryptic",
     "author": "Paul"
+  },
+  {
+    "source": "tny-mini",
+    "date": "20260625",
+    "isoDate": "2026-06-25",
+    "weekday": "Thu",
+    "title": "New Yorker Mini",
+    "author": "Andy Kravis"
   },
   {
     "source": "nyt",
@@ -536,6 +552,14 @@
     "author": "Yank"
   },
   {
+    "source": "tny-mini",
+    "date": "20260619",
+    "isoDate": "2026-06-19",
+    "weekday": "Fri",
+    "title": "New Yorker Mini",
+    "author": "Mollie Cowger"
+  },
+  {
     "source": "nyt",
     "date": "260618",
     "isoDate": "2026-06-18",
@@ -582,6 +606,14 @@
     "weekday": "Thu",
     "title": "Guardian Cryptic",
     "author": "Paul"
+  },
+  {
+    "source": "tny-mini",
+    "date": "20260618",
+    "isoDate": "2026-06-18",
+    "weekday": "Thu",
+    "title": "New Yorker Mini",
+    "author": "Kate Chin Park"
   },
   {
     "source": "nyt",
@@ -832,6 +864,14 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "tny-mini",
+    "date": "20260612",
+    "isoDate": "2026-06-12",
+    "weekday": "Fri",
+    "title": "New Yorker Mini",
+    "author": "Andy Kravis"
+  },
+  {
     "source": "nyt",
     "date": "260611",
     "isoDate": "2026-06-11",
@@ -862,6 +902,14 @@
     "weekday": "Thu",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "tny-mini",
+    "date": "20260611",
+    "isoDate": "2026-06-11",
+    "weekday": "Thu",
+    "title": "New Yorker Mini",
+    "author": "Mollie Cowger"
   },
   {
     "source": "nyt",
