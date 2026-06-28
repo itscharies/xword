@@ -40,6 +40,14 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quiptic",
+    "date": "20260628",
+    "isoDate": "2026-06-28",
+    "weekday": "Sun",
+    "title": "Guardian Quiptic",
+    "author": "Pangakupu"
+  },
+  {
     "source": "nyt",
     "date": "260627",
     "isoDate": "2026-06-27",
@@ -78,6 +86,30 @@
     "weekday": "Sat",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260627",
+    "isoDate": "2026-06-27",
+    "weekday": "Sat",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-quick-cryptic",
+    "date": "20260627",
+    "isoDate": "2026-06-27",
+    "weekday": "Sat",
+    "title": "Guardian Quick Cryptic",
+    "author": "Ludwig"
+  },
+  {
+    "source": "gdn-prize",
+    "date": "20260627",
+    "isoDate": "2026-06-27",
+    "weekday": "Sat",
+    "title": "Guardian Prize",
+    "author": "Brendan"
   },
   {
     "source": "nyt",
@@ -120,6 +152,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260626",
+    "isoDate": "2026-06-26",
+    "weekday": "Fri",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260626",
+    "isoDate": "2026-06-26",
+    "weekday": "Fri",
+    "title": "Guardian Cryptic",
+    "author": "Pangakupu"
+  },
+  {
     "source": "nyt",
     "date": "260625",
     "isoDate": "2026-06-25",
@@ -158,6 +206,22 @@
     "weekday": "Thu",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260625",
+    "isoDate": "2026-06-25",
+    "weekday": "Thu",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260625",
+    "isoDate": "2026-06-25",
+    "weekday": "Thu",
+    "title": "Guardian Cryptic",
+    "author": "Paul"
   },
   {
     "source": "nyt",
@@ -200,6 +264,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260624",
+    "isoDate": "2026-06-24",
+    "weekday": "Wed",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260624",
+    "isoDate": "2026-06-24",
+    "weekday": "Wed",
+    "title": "Guardian Cryptic",
+    "author": "Brummie"
+  },
+  {
     "source": "nyt",
     "date": "260623",
     "isoDate": "2026-06-23",
@@ -238,6 +318,22 @@
     "weekday": "Tue",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260623",
+    "isoDate": "2026-06-23",
+    "weekday": "Tue",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260623",
+    "isoDate": "2026-06-23",
+    "weekday": "Tue",
+    "title": "Guardian Cryptic",
+    "author": "Chandler"
   },
   {
     "source": "nyt",
@@ -280,6 +376,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260622",
+    "isoDate": "2026-06-22",
+    "weekday": "Mon",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260622",
+    "isoDate": "2026-06-22",
+    "weekday": "Mon",
+    "title": "Guardian Cryptic",
+    "author": "Vulcan"
+  },
+  {
     "source": "nyt",
     "date": "260621",
     "isoDate": "2026-06-21",
@@ -310,6 +422,14 @@
     "weekday": "Sun",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quiptic",
+    "date": "20260621",
+    "isoDate": "2026-06-21",
+    "weekday": "Sun",
+    "title": "Guardian Quiptic",
+    "author": "Budmo"
   },
   {
     "source": "nyt",
@@ -344,6 +464,30 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260620",
+    "isoDate": "2026-06-20",
+    "weekday": "Sat",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-quick-cryptic",
+    "date": "20260620",
+    "isoDate": "2026-06-20",
+    "weekday": "Sat",
+    "title": "Guardian Quick Cryptic",
+    "author": "Chandler"
+  },
+  {
+    "source": "gdn-prize",
+    "date": "20260620",
+    "isoDate": "2026-06-20",
+    "weekday": "Sat",
+    "title": "Guardian Prize",
+    "author": "Brockwell"
+  },
+  {
     "source": "nyt",
     "date": "260619",
     "isoDate": "2026-06-19",
@@ -374,6 +518,22 @@
     "weekday": "Fri",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260619",
+    "isoDate": "2026-06-19",
+    "weekday": "Fri",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260619",
+    "isoDate": "2026-06-19",
+    "weekday": "Fri",
+    "title": "Guardian Cryptic",
+    "author": "Yank"
   },
   {
     "source": "nyt",
@@ -408,6 +568,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260618",
+    "isoDate": "2026-06-18",
+    "weekday": "Thu",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260618",
+    "isoDate": "2026-06-18",
+    "weekday": "Thu",
+    "title": "Guardian Cryptic",
+    "author": "Paul"
+  },
+  {
     "source": "nyt",
     "date": "260617",
     "isoDate": "2026-06-17",
@@ -438,6 +614,22 @@
     "weekday": "Wed",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260617",
+    "isoDate": "2026-06-17",
+    "weekday": "Wed",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260617",
+    "isoDate": "2026-06-17",
+    "weekday": "Wed",
+    "title": "Guardian Cryptic",
+    "author": "Tramp"
   },
   {
     "source": "nyt",
@@ -472,6 +664,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260616",
+    "isoDate": "2026-06-16",
+    "weekday": "Tue",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260616",
+    "isoDate": "2026-06-16",
+    "weekday": "Tue",
+    "title": "Guardian Cryptic",
+    "author": "Vlad"
+  },
+  {
     "source": "nyt",
     "date": "260615",
     "isoDate": "2026-06-15",
@@ -504,6 +712,22 @@
     "author": "Sowmya Ramkumar, Ed. John Lieb"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260615",
+    "isoDate": "2026-06-15",
+    "weekday": "Mon",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260615",
+    "isoDate": "2026-06-15",
+    "weekday": "Mon",
+    "title": "Guardian Cryptic",
+    "author": "Philistine"
+  },
+  {
     "source": "nyt",
     "date": "260614",
     "isoDate": "2026-06-14",
@@ -534,6 +758,14 @@
     "weekday": "Sun",
     "title": "Seattle Times Mini",
     "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
+    "source": "gdn-quiptic",
+    "date": "20260614",
+    "isoDate": "2026-06-14",
+    "weekday": "Sun",
+    "title": "Guardian Quiptic",
+    "author": "Chandler"
   },
   {
     "source": "nyt",

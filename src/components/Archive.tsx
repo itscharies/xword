@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
-import { SOURCES, PAPERS, SIZES } from "../lib/sources.ts";
+import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { CheckIcon } from "./icons.tsx";
@@ -68,7 +68,7 @@ export function Archive({
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [paper, setPaper] = useState<string>("all");
-  const [size, setSize] = useState<string>("all");
+  const [type, setType] = useState<string>("all");
 
   // Group by date (index is pre-sorted newest-first, then by source order, so
   // insertion order into the Map is already what we want to render).
@@ -77,13 +77,13 @@ export function Archive({
     for (const p of index) {
       const meta = SOURCES[p.source];
       if (paper !== "all" && meta.paper !== paper) continue;
-      if (size !== "all" && meta.size !== size) continue;
+      if (type !== "all" && meta.type !== type) continue;
       const arr = byDate.get(p.isoDate);
       if (arr) arr.push(p);
       else byDate.set(p.isoDate, [p]);
     }
     return [...byDate.entries()];
-  }, [index, paper, size]);
+  }, [index, paper, type]);
 
   return (
     <div className="app archive">
@@ -108,7 +108,7 @@ export function Archive({
           value={paper}
           onChange={setPaper}
         />
-        <FilterRow label="Size" options={SIZES} value={size} onChange={setSize} />
+        <FilterRow label="Type" options={TYPES} value={type} onChange={setType} />
       </div>
 
       {days.map(([iso, items]) => (

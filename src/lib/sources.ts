@@ -9,31 +9,41 @@ export type PuzzleSource =
   | "st-large"
   | "st-midi"
   | "st-mini"
-  | "latimes";
+  | "latimes"
+  | "gdn-quick"
+  | "gdn-cryptic"
+  | "gdn-quiptic"
+  | "gdn-quick-cryptic"
+  | "gdn-prize";
 
 export interface SourceMeta {
   /** Full name, shown in the solver header and archive cards. */
   label: string;
   /** Publisher — drives the "Paper" filter. */
   paper: string;
-  /** Puzzle size/type — drives the "Size" filter. */
-  size: string;
+  /** Puzzle type (size or variety) — drives the "Type" filter. */
+  type: string;
 }
 
 export const SOURCES: Record<PuzzleSource, SourceMeta> = {
-  nyt: {
-    label: "NYT Crossword",
-    paper: "NY Times",
-    size: "Crossword",
-  },
+  nyt: { label: "NYT Crossword", paper: "NY Times", type: "Crossword" },
+  latimes: { label: "LA Times Crossword", paper: "LA Times", type: "Crossword" },
   "st-large": {
     label: "Seattle Times Crossword",
     paper: "Seattle Times",
-    size: "Crossword",
+    type: "Crossword",
   },
-  "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", size: "Midi" },
-  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", size: "Mini" },
-  latimes: { label: "LA Times Crossword", paper: "LA Times", size: "Crossword" },
+  "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", type: "Midi" },
+  "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", type: "Mini" },
+  "gdn-quick": { label: "Guardian Quick", paper: "Guardian", type: "Quick" },
+  "gdn-cryptic": { label: "Guardian Cryptic", paper: "Guardian", type: "Cryptic" },
+  "gdn-quiptic": { label: "Guardian Quiptic", paper: "Guardian", type: "Quiptic" },
+  "gdn-quick-cryptic": {
+    label: "Guardian Quick Cryptic",
+    paper: "Guardian",
+    type: "Quick Cryptic",
+  },
+  "gdn-prize": { label: "Guardian Prize", paper: "Guardian", type: "Prize" },
 };
 
 /** Display + tie-break order when several puzzles share a date. */
@@ -43,14 +53,19 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "st-large",
   "st-midi",
   "st-mini",
+  "gdn-quick",
+  "gdn-cryptic",
+  "gdn-quiptic",
+  "gdn-quick-cryptic",
+  "gdn-prize",
 ];
 
-/** Distinct papers / sizes in display order, for the archive filters. */
+/** Distinct papers / types in display order, for the archive filters. */
 export const PAPERS: string[] = [
   ...new Set(SOURCE_ORDER.map((s) => SOURCES[s].paper)),
 ];
-export const SIZES: string[] = [
-  ...new Set(SOURCE_ORDER.map((s) => SOURCES[s].size)),
+export const TYPES: string[] = [
+  ...new Set(SOURCE_ORDER.map((s) => SOURCES[s].type)),
 ];
 
 export function isSource(s: string): s is PuzzleSource {
