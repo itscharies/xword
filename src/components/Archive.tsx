@@ -129,9 +129,15 @@ export function Archive({
               const prog = loadProgress(p.source, p.date);
               const done = prog?.completed ?? false;
               const rating = prog?.rating ?? 0;
+              // Cap at 99% while unsolved: a fully-filled grid with a wrong
+              // letter is 100% filled but not "done", and showing 100% would
+              // look solved. 100%/the tick is reserved for a correct solve.
               const pct =
                 !done && prog?.total
-                  ? Math.round((100 * (prog.filled ?? 0)) / prog.total)
+                  ? Math.min(
+                      99,
+                      Math.round((100 * (prog.filled ?? 0)) / prog.total),
+                    )
                   : 0;
               return (
                 <li key={`${p.source}/${p.date}`}>

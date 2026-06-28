@@ -17,7 +17,7 @@ export interface SourceMeta {
 
 export const SOURCES: Record<PuzzleSource, SourceMeta> = {
   nyt: {
-    label: "NY Times Syndicated",
+    label: "NYT Crossword",
     paper: "NY Times",
     size: "Crossword",
   },
