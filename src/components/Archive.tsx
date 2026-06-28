@@ -122,6 +122,21 @@ export function Archive({
         <FilterRow label="Type" options={TYPES} value={type} onChange={setType} />
       </div>
 
+      {days.length === 0 && (
+        <div className="archive-empty">
+          <p>No puzzles match these filters.</p>
+          <button
+            className="btn"
+            onClick={() => {
+              setPaper("all");
+              setType("all");
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
+
       {days.map(([iso, items]) => (
         <section className="archive-day" key={iso}>
           <h2 className="archive-day-head">{formatDate(iso)}</h2>

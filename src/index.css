@@ -765,6 +765,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   box-shadow: 0 0 0 var(--shadow-col);
 }
 
+/* Shown when the Paper/Type filters exclude everything. */
+.archive-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 32px 0;
+  color: var(--muted);
+}
+.archive-empty p { margin: 0; font-size: 15px; }
+
 /* One section per date. */
 .archive-day { margin-bottom: 22px; }
 .archive-day-head {
