@@ -630,21 +630,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .title-link {
   background: transparent;
   border: 0;
-  /* Padding gives the hover block some room; the matching negative margin
-     keeps the title aligned with the rest of the header (no layout shift). */
-  padding: 4px 8px;
-  margin: -4px -8px;
+  padding: 0;
   text-align: left;
   cursor: pointer;
   color: inherit;
-  transition: background 0.08s ease;
 }
-/* On hover the whole title becomes a solid accent block with black text. */
-.title-link:hover {
-  background: var(--accent);
+/* Only the title line is the link, so the hover block covers just it (not the
+   byline). Padding gives the block room; the matching negative margin keeps the
+   title aligned and avoids any layout shift. */
+.title-link h1 {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: -2px -8px;
+  transition: background 0.08s ease, color 0.08s ease;
 }
-.title-link:hover h1,
-.title-link:hover .byline {
+.title-link:hover h1 {
+  background: var(--accent-2);
   color: #000;
 }
 
