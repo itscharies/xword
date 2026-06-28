@@ -2,12 +2,14 @@ name: Fetch daily puzzle
 
 on:
   schedule:
-    # Each source publishes once a day, but at times that drift and differ
-    # between sources. Rather than guess, poll hourly all day and grab each new
-    # puzzle the moment it lands. A run with nothing new skips every existing
-    # file and makes no commit (the git-diff guard below), so it never deploys —
-    # only the run that actually finds a new puzzle triggers a build.
-    - cron: "0 * * * *"
+    # The NYT source publishes the next day's puzzle ~20:00-23:00 UTC, which is
+    # ~6-9am Sydney — right around wake-up. GitHub's scheduled runs are delayed
+    # and irregular (often 30-50 min late, sometimes skipped), so poll every
+    # 10 min through that window to catch it as soon as it lands, and hourly
+    # the rest of the day. A run with nothing new makes no commit (git-diff
+    # guard below) and so never deploys; only a new puzzle triggers a build.
+    - cron: "*/10 19-23 * * *" # every 10 min, ~5-10am Sydney
+    - cron: "0 0-18 * * *" # hourly the rest of the day
   workflow_dispatch: {}
 
 permissions:

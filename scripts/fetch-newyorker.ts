@@ -28,6 +28,14 @@ async function fetchText(url: string): Promise<string> {
   return res.text();
 }
 
+/** Fetch a page, returning null on 404 (no puzzle of this kind that day). */
+async function fetchPage(url: string): Promise<string | null> {
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
 /** Last `n` days as {ymd, y, m, d} (UTC), newest first. */
 function recentDays(n: number) {
   const now = new Date();
@@ -55,9 +63,10 @@ async function main(): Promise<void> {
       const file = join(dir, `${ymd}.json`);
       if (existsSync(file)) continue;
       try {
-        const page = await fetchText(`${PAGE_BASE}/${slug}/${path}`);
+        const page = await fetchPage(`${PAGE_BASE}/${slug}/${path}`);
+        if (!page) continue; // no page = no puzzle of this kind that day
         const id = page.match(/games\.newyorker\.com\?id=([0-9a-f-]{36})/)?.[1];
-        if (!id) continue; // no puzzle of this kind that day
+        if (!id) continue; // page exists but no game embed
         const game = JSON.parse(await fetchText(`${API}/${id}`));
         if (!game?.data) continue;
         const puzzle = parseNewYorker(game.data, source, ymd);
