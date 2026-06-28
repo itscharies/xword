@@ -8,6 +8,14 @@
     "author": "David Steinberg"
   },
   {
+    "source": "latimes",
+    "date": "20260628",
+    "isoDate": "2026-06-28",
+    "weekday": "Sun",
+    "title": "LA Times Crossword",
+    "author": "Emet Ozar"
+  },
+  {
     "source": "st-large",
     "date": "20260628",
     "isoDate": "2026-06-28",
@@ -38,6 +46,14 @@
     "weekday": "Sat",
     "title": "NY Times, Sat, Jun 27, 2026",
     "author": "Kameron Austin Collins"
+  },
+  {
+    "source": "latimes",
+    "date": "20260627",
+    "isoDate": "2026-06-27",
+    "weekday": "Sat",
+    "title": "LA Times Crossword",
+    "author": "Zhouqin Burnikel"
   },
   {
     "source": "st-large",
@@ -72,6 +88,14 @@
     "author": "Gene Louise De Vera"
   },
   {
+    "source": "latimes",
+    "date": "20260626",
+    "isoDate": "2026-06-26",
+    "weekday": "Fri",
+    "title": "LA Times Crossword",
+    "author": "Jeremy Venook"
+  },
+  {
     "source": "st-large",
     "date": "20260626",
     "isoDate": "2026-06-26",
@@ -102,6 +126,14 @@
     "weekday": "Thu",
     "title": "NY Times, Thu, Jun 25, 2026",
     "author": "Zhou Zhang and Mallory Montgomery"
+  },
+  {
+    "source": "latimes",
+    "date": "20260625",
+    "isoDate": "2026-06-25",
+    "weekday": "Thu",
+    "title": "LA Times Crossword",
+    "author": "Jeffrey Wechsler"
   },
   {
     "source": "st-large",
@@ -136,6 +168,14 @@
     "author": "Kathleen Duncan"
   },
   {
+    "source": "latimes",
+    "date": "20260624",
+    "isoDate": "2026-06-24",
+    "weekday": "Wed",
+    "title": "LA Times Crossword",
+    "author": "Sala Wanetick & Dena R. Verkuil"
+  },
+  {
     "source": "st-large",
     "date": "20260624",
     "isoDate": "2026-06-24",
@@ -168,6 +208,14 @@
     "author": "Brad Wiegmann"
   },
   {
+    "source": "latimes",
+    "date": "20260623",
+    "isoDate": "2026-06-23",
+    "weekday": "Tue",
+    "title": "LA Times Crossword",
+    "author": "Adam Shapiro"
+  },
+  {
     "source": "st-large",
     "date": "20260623",
     "isoDate": "2026-06-23",
@@ -198,6 +246,14 @@
     "weekday": "Mon",
     "title": "NY Times, Mon, Jun 22, 2026",
     "author": "Rena Cohen"
+  },
+  {
+    "source": "latimes",
+    "date": "20260622",
+    "isoDate": "2026-06-22",
+    "weekday": "Mon",
+    "title": "LA Times Crossword",
+    "author": "Robbie Cottom"
   },
   {
     "source": "st-large",

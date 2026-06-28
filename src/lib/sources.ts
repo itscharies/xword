@@ -4,7 +4,12 @@
 // Seattle Times publishes several AmuseLabs sets. The non-"large" daily set
 // (seattletimes-crossword) is deactivated upstream (errorCode 115), but large,
 // midi, and mini are live.
-export type PuzzleSource = "nyt" | "st-large" | "st-midi" | "st-mini";
+export type PuzzleSource =
+  | "nyt"
+  | "st-large"
+  | "st-midi"
+  | "st-mini"
+  | "latimes";
 
 export interface SourceMeta {
   /** Full name, shown in the solver header and archive cards. */
@@ -28,11 +33,13 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
   },
   "st-midi": { label: "Seattle Times Midi", paper: "Seattle Times", size: "Midi" },
   "st-mini": { label: "Seattle Times Mini", paper: "Seattle Times", size: "Mini" },
+  latimes: { label: "LA Times Crossword", paper: "LA Times", size: "Crossword" },
 };
 
 /** Display + tie-break order when several puzzles share a date. */
 export const SOURCE_ORDER: PuzzleSource[] = [
   "nyt",
+  "latimes",
   "st-large",
   "st-midi",
   "st-mini",
