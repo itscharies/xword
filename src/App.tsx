@@ -42,7 +42,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fetch(`${BASE}puzzles/index.json`)
+    // The catalogue changes whenever a new puzzle lands, but GitHub Pages /
+    // phones cache it — so bypass the cache (a cache-bust param + no-store) to
+    // make sure freshly-deployed puzzles show up right away. The puzzle files
+    // themselves are immutable, so they stay cached.
+    fetch(`${BASE}puzzles/index.json?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error(`index.json ${r.status}`);
         return r.json() as Promise<PuzzleIndexEntry[]>;
