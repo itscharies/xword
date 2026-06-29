@@ -16,8 +16,13 @@ export function HowToPlay() {
         <ul>
           <li>Tap a square, or use the arrow keys, to move.</li>
           <li>
-            Tap the square again — or tap the clue bar — to switch between Across
-            and Down.
+            <b>Drag along the clue bar</b> to glide the cursor across the
+            squares without lifting your finger — the quickest way to move on a
+            phone.
+          </li>
+          <li>
+            Tap the clue bar (without dragging) — or tap the current square
+            again — to switch between Across and Down.
           </li>
           <li>
             Tap any clue to jump to it; <b>Tab</b> / <b>Shift+Tab</b> go to the
