@@ -27,6 +27,7 @@
   --shaded: #3c3c3c;
   --wrong: #ff5247;
   --revealed: #4aabff;
+  --ants: var(--accent); /* rebus marching-ants ring */
   color-scheme: dark;
 }
 
@@ -45,6 +46,7 @@
   --shaded: #d9d9d9; /* slightly greyed-in themed cells */
   --wrong: #e0192b;
   --revealed: #0a59d0;
+  --ants: var(--accent-deep); /* darker tint so the ring shows on white */
   color-scheme: light;
 }
 
@@ -484,8 +486,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: absolute;
   bottom: 1px;
   right: 1px;
-  width: max(7px, calc(34cqw / var(--cols)));
-  height: max(7px, calc(34cqw / var(--cols)));
+  width: max(5px, calc(24cqw / var(--cols)));
+  height: max(5px, calc(24cqw / var(--cols)));
   pointer-events: none;
   background: color-mix(in srgb, currentColor 60%, transparent);
   -webkit-mask-repeat: no-repeat;
@@ -517,17 +519,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: absolute;
   inset: -3px;
   pointer-events: none;
-  /* White dashes blended with `difference` invert whatever is behind them, so
-     the ring stays visible on a dark cell, a black gridline, or a bright
-     highlight in light mode alike. */
-  background-image: linear-gradient(90deg, #fff 50%, transparent 50%),
-    linear-gradient(90deg, #fff 50%, transparent 50%),
-    linear-gradient(0deg, #fff 50%, transparent 50%),
-    linear-gradient(0deg, #fff 50%, transparent 50%);
+  /* Accent dashes in dark mode; a darker accent tint in light mode (var --ants)
+     so the ring stays visible against the white grid. */
+  background-image: linear-gradient(90deg, var(--ants) 50%, transparent 50%),
+    linear-gradient(90deg, var(--ants) 50%, transparent 50%),
+    linear-gradient(0deg, var(--ants) 50%, transparent 50%),
+    linear-gradient(0deg, var(--ants) 50%, transparent 50%);
   background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
   background-size: 8px 2px, 8px 2px, 2px 8px, 2px 8px;
   background-position: 0 0, 0 100%, 0 0, 100% 0;
-  mix-blend-mode: difference;
   animation: marching-ants 0.6s linear infinite;
 }
 @keyframes marching-ants {
