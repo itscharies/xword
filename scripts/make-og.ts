@@ -31,39 +31,86 @@ async function loadFont(cssUrl: string, prefix: string): Promise<string[]> {
 }
 
 // ---- 5x5 crossword motif, vertically centred -----------------------------
+// Theme colours (match the app).
+const BG = "#1c1c1c"; // slightly-lighter page background
+const SHADOW = "#000000"; // harsh offset shadow
+const GRIDLINE = "#000000";
+const OPEN = "#ededed"; // white cells, like the title logo
+const BLOCK = "#000000";
+const ACTIVE = "#ffe500"; // the main highlight (active square)
+const WORD = "#c9b200"; // the rest of the highlighted word, dimmer
+
+// ---- 5x5 motif: one highlighted word (bright active cell + dimmer word),
+//      black/white crossword pattern around it — vertically centred. ----
 const cell = 76;
 const gap = 8;
 const span = 5 * cell + 4 * gap; // 412
-const ox = 84;
-const oy = (H - span) / 2; // centred vertically
-const blocked = new Set(["1,1", "3,0", "0,3", "2,2", "4,3"]);
-const accent = new Set(["0,0", "4,0", "2,4"]);
+const ox = 96;
+const oy = (H - span) / 2;
+const SH = 16; // harsh shadow offset
+
+// Per-cell fill from the requested layout (row 1 is the highlighted word;
+// (1,1) is the active square).
+const fillAt = (c: number, r: number): string => {
+  if (r === 1) return c === 1 ? ACTIVE : WORD;
+  if (r === 3) return OPEN;
+  // rows 0,2,4: block / open / block / open / block
+  return c % 2 === 0 ? BLOCK : OPEN;
+};
 
 let cells = "";
 for (let r = 0; r < 5; r++) {
   for (let c = 0; c < 5; c++) {
     const x = ox + c * (cell + gap);
     const y = oy + r * (cell + gap);
-    const key = `${c},${r}`;
-    const fill = blocked.has(key) ? "#0d0d0d" : accent.has(key) ? "#ffe500" : "#ededed";
-    cells += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+    cells += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="${fillAt(c, r)}"/>`;
   }
 }
 
-// ---- text block, vertically centred to match the grid --------------------
-const tx = ox + span + 60; // 556
-const text = `
-  <text x="${tx}" y="262" font-family="Jaro" font-size="96" fill="#ffe500">The Daily</text>
-  <text x="${tx}" y="360" font-family="Jaro" font-size="96" fill="#ffe500">Grid</text>
-  <text x="${tx + 4}" y="430" font-family="SN Pro" font-size="32" font-weight="500" fill="#e6e6e6">Every day's crosswords —</text>
-  <text x="${tx + 4}" y="474" font-family="SN Pro" font-size="32" font-weight="500" fill="#e6e6e6">every paper, one place.</text>
-  <text x="${tx + 4}" y="548" font-family="SN Pro" font-size="26" font-weight="600" fill="#8a8a8a">itscharies.github.io/xword</text>
+const grid = `
+  <rect x="${ox - gap + SH}" y="${oy - gap + SH}" width="${span + 2 * gap}" height="${span + 2 * gap}" fill="${SHADOW}"/>
+  <rect x="${ox - gap}" y="${oy - gap}" width="${span + 2 * gap}" height="${span + 2 * gap}" fill="${GRIDLINE}"/>
+  ${cells}
 `;
 
+// ---- text block: the wordmark in white (like the site logo) + tagline,
+//      vertically centred as a group. ----
+const tx = ox + span + 76;
+type Line = {
+  t: string;
+  size: number;
+  font: string;
+  fill: string;
+  weight?: number;
+  brand?: boolean;
+  gap: number;
+};
+const lines: Line[] = [
+  { t: "The Daily", size: 100, font: "Jaro", fill: OPEN, brand: true, gap: 6 },
+  { t: "Grid", size: 100, font: "Jaro", fill: OPEN, brand: true, gap: 36 },
+  { t: "Every day's crosswords —", size: 32, font: "SN Pro", fill: "#e6e6e6", weight: 500, gap: 6 },
+  { t: "every paper, one place.", size: 32, font: "SN Pro", fill: "#e6e6e6", weight: 500, gap: 30 },
+  { t: "itscharies.github.io/xword", size: 26, font: "SN Pro", fill: "#8a8a8a", weight: 600, gap: 0 },
+];
+const totalH = lines.reduce((s, l) => s + l.size + l.gap, 0) - lines[lines.length - 1].gap;
+let top = H / 2 - totalH / 2;
+let text = "";
+for (const l of lines) {
+  const baseline = top + l.size * 0.78;
+  const w = l.weight ? ` font-weight="${l.weight}"` : "";
+  if (l.brand) {
+    // harsh offset shadow behind, white wordmark on top
+    text += `<text x="${tx + SH}" y="${baseline + SH}" font-family="${l.font}" font-size="${l.size}" fill="${SHADOW}">${l.t}</text>`;
+    text += `<text x="${tx}" y="${baseline}" font-family="${l.font}" font-size="${l.size}" fill="${l.fill}">${l.t}</text>`;
+  } else {
+    text += `<text x="${tx}" y="${baseline}" font-family="${l.font}" font-size="${l.size}"${w} fill="${l.fill}">${l.t}</text>`;
+  }
+  top += l.size + l.gap;
+}
+
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-  <rect width="${W}" height="${H}" fill="#000000"/>
-  <rect x="36" y="36" width="${W - 72}" height="${H - 72}" fill="none" stroke="#8a7b00" stroke-width="6"/>
-  ${cells}
+  <rect width="${W}" height="${H}" fill="${BG}"/>
+  ${grid}
   ${text}
 </svg>`;
 
