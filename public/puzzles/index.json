@@ -64,6 +64,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "New Yorker Crossword",
+    "author": "Will Nediger"
+  },
+  {
     "source": "nyt",
     "date": "260628",
     "isoDate": "2026-06-28",
