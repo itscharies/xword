@@ -38,6 +38,7 @@ export function Grid({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
             "cell",
             cell.shaded ? "shaded" : "",
             isActive ? "active" : inWord ? "word" : isLinked ? "linked" : "",
+            isActive && xw.rebus ? "rebus-sel" : "",
             xw.wrong.has(k) ? "wrong" : "",
             xw.revealed.has(k) ? "revealed" : "",
             entry.length > 1 ? "multi" : "",

@@ -182,13 +182,24 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     return set;
   }, [activeClue, rebus]);
 
-  // Clues cross-referenced by the active clue's text ("17-, 22- and 33-Across").
+  // "Starred" theme clues (text begins with "*"), e.g. the LA Times sets a
+  // revealer pointing at "the answers to the starred clues".
+  const starredClues = useMemo<DirClue[]>(
+    () => orderedClues.filter((c) => c.clue.trim().startsWith("*")),
+    [orderedClues],
+  );
+
+  // Clues cross-referenced by the active clue's text ("17-, 22- and 33-Across"),
+  // plus — when the active clue is a revealer that mentions the starred clues —
+  // every starred clue, so selecting the revealer lights up the theme answers.
   const linkedClues = useMemo<DirClue[]>(() => {
     if (!activeClue) return [];
-    return parseClueRefs(activeClue.clue, activeClue)
+    const refs = parseClueRefs(activeClue.clue, activeClue)
       .map((r) => byNumber.get(`${r.number}-${r.direction}`))
       .filter((c): c is DirClue => Boolean(c));
-  }, [activeClue, byNumber]);
+    if (/starred/i.test(activeClue.clue)) refs.push(...starredClues);
+    return refs;
+  }, [activeClue, byNumber, starredClues]);
 
   const linked = useMemo<Set<string>>(() => {
     const set = new Set<string>();
