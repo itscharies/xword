@@ -487,6 +487,24 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const k = e.key;
+      // Check / reveal shortcuts (matching the Seattle Times bindings):
+      //   Ctrl+B/R/G reveal box/word/grid; Ctrl+X/C/E check box/word/grid.
+      if (e.ctrlKey && !e.metaKey && !e.altKey) {
+        const combos: Record<string, () => void> = {
+          b: () => reveal("cell"),
+          r: () => reveal("word"),
+          g: () => reveal("puzzle"),
+          x: () => check("cell"),
+          c: () => check("word"),
+          e: () => check("puzzle"),
+        };
+        const act = combos[k.toLowerCase()];
+        if (act) {
+          e.preventDefault();
+          act();
+        }
+        return;
+      }
       if (k === "ArrowLeft") {
         e.preventDefault();
         if (directionRef.current !== "across") setDirection("across");
@@ -520,7 +538,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
         typeLetter(k);
       }
     },
-    [step, backspace, deleteCell, moveToClue, toggleDirection, typeLetter],
+    [step, backspace, deleteCell, moveToClue, toggleDirection, typeLetter, check, reveal],
   );
 
   return {

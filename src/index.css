@@ -649,6 +649,41 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 28px 30px;
   text-align: center;
   width: min(92vw, 400px);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* How-to-play guide. */
+.howto {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.howto h3 {
+  margin: 0 0 5px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.howto p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--fg); }
+.howto ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.howto .howto-dim { color: var(--muted); font-size: 13px; }
+.shortcuts { border-collapse: collapse; margin: 4px 0; font-size: 14px; }
+.shortcuts td { padding: 3px 0; vertical-align: top; }
+.shortcuts td:first-child {
+  font-weight: 700;
+  padding-right: 18px;
+  white-space: nowrap;
 }
 .modal-title { margin: 0 0 10px; font-size: 24px; font-weight: 800; }
 .modal p { color: var(--muted); margin: 4px 0; }

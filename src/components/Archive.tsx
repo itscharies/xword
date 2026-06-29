@@ -5,6 +5,7 @@ import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
 import { getFilters, setFilters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
+import { HowToPlay } from "./HowToPlay.tsx";
 import { CheckIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
@@ -68,6 +69,7 @@ export function Archive({
   onPick: (source: PuzzleSource, date: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [paper, setPaperState] = useState<string>(() => getFilters().paper);
   const [type, setTypeState] = useState<string>(() => getFilters().type);
 
@@ -101,6 +103,14 @@ export function Archive({
       <header className="header">
         <h1 className="archive-heading">Crosswords</h1>
         <div className="header-right">
+          <button
+            className="btn icon-btn cog-btn"
+            onClick={() => setShowInfo(true)}
+            aria-label="How to play"
+            title="How to play"
+          >
+            ℹ
+          </button>
           <button
             className="btn icon-btn cog-btn"
             onClick={() => setShowSettings(true)}
@@ -195,6 +205,12 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
+        </Modal>
+      )}
+
+      {showInfo && (
+        <Modal title="How to play" onClose={() => setShowInfo(false)}>
+          <HowToPlay />
         </Modal>
       )}
     </div>
