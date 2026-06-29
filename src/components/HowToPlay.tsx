@@ -48,6 +48,11 @@ export function HowToPlay() {
             rebus key to type several letters into one square.
           </li>
           <li>
+            On cryptic crosswords that key becomes an <b>anagram helper</b> — a
+            scratchpad where you type in letters and shuffle them around a circle
+            or grid to untangle the wordplay.
+          </li>
+          <li>
             In <b>Settings</b> (⚙) choose light/dark, an accent colour, and
             whether finishing a word jumps to the next clue.
           </li>

@@ -328,7 +328,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 /* The keyboard key needs a small nudge for the font's vertical metrics; the
    smaller toolbar button stays geometrically centered. */
-.kb-key .rebus-icon { transform: translateY(2px); }
+.kb-key .rebus-icon { line-height: 0.95; text-align: center; }
+.kb-key svg { display: block; }
 
 .menu {
   position: absolute;
@@ -669,6 +670,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .kb-key {
   flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--surface);
   border: var(--bw) solid var(--line);
   box-shadow: 3px 3px 0 var(--shadow-col);

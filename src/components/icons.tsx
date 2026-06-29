@@ -47,8 +47,8 @@ export const AnagramIcon = () => (
 // Anagram (mobile key): letters arranged in a circle, echoing the helper's
 // circle view of the scrambled tiles.
 export const AnagramCircleIcon = () => {
-  const letters = ["A", "B", "C", "D", "E", "F"];
-  const r = 7.2;
+  const letters = ["A", "B", "C", "D", "E"];
+  const r = 7.4;
   return (
     <svg {...base} fill="currentColor" stroke="none">
       {letters.map((ch, i) => {
@@ -58,7 +58,7 @@ export const AnagramCircleIcon = () => {
             key={ch}
             x={12 + Math.cos(a) * r}
             y={12 + Math.sin(a) * r}
-            fontSize="6.6"
+            fontSize="8"
             fontWeight="800"
             textAnchor="middle"
             dominantBaseline="central"
