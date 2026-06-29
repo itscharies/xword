@@ -46,7 +46,7 @@
   --shaded: #d9d9d9; /* slightly greyed-in themed cells */
   --wrong: #e0192b;
   --revealed: #0a59d0;
-  --ants: var(--accent-deep); /* darker tint so the ring shows on white */
+  --ants: color-mix(in srgb, var(--accent-deep) 68%, #000); /* darker tint so the ring shows on the light highlight */
   color-scheme: light;
 }
 
@@ -476,15 +476,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
     var(--hl);
 }
-/* Revealed and wrong cells get one small marker tucked into the corner
-   opposite the clue number (bottom-right): an eye for a revealed cell, a cross
-   for a wrong one. It picks up the number's muted tone via currentColor, so it
-   matches the number and stays legible on any cell colour. */
-.cell.wrong::after,
+/* Revealed cells get a small eye in the corner opposite the number (top-right),
+   tinted like the number. Wrong cells go red — red text plus a red line struck
+   horizontally across the square. */
 .cell.revealed::after {
   content: "";
   position: absolute;
-  bottom: 1px;
+  top: 1px;
   right: 1px;
   width: max(5px, calc(24cqw / var(--cols)));
   height: max(5px, calc(24cqw / var(--cols)));
@@ -496,14 +494,23 @@ button { font: inherit; cursor: pointer; color: inherit; }
   mask-size: contain;
   -webkit-mask-position: center;
   mask-position: center;
-}
-.cell.wrong::after {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
-}
-.cell.revealed::after {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cellipse cx='6' cy='6' rx='5' ry='3.2' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3Ccircle cx='6' cy='6' r='1.6' fill='%23000'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cellipse cx='6' cy='6' rx='5' ry='3.2' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3Ccircle cx='6' cy='6' r='1.6' fill='%23000'/%3E%3C/svg%3E");
+}
+.cell.wrong {
+  color: var(--wrong);
+}
+.cell.wrong::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: max(2px, calc(7cqw / var(--cols)));
+  transform: translateY(-50%);
+  background: var(--wrong);
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* Rebus mode marks the single active cell with a dashed "marching ants" ring
@@ -762,8 +769,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .ana-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-/* Mobile anagram overlay: covers the board area while the sticky on-screen
-   keyboard stays live below it and types into the answer cells. */
+/* Mobile anagram overlay: covers the board while the sticky on-screen keyboard
+   stays live below it and feeds the letter pool. Content is centred. */
 .ana-overlay {
   position: absolute;
   inset: 0;
@@ -771,39 +778,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: center;
+  gap: 20px;
   overflow-y: auto;
 }
-.ana-overlay-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 2px solid var(--line);
-  padding-bottom: 10px;
-}
-.ana-overlay-title { font-size: 16px; font-weight: 800; }
-.ana-overlay .modal-close {
-  position: static;
-  border: var(--bw) solid var(--line);
-}
-/* The crossword-style answer: locked letters in place, blanks to fill. */
-.ana-answer { display: flex; flex-direction: column; gap: 6px; }
-.ana-cells { display: flex; flex-wrap: wrap; gap: 4px; }
-.ana-cell {
-  width: 36px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 20px;
-  background: var(--cell-bg);
-  color: var(--cell-fg);
-  border: var(--bw) solid var(--line);
-  box-shadow: 3px 3px 0 var(--shadow-col);
-}
-.ana-cell.locked { background: var(--shaded); color: var(--muted); }
-.ana-cell.active { background: var(--hl); color: #000; }
 
 /* How-to-play guide. */
 .howto {

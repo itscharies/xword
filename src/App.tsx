@@ -4,7 +4,7 @@ import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
-import { useWordEntry } from "./hooks/useWordEntry.ts";
+import { useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import { loadProgress, saveProgress } from "./lib/storage.ts";
 import { Grid } from "./components/Grid.tsx";
@@ -17,6 +17,7 @@ import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
+import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
 
@@ -163,7 +164,7 @@ function Solver({
   const [rating, setRating] = useState(saved?.rating ?? 0);
 
   const isMobile = useMediaQuery("(max-width: 820px)");
-  const anagramEntry = useWordEntry(xw, showAnagram && isMobile);
+  const anagramPool = useAnagramPool(showAnagram && isMobile);
 
   // Any open dialog (including the anagram overlay) takes over keyboard input —
   // the overlay routes keys into its own answer entry rather than the grid.
@@ -264,14 +265,7 @@ function Solver({
           <Grid puzzle={puzzle} xw={xw} />
         </div>
         <ClueList puzzle={puzzle} xw={xw} />
-        {showAnagram && isMobile && (
-          <AnagramHelper
-            xw={xw}
-            mobile
-            entry={anagramEntry}
-            onClose={() => setShowAnagram(false)}
-          />
-        )}
+        {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
       </div>
 
       {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
@@ -281,7 +275,7 @@ function Solver({
         <MobileKeyboard
           xw={xw}
           onAnagram={() => setShowAnagram((v) => !v)}
-          anagramEntry={showAnagram && isMobile ? anagramEntry : null}
+          anagramPool={showAnagram && isMobile ? anagramPool : null}
         />
       </div>
 
@@ -326,12 +320,7 @@ function Solver({
       )}
 
       {showAnagram && !isMobile && (
-        <AnagramHelper
-          xw={xw}
-          mobile={false}
-          entry={anagramEntry}
-          onClose={() => setShowAnagram(false)}
-        />
+        <AnagramHelper xw={xw} onClose={() => setShowAnagram(false)} />
       )}
     </div>
   );

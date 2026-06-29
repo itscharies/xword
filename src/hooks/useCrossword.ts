@@ -512,23 +512,6 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     [clueThrough],
   );
 
-  /** Current entry at a cell, read from the live ref (for input handlers). */
-  const cellEntry = useCallback(
-    (r: number, c: number): string => entriesRef.current[r]?.[c] ?? "",
-    [],
-  );
-
-  /** Write a single cell (used by the mobile anagram answer-entry). */
-  const setCell = useCallback(
-    (r: number, c: number, ch: string) => {
-      if (!isOpen(r, c)) return;
-      writeCell(r, c, ch.toUpperCase());
-      clearWrongAt(r, c);
-      clearRevealedAt(r, c);
-    },
-    [isOpen],
-  );
-
   // Cryptic puzzles get the anagram helper instead of the rebus toggle.
   const isCryptic = SOURCES[puzzle.source]?.type === "Cryptic";
 
@@ -620,8 +603,6 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     // derived helpers
     clueAt,
     solutionAt,
-    cellEntry,
-    setCell,
     // actions
     selectCell,
     selectClue,

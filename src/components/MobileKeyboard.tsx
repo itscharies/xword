@@ -1,5 +1,5 @@
 import type { Crossword } from "../hooks/useCrossword.ts";
-import type { WordEntry } from "../hooks/useWordEntry.ts";
+import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { AnagramCircleIcon } from "./icons.tsx";
 
@@ -8,17 +8,17 @@ const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 export function MobileKeyboard({
   xw,
   onAnagram,
-  anagramEntry,
+  anagramPool,
 }: {
   xw: Crossword;
   onAnagram: () => void;
-  /** When the anagram overlay is open, keystrokes fill its answer instead. */
-  anagramEntry?: WordEntry | null;
+  /** When the anagram overlay is open, keystrokes feed its letter pool. */
+  anagramPool?: AnagramPool | null;
 }) {
   const typeLetter = (ch: string) =>
-    anagramEntry ? anagramEntry.type(ch) : xw.typeLetter(ch);
+    anagramPool ? anagramPool.add(ch) : xw.typeLetter(ch);
   const backspace = () =>
-    anagramEntry ? anagramEntry.backspace() : xw.backspace();
+    anagramPool ? anagramPool.backspace() : xw.backspace();
 
   return (
     <div className="keyboard">
@@ -27,10 +27,10 @@ export function MobileKeyboard({
           {i === 2 &&
             (xw.isCryptic ? (
               <button
-                className={`kb-key wide ${anagramEntry ? "active" : ""}`}
+                className={`kb-key wide ${anagramPool ? "active" : ""}`}
                 onClick={onAnagram}
                 aria-label="Anagram helper"
-                aria-pressed={!!anagramEntry}
+                aria-pressed={!!anagramPool}
               >
                 <AnagramCircleIcon />
               </button>
