@@ -763,7 +763,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: clamp(30px, 8.5vw, 52px);
   line-height: 1;
   white-space: nowrap;
-  color: var(--fg);
+  /* Always white fill so the black outline + shadow define the letters in both
+     themes (in light mode --fg is black, which would make the whole thing
+     black-on-black). */
+  color: #fff;
   /* paint-order draws the stroke behind the fill, so the outline sits outside
      the letters instead of eating into them. Width is doubled since only the
      outer half shows. */
