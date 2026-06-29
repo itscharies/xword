@@ -48,7 +48,7 @@ export const AnagramIcon = () => (
 // circle view of the scrambled tiles.
 export const AnagramCircleIcon = () => {
   const letters = ["A", "B", "C", "D", "E"];
-  const r = 7.4;
+  const r = 7;
   return (
     <svg {...base} fill="currentColor" stroke="none">
       {letters.map((ch, i) => {
@@ -58,7 +58,7 @@ export const AnagramCircleIcon = () => {
             key={ch}
             x={12 + Math.cos(a) * r}
             y={12 + Math.sin(a) * r}
-            fontSize="8"
+            fontSize="10"
             fontWeight="800"
             textAnchor="middle"
             dominantBaseline="central"
