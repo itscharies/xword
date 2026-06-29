@@ -101,7 +101,7 @@ export function Archive({
   return (
     <div className="app archive">
       <header className="header">
-        <h1 className="archive-heading">Crosswords</h1>
+        <h1 className="archive-heading brand">The Daily Grid</h1>
         <div className="header-right">
           <button
             className="btn icon-btn cog-btn"

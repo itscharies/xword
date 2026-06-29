@@ -4,7 +4,6 @@ export function HowToPlay() {
   return (
     <div className="howto">
       <section>
-        <h3>How to play</h3>
         <p>
           Tap a square and type to fill in answers — the highlighted clue shows
           above the grid. Solve every square correctly to finish.

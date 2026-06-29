@@ -753,6 +753,25 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .archive-heading { margin: 0; font-size: 24px; font-weight: 800; }
 
+/* "The Daily Grid" brand title — Jaro display face, with the letters
+   outlined (text-stroke) and a hard offset drop shadow to match the brutalist
+   UI. Size scales with the viewport and never wraps, so it stays on one line
+   on a phone. */
+.brand {
+  font-family: "Jaro", "SN Pro", sans-serif;
+  font-weight: 400;
+  font-size: clamp(30px, 8.5vw, 52px);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--fg);
+  /* paint-order draws the stroke behind the fill, so the outline sits outside
+     the letters instead of eating into them. Width is doubled since only the
+     outer half shows. */
+  -webkit-text-stroke: 5px var(--line);
+  paint-order: stroke fill;
+  text-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+}
+
 /* Source filter chips — one row per dimension (Paper, Type). */
 .archive-filters {
   display: flex;

@@ -1,10 +1,9 @@
-# xword
+# The Daily Grid
 
-A self-hosted, fully playable crossword app. It pulls from two sources:
-
-- **NY Times syndicated** — as published by the Seattle Times via `nytsyn.pzzl.com`.
-- **Seattle Times Crossword** — the Penny Press puzzle served through AmuseLabs
-  (PuzzleMe), decoded from its scrambled `rawc` payload.
+A self-hosted, fully playable crossword app that gathers each day's puzzles
+from several papers — NY Times, LA Times, Seattle Times, the Guardian and the
+New Yorker — into one clean, ad-free place. See **Sources** below for the full
+list and how each is fetched.
 
 Puzzles are fetched and parsed into clean JSON ahead of time, then served as a
 static React site — so the browser only ever reads our own JSON (no CORS issues,
