@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Crossword, RevealScope } from "../hooks/useCrossword.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
-import { CheckIcon, EyeIcon, ResetIcon } from "./icons.tsx";
+import { AnagramIcon, CheckIcon, EyeIcon, ResetIcon } from "./icons.tsx";
 
 function Dropdown({
   label,
@@ -53,22 +53,34 @@ function Dropdown({
 export function Toolbar({
   xw,
   onRequestReset,
+  onAnagram,
 }: {
   xw: Crossword;
   onRequestReset: () => void;
+  onAnagram: () => void;
 }) {
   return (
     <div className="toolbar">
       <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} />
       <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} />
-      <button
-        className={`btn rebus-btn ${xw.rebus ? "active" : ""}`}
-        onClick={() => xw.toggleRebus()}
-        aria-pressed={xw.rebus}
-        title="Rebus: type multiple letters in one square"
-      >
-        <RebusIcon />
-      </button>
+      {xw.isCryptic ? (
+        <button
+          className="btn rebus-btn"
+          onClick={onAnagram}
+          title="Anagram helper"
+        >
+          <AnagramIcon />
+        </button>
+      ) : (
+        <button
+          className={`btn rebus-btn ${xw.rebus ? "active" : ""}`}
+          onClick={() => xw.toggleRebus()}
+          aria-pressed={xw.rebus}
+          title="Rebus: type multiple letters in one square"
+        >
+          <RebusIcon />
+        </button>
+      )}
       <button className="btn" onClick={onRequestReset} aria-label="Reset">
         <span className="btn-icon">
           <ResetIcon />

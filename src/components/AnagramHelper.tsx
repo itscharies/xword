@@ -1,0 +1,152 @@
+import { useMemo, useState } from "react";
+import type { Crossword } from "../hooks/useCrossword.ts";
+import { Modal } from "./Modal.tsx";
+import { formatClue } from "../lib/clueFormat.ts";
+
+/** Letters currently entered across the active word's cells. */
+function wordLetters(xw: Crossword): string {
+  const c = xw.activeClue;
+  if (!c) return "";
+  let s = "";
+  for (let i = 0; i < c.len; i++) {
+    const r = c.direction === "down" ? c.row + i : c.row;
+    const col = c.direction === "across" ? c.col + i : c.col;
+    s += xw.entries[r][col] || "";
+  }
+  return s;
+}
+
+/** An anagram aid for cryptic clues: shows the clue and a pool of letters
+ * (seeded with whatever's already filled in) that you can shuffle and view in
+ * a circle or grid, then type the answer to drop it into the grid. */
+export function AnagramHelper({
+  xw,
+  onClose,
+}: {
+  xw: Crossword;
+  onClose: () => void;
+}) {
+  const clue = xw.activeClue;
+  const initial = useMemo(
+    () => wordLetters(xw).toUpperCase().replace(/[^A-Z]/g, ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const [pool, setPool] = useState(initial);
+  const [tiles, setTiles] = useState<string[]>(() => initial.split(""));
+  const [view, setView] = useState<"circle" | "grid">("circle");
+  const [answer, setAnswer] = useState("");
+
+  if (!clue) return null;
+
+  const setLetters = (v: string) => {
+    const up = v.toUpperCase().replace(/[^A-Z]/g, "");
+    setPool(up);
+    setTiles(up.split(""));
+  };
+  const shuffle = () =>
+    setTiles((t) => {
+      const a = [...t];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    });
+  const fill = () => {
+    if (!answer.trim()) return;
+    xw.fillWord(answer);
+    onClose();
+  };
+
+  const radius = Math.min(95, 30 + tiles.length * 8);
+
+  return (
+    <Modal title="Anagram helper" onClose={onClose}>
+      <div className="anagram">
+        <p
+          className="ana-clue"
+          dangerouslySetInnerHTML={{
+            __html: `<b>${clue.number}${clue.direction === "across" ? "A" : "D"}</b> ${formatClue(clue.clue)}`,
+          }}
+        />
+
+        <label className="ana-row">
+          <span className="ana-label">Letters</span>
+          <input
+            className="ana-input"
+            value={pool}
+            onChange={(e) => setLetters(e.target.value)}
+            autoCapitalize="characters"
+            spellCheck={false}
+            placeholder="add the letters to anagram"
+          />
+        </label>
+
+        <div className={`ana-tiles ${view}`}>
+          {tiles.length === 0 ? (
+            <span className="ana-empty">Add some letters above.</span>
+          ) : (
+            tiles.map((t, i) => {
+              const style =
+                view === "circle"
+                  ? {
+                      transform: `translate(-50%, -50%) translate(${
+                        Math.cos((i / tiles.length) * 2 * Math.PI - Math.PI / 2) *
+                        radius
+                      }px, ${
+                        Math.sin((i / tiles.length) * 2 * Math.PI - Math.PI / 2) *
+                        radius
+                      }px)`,
+                    }
+                  : undefined;
+              return (
+                <span key={i} className="ana-tile" style={style}>
+                  {t}
+                </span>
+              );
+            })
+          )}
+        </div>
+
+        <div className="ana-controls">
+          <button className="btn" onClick={shuffle} disabled={tiles.length < 2}>
+            Shuffle
+          </button>
+          <div className="seg">
+            <button
+              className={`seg-btn ${view === "circle" ? "active" : ""}`}
+              onClick={() => setView("circle")}
+            >
+              Circle
+            </button>
+            <button
+              className={`seg-btn ${view === "grid" ? "active" : ""}`}
+              onClick={() => setView("grid")}
+            >
+              Grid
+            </button>
+          </div>
+        </div>
+
+        <div className="ana-row">
+          <input
+            className="ana-input"
+            value={answer}
+            onChange={(e) =>
+              setAnswer(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))
+            }
+            maxLength={clue.len}
+            autoCapitalize="characters"
+            spellCheck={false}
+            placeholder={`Answer (${clue.len})`}
+            onKeyDown={(e) => e.key === "Enter" && fill()}
+          />
+          <button className="btn btn-accent" onClick={fill} disabled={!answer.trim()}>
+            Fill in
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}

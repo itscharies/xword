@@ -15,6 +15,7 @@ import { CompletionModal } from "./components/CompletionModal.tsx";
 import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
+import { AnagramHelper } from "./components/AnagramHelper.tsx";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
 
@@ -143,10 +144,11 @@ function Solver({
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [showAnagram, setShowAnagram] = useState(false);
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
   const [rating, setRating] = useState(saved?.rating ?? 0);
 
-  const modalOpen = showModal || showSettings || showReset;
+  const modalOpen = showModal || showSettings || showReset || showAnagram;
 
   // Persist progress whenever it changes.
   useEffect(() => {
@@ -203,7 +205,11 @@ function Solver({
       </header>
 
       <div className="actionbar">
-        <Toolbar xw={xw} onRequestReset={() => setShowReset(true)} />
+        <Toolbar
+          xw={xw}
+          onRequestReset={() => setShowReset(true)}
+          onAnagram={() => setShowAnagram(true)}
+        />
         <div className="actionbar-controls">
           <div className="timer-group">
             <button
@@ -245,7 +251,7 @@ function Solver({
           while the rest of the page scrolls. */}
       <div className="mobile-bar" onPointerDown={resume}>
         <ClueBanner xw={xw} />
-        <MobileKeyboard xw={xw} />
+        <MobileKeyboard xw={xw} onAnagram={() => setShowAnagram(true)} />
       </div>
 
       {showModal && (
@@ -286,6 +292,10 @@ function Solver({
             </button>
           </div>
         </Modal>
+      )}
+
+      {showAnagram && (
+        <AnagramHelper xw={xw} onClose={() => setShowAnagram(false)} />
       )}
     </div>
   );

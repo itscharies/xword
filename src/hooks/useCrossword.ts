@@ -3,6 +3,7 @@ import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
 import { getAutoAdvance } from "../lib/theme.ts";
+import { SOURCES } from "../lib/sources.ts";
 
 export type RevealScope = "cell" | "word" | "puzzle";
 
@@ -471,6 +472,32 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     setDirection("across");
   }, [firstOpen]);
 
+  /** Write `text` across the active word's cells (used by the anagram helper). */
+  const fillWord = useCallback(
+    (text: string) => {
+      const clue = clueThrough(activeRef.current, directionRef.current);
+      if (!clue) return;
+      const letters = text.toUpperCase().replace(/[^A-Z]/g, "").split("");
+      const g = entriesRef.current.map((row) => row.slice());
+      const wr = new Set(wrongRef.current);
+      const rev = new Set(revealedRef.current);
+      clueCells(clue).forEach((p, i) => {
+        if (i < letters.length) {
+          g[p.row][p.col] = letters[i];
+          wr.delete(keyOf(p.row, p.col));
+          rev.delete(keyOf(p.row, p.col));
+        }
+      });
+      setEntries(g);
+      setWrong(wr);
+      setRevealed(rev);
+    },
+    [clueThrough],
+  );
+
+  // Cryptic puzzles get the anagram helper instead of the rebus toggle.
+  const isCryptic = SOURCES[puzzle.source]?.type === "Cryptic";
+
   // ---- completion ---------------------------------------------------------
 
   const completed = useMemo(() => {
@@ -555,6 +582,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     rebus,
     completed,
     openCells,
+    isCryptic,
     // derived helpers
     clueAt,
     solutionAt,
@@ -572,6 +600,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     check,
     reveal,
     reset,
+    fillWord,
   };
 }
 

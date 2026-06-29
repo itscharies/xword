@@ -32,3 +32,14 @@ export const ResetIcon = () => (
     <path d="M3 4v4h4" />
   </svg>
 );
+
+// Shuffle / anagram: two crossing arrows (Feather "shuffle").
+export const AnagramIcon = () => (
+  <svg {...base} strokeWidth={2}>
+    <path d="M16 3h5v5" />
+    <path d="M4 4l5 5" />
+    <path d="M15 15l6 6" />
+    <path d="M21 16v5h-5" />
+    <path d="M4 20L21 3" />
+  </svg>
+);
