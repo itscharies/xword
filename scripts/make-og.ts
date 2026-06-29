@@ -12,19 +12,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const W = 1200;
 const H = 630;
 
-/** Fetch the SN Pro weights as .ttf files (an old UA makes Google serve ttf,
- * which resvg can read — unlike woff2). Returns local file paths. */
-async function loadSnPro(): Promise<string[]> {
-  const css = await fetch(
-    "https://fonts.googleapis.com/css2?family=SN+Pro:wght@500;600;800&display=swap",
-    { headers: { "User-Agent": "Mozilla/5.0" } },
-  ).then((r) => r.text());
+/** Fetch a Google font's .ttf files (a bare UA makes Google serve ttf, which
+ * resvg can read — unlike woff2). Returns local file paths. */
+async function loadFont(cssUrl: string, prefix: string): Promise<string[]> {
+  const css = await fetch(cssUrl, {
+    headers: { "User-Agent": "Mozilla/5.0" },
+  }).then((r) => r.text());
   const urls = [...css.matchAll(/url\((https:\/\/[^)]+\.ttf)\)/g)].map((m) => m[1]);
-  const dir = mkdtempSync(join(tmpdir(), "snpro-"));
+  const dir = mkdtempSync(join(tmpdir(), prefix));
   const files: string[] = [];
   for (let i = 0; i < urls.length; i++) {
     const ab = await fetch(urls[i]).then((r) => r.arrayBuffer());
-    const p = join(dir, `snpro-${i}.ttf`);
+    const p = join(dir, `${prefix}${i}.ttf`);
     writeFileSync(p, new Uint8Array(ab));
     files.push(p);
   }
@@ -53,12 +52,12 @@ for (let r = 0; r < 5; r++) {
 
 // ---- text block, vertically centred to match the grid --------------------
 const tx = ox + span + 60; // 556
-const ff = "SN Pro";
 const text = `
-  <text x="${tx}" y="288" font-family="${ff}" font-size="112" font-weight="800" fill="#ffe500">Crossword</text>
-  <text x="${tx + 4}" y="350" font-family="${ff}" font-size="34" font-weight="500" fill="#e6e6e6">The daily New York Times puzzle —</text>
-  <text x="${tx + 4}" y="396" font-family="${ff}" font-size="34" font-weight="500" fill="#e6e6e6">free and ad-free.</text>
-  <text x="${tx + 4}" y="476" font-family="${ff}" font-size="26" font-weight="600" fill="#8a8a8a">itscharies.github.io/xword</text>
+  <text x="${tx}" y="262" font-family="Jaro" font-size="96" fill="#ffe500">The Daily</text>
+  <text x="${tx}" y="360" font-family="Jaro" font-size="96" fill="#ffe500">Grid</text>
+  <text x="${tx + 4}" y="430" font-family="SN Pro" font-size="32" font-weight="500" fill="#e6e6e6">Every day's crosswords —</text>
+  <text x="${tx + 4}" y="474" font-family="SN Pro" font-size="32" font-weight="500" fill="#e6e6e6">every paper, one place.</text>
+  <text x="${tx + 4}" y="548" font-family="SN Pro" font-size="26" font-weight="600" fill="#8a8a8a">itscharies.github.io/xword</text>
 `;
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
@@ -68,7 +67,15 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   ${text}
 </svg>`;
 
-const fontFiles = await loadSnPro();
+const snPro = await loadFont(
+  "https://fonts.googleapis.com/css2?family=SN+Pro:wght@500;600;800&display=swap",
+  "snpro-",
+);
+const jaro = await loadFont(
+  "https://fonts.googleapis.com/css2?family=Jaro:opsz@6..72&display=swap",
+  "jaro-",
+);
+const fontFiles = [...snPro, ...jaro];
 const png = new Resvg(svg, {
   fitTo: { mode: "width", value: W },
   font: { loadSystemFonts: false, fontFiles, defaultFontFamily: "SN Pro" },
