@@ -1,6 +1,30 @@
 [
   {
     "source": "nyt",
+    "date": "260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "NY Times, Tue, Jun 30, 2026",
+    "author": "Brad Lively"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "Guardian Cryptic",
+    "author": "Imogen"
+  },
+  {
+    "source": "gdn-mini",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "Guardian Mini",
+    "author": "The Guardian"
+  },
+  {
+    "source": "nyt",
     "date": "260629",
     "isoDate": "2026-06-29",
     "weekday": "Mon",
