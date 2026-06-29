@@ -105,6 +105,21 @@ export function parseUclick(
   const across = clues(acrossSection).map(toClue).sort((a, b) => a.number - b.number);
   const down = clues(downSection).map(toClue).sort((a, b) => a.number - b.number);
 
+  // Themed "starred" clues (their text begins with "*") are the puzzle's theme
+  // answers — usually called out by a revealer like "…or the answer to the
+  // starred clues". Shade those cells so the theme stands out, the same way the
+  // '^'/'%' markers do for other sources.
+  const shadeClue = (cl: Clue, vertical: boolean) => {
+    for (let i = 0; i < cl.len; i++) {
+      const r = vertical ? cl.row + i : cl.row;
+      const c = vertical ? cl.col : cl.col + i;
+      const cell = grid[r]?.[c];
+      if (cell && !cell.black) cell.shaded = true;
+    }
+  };
+  for (const cl of across) if (cl.clue.trim().startsWith("*")) shadeClue(cl, false);
+  for (const cl of down) if (cl.clue.trim().startsWith("*")) shadeClue(cl, true);
+
   const iso = isoFromYmd(date);
   const author = field(xml, "Author").replace(/^by\s+/i, "").trim();
   const editor = field(xml, "Editor").replace(/^by\s+/i, "").trim();

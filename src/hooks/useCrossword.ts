@@ -174,10 +174,13 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
 
   const highlighted = useMemo<Set<string>>(() => {
     const set = new Set<string>();
+    // Rebus mode targets a single square — don't light up the rest of the word,
+    // so it's clear that only the active cell is being edited.
+    if (rebus) return set;
     if (activeClue)
       for (const p of clueCells(activeClue)) set.add(keyOf(p.row, p.col));
     return set;
-  }, [activeClue]);
+  }, [activeClue, rebus]);
 
   // Clues cross-referenced by the active clue's text ("17-, 22- and 33-Across").
   const linkedClues = useMemo<DirClue[]>(() => {
@@ -189,10 +192,11 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
 
   const linked = useMemo<Set<string>>(() => {
     const set = new Set<string>();
+    if (rebus) return set;
     for (const c of linkedClues)
       for (const p of clueCells(c)) set.add(keyOf(p.row, p.col));
     return set;
-  }, [linkedClues]);
+  }, [linkedClues, rebus]);
 
   // Quick lookup for clue lists: which numbers are linked, per direction.
   const linkedNumbers = useMemo(() => {
@@ -238,6 +242,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   }, [lookup]);
 
   const selectClue = useCallback((clue: DirClue) => {
+    setRebus(false);
     setDirection(clue.direction);
     setActive({ row: clue.row, col: clue.col });
   }, []);
@@ -280,6 +285,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
         }
       }
       const next = orderedClues[target];
+      setRebus(false);
       setDirection(next.direction);
       setActive(firstEmpty(next));
     },
