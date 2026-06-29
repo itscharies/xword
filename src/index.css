@@ -482,7 +482,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .cell.revealed::after {
   content: "";
   position: absolute;
-  top: 1px;
+  top: 0;
   right: 1px;
   width: max(5px, calc(24cqw / var(--cols)));
   height: max(5px, calc(24cqw / var(--cols)));
@@ -770,7 +770,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ana-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* Mobile anagram overlay: covers the board while the sticky on-screen keyboard
-   stays live below it and feeds the letter pool. Content is centred. */
+   stays live below it and feeds the letter pool. The tiles area grows to fill
+   the space (centring its content) so the controls stay pinned to the bottom,
+   just above the clue bar, and don't shift when toggling circle/grid. */
 .ana-overlay {
   position: absolute;
   inset: 0;
@@ -778,9 +780,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 20px;
+  gap: 12px;
+  padding-bottom: 12px;
   overflow-y: auto;
+}
+.ana-overlay .ana-tiles {
+  flex: 1;
+}
+.ana-overlay .ana-tiles.circle {
+  height: auto;
+}
+.ana-overlay .ana-tiles.grid {
+  align-content: center;
+  align-items: center;
 }
 
 /* How-to-play guide. */
