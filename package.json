@@ -14,7 +14,8 @@
     "fetch:guardian": "tsx scripts/fetch-guardian.ts",
     "fetch:newyorker": "tsx scripts/fetch-newyorker.ts",
     "parse:test": "tsx scripts/parse.test.ts",
-    "og": "tsx scripts/make-og.ts"
+    "og": "tsx scripts/make-og.ts",
+    "icons": "tsx scripts/make-icons.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

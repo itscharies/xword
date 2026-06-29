@@ -301,7 +301,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Icons replace the labels only on mobile. */
 .btn-icon { display: none; align-items: center; justify-content: center; }
 .btn-icon svg { display: block; }
-.btn:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .btn:hover { background: var(--accent-2); color: #000; }
+}
 /* Toggle buttons (rebus) that are switched on. */
 .btn.active { background: var(--accent-2); color: #000; }
 /* A press uses the full tone — placed last so it wins over hover/.active. */
@@ -349,7 +351,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 600;
   white-space: nowrap;
 }
-.menu button:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .menu button:hover { background: var(--accent-2); color: #000; }
+}
 .menu button.active { background: var(--accent-2); color: #000; }
 
 /* ---- main grid + clues -------------------------------------------------- */
@@ -580,7 +584,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   cursor: pointer;
   border-left: 5px solid transparent;
 }
-.clue-col li:hover { background: var(--surface-2); }
+@media (hover: hover) {
+  .clue-col li:hover { background: var(--surface-2); }
+}
 .clue-col li.active {
   background: var(--surface-2);
   border-left-color: var(--accent-2);
@@ -703,7 +709,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 700;
   line-height: 1;
 }
-.modal-close:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .modal-close:hover { background: var(--accent-2); color: #000; }
+}
 .modal-actions {
   display: flex;
   gap: 12px;
@@ -711,7 +719,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 20px;
 }
 .btn-accent { background: var(--accent-2); color: #000; }
-.btn-accent:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .btn-accent:hover { background: var(--accent-2); color: #000; }
+}
 .modal .big-time {
   font-size: 34px;
   font-weight: 800;
@@ -744,9 +754,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin: -2px -8px;
   transition: background 0.08s ease, color 0.08s ease;
 }
-.title-link:hover h1 {
-  background: var(--accent-2);
-  color: #000;
+@media (hover: hover) {
+  .title-link:hover h1 {
+    background: var(--accent-2);
+    color: #000;
+  }
 }
 
 /* ---- archive page ------------------------------------------------------- */
@@ -822,7 +834,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   white-space: nowrap;
   flex-shrink: 0;
 }
-.filter-chip:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .filter-chip:hover { background: var(--accent-2); color: #000; }
+}
 .filter-chip.on {
   background: var(--accent);
   color: #000;
@@ -875,7 +889,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 14px 16px;
   transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
 }
-.archive-item:hover { background: var(--accent-2); color: #000; }
+@media (hover: hover) {
+  .archive-item:hover { background: var(--accent-2); color: #000; }
+}
 .archive-item:active {
   transform: translate(var(--sh), var(--sh));
   box-shadow: 0 0 0 var(--shadow-col);
@@ -884,7 +900,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ai-source { font-size: 16px; font-weight: 700; }
 .ai-theme { font-size: 14px; font-weight: 600; }
 .ai-author { font-size: 13px; color: var(--muted); }
-.archive-item:hover .ai-author { color: #000; }
+@media (hover: hover) {
+  .archive-item:hover .ai-author { color: #000; }
+}
 
 /* ---- star rating -------------------------------------------------------- */
 
@@ -902,7 +920,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .stars-lg .star { font-size: 32px; }
 .archive-item { gap: 3px; }
 .archive-item .stars { margin-top: 4px; }
-.archive-item:hover .star:not(.on) { color: rgba(0, 0, 0, 0.4); }
+@media (hover: hover) {
+  .archive-item:hover .star:not(.on) { color: rgba(0, 0, 0, 0.4); }
+}
 
 /* completion-modal rating */
 .rate-label { margin-top: 16px !important; font-weight: 700; color: var(--fg) !important; }
@@ -931,8 +951,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.archive-item:hover .ai-done,
-.archive-item:hover .ai-pct { background: var(--surface); color: var(--fg); }
+@media (hover: hover) {
+  .archive-item:hover .ai-done,
+  .archive-item:hover .ai-pct { background: var(--surface); color: var(--fg); }
+}
 
 /* ---- responsive --------------------------------------------------------- */
 
@@ -942,7 +964,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* The keyboard already carries the rebus toggle, so drop the toolbar one. */
   .rebus-btn { display: none; }
 
-  .app { padding: 14px 14px 0; gap: 12px; }
+  /* env() insets keep content clear of the notch/status bar and the rounded
+     screen edges when installed to the home screen (viewport-fit=cover). */
+  .app {
+    padding: calc(14px + env(safe-area-inset-top, 0px))
+      calc(14px + env(safe-area-inset-right, 0px)) 0
+      calc(14px + env(safe-area-inset-left, 0px));
+    gap: 12px;
+  }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; gap: 1px; }
@@ -968,7 +997,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
     z-index: 30;
     flex-wrap: nowrap;
     margin: 0 -14px;
-    padding: 8px 14px;
+    /* Extra top inset so that when it sticks under a translucent status bar
+       (installed PWA) the buttons clear it; its background fills behind it. */
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
     background: var(--bg);
     border-bottom: 2px solid var(--line);
   }
