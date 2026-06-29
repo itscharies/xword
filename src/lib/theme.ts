@@ -45,6 +45,36 @@ export function setAccent(accent: AccentId): void {
   } catch {
     /* ignore */
   }
+  updateFavicon();
+}
+
+/** Redraw the favicon (the highlighted-word mark) in the current accent colour,
+ * read live from the applied CSS variables, as an inline data-URI. */
+export function updateFavicon(): void {
+  const cs = getComputedStyle(root());
+  const active = cs.getPropertyValue("--accent").trim() || "#ffe500";
+  const word = cs.getPropertyValue("--accent-deep").trim() || active;
+  const OPEN = "#ededed";
+  const BLOCK = "#000000";
+  const BG = "#1c1c1c";
+  const p = [0, 11, 22];
+  const cell = (x: number, y: number, fill: string) =>
+    `<rect x="${x}" y="${y}" width="10" height="10" fill="${fill}"/>`;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">` +
+    `<rect width="32" height="32" fill="${BG}"/>` +
+    cell(p[0], p[0], BLOCK) + cell(p[1], p[0], OPEN) + cell(p[2], p[0], BLOCK) +
+    cell(p[0], p[1], word) + cell(p[1], p[1], active) + cell(p[2], p[1], word) +
+    cell(p[0], p[2], BLOCK) + cell(p[1], p[2], OPEN) + cell(p[2], p[2], BLOCK) +
+    `</svg>`;
+  let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.type = "image/svg+xml";
+  link.href = "data:image/svg+xml," + encodeURIComponent(svg);
 }
 
 const ADVANCE_KEY = "xword:autoAdvance";

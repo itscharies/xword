@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
+import { updateFavicon } from "./lib/theme.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import { loadProgress, saveProgress } from "./lib/storage.ts";
@@ -40,6 +41,9 @@ export default function App() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+
+  // Draw the favicon in the saved accent colour.
+  useEffect(() => updateFavicon(), []);
 
   useEffect(() => {
     // The catalogue changes whenever a new puzzle lands, but GitHub Pages /
