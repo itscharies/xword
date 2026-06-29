@@ -88,8 +88,10 @@ export function updateFavicon(): void {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">` +
     `<rect width="32" height="32" fill="${BG}"/>` +
-    cell(p[0], p[0], BLOCK) + cell(p[1], p[0], OPEN) + cell(p[2], p[0], BLOCK) +
-    cell(p[0], p[1], word) + cell(p[1], p[1], active) + cell(p[2], p[1], word) +
+    // A "T" (for "The"): highlighted word across the top, white stem down the
+    // middle, the active square at the top centre.
+    cell(p[0], p[0], word) + cell(p[1], p[0], active) + cell(p[2], p[0], word) +
+    cell(p[0], p[1], BLOCK) + cell(p[1], p[1], OPEN) + cell(p[2], p[1], BLOCK) +
     cell(p[0], p[2], BLOCK) + cell(p[1], p[2], OPEN) + cell(p[2], p[2], BLOCK) +
     `</svg>`;
   let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');

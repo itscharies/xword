@@ -772,7 +772,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
      outer half shows. */
   -webkit-text-stroke: 5px var(--line);
   paint-order: stroke fill;
-  text-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  /* drop-shadow (not text-shadow) so the shadow is cast from the outlined
+     shape — text-shadow ignores the stroke. */
+  filter: drop-shadow(var(--sh) var(--sh) 0 var(--shadow-col));
 }
 
 /* Source filter chips — one row per dimension (Paper, Type). */
