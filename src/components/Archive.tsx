@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
@@ -98,6 +98,28 @@ export function Archive({
     return [...byDate.entries()];
   }, [index, paper, type]);
 
+  // Render the archive a fortnight at a time and grow as the reader nears the
+  // bottom — keeps the DOM small so scrolling 180+ days stays smooth.
+  const PAGE = 14;
+  const [shown, setShown] = useState(PAGE);
+  useEffect(() => setShown(PAGE), [paper, type]); // restart on filter change
+  const visibleDays = days.slice(0, shown);
+  const hasMore = shown < days.length;
+
+  // Load the next page when a sentinel near the bottom scrolls into view.
+  const io = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    io.current?.disconnect();
+    if (!node) return;
+    io.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setShown((n) => n + PAGE);
+      },
+      { rootMargin: "1200px" },
+    );
+    io.current.observe(node);
+  }, []);
+
   return (
     <div className="app archive">
       <header className="header">
@@ -147,7 +169,7 @@ export function Archive({
         </div>
       )}
 
-      {days.map(([iso, items]) => (
+      {visibleDays.map(([iso, items]) => (
         <section className="archive-day" key={iso}>
           <h2 className="archive-day-head">{formatDate(iso)}</h2>
           <ul className="archive-list">
@@ -201,6 +223,17 @@ export function Archive({
           </ul>
         </section>
       ))}
+
+      {hasMore && (
+        <div className="archive-more">
+          {/* Auto-loads as it nears view (real browsers); the button is a
+              reliable fallback / manual control. */}
+          <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
+          <button className="btn" onClick={() => setShown((n) => n + PAGE)}>
+            Show more
+          </button>
+        </div>
+      )}
 
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>

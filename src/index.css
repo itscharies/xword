@@ -857,6 +857,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* One section per date. */
 .archive-day { margin-bottom: 22px; }
+.archive-more { display: flex; justify-content: center; padding: 8px 0 28px; }
 .archive-day-head {
   margin: 0 0 10px;
   font-size: 14px;
