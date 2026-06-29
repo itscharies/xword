@@ -363,6 +363,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   grid-template-columns: minmax(0, auto) minmax(240px, 1fr);
   gap: 22px;
   align-items: start;
+  /* Anchor for the mobile anagram overlay, which covers this region. */
+  position: relative;
 }
 
 .board { display: flex; flex-direction: column; gap: 12px; }
@@ -732,6 +734,49 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 14px;
 }
 .ana-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Mobile anagram overlay: covers the board area while the sticky on-screen
+   keyboard stays live below it and types into the answer cells. */
+.ana-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ana-overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 10px;
+}
+.ana-overlay-title { font-size: 16px; font-weight: 800; }
+.ana-overlay .modal-close {
+  position: static;
+  border: var(--bw) solid var(--line);
+}
+/* The crossword-style answer: locked letters in place, blanks to fill. */
+.ana-answer { display: flex; flex-direction: column; gap: 6px; }
+.ana-cells { display: flex; flex-wrap: wrap; gap: 4px; }
+.ana-cell {
+  width: 36px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 20px;
+  background: var(--cell-bg);
+  color: var(--cell-fg);
+  border: var(--bw) solid var(--line);
+  box-shadow: 3px 3px 0 var(--shadow-col);
+}
+.ana-cell.locked { background: var(--shaded); color: var(--muted); }
+.ana-cell.active { background: var(--hl); color: #000; }
 
 /* How-to-play guide. */
 .howto {

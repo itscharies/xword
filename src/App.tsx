@@ -4,6 +4,7 @@ import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
+import { useWordEntry } from "./hooks/useWordEntry.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import { loadProgress, saveProgress } from "./lib/storage.ts";
 import { Grid } from "./components/Grid.tsx";
@@ -18,6 +19,19 @@ import { Archive } from "./components/Archive.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
+
+/** Track a CSS media query (used to switch the anagram helper's layout). */
+function useMediaQuery(query: string): boolean {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const on = () => setMatch(m.matches);
+    m.addEventListener("change", on);
+    setMatch(m.matches);
+    return () => m.removeEventListener("change", on);
+  }, [query]);
+  return match;
+}
 
 /** The route path after the base, e.g. "" (archive) or "gdn-cryptic/20260615". */
 const readRoute = () => {
@@ -148,6 +162,11 @@ function Solver({
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
   const [rating, setRating] = useState(saved?.rating ?? 0);
 
+  const isMobile = useMediaQuery("(max-width: 820px)");
+  const anagramEntry = useWordEntry(xw, showAnagram && isMobile);
+
+  // Any open dialog (including the anagram overlay) takes over keyboard input —
+  // the overlay routes keys into its own answer entry rather than the grid.
   const modalOpen = showModal || showSettings || showReset || showAnagram;
 
   // Persist progress whenever it changes.
@@ -245,13 +264,25 @@ function Solver({
           <Grid puzzle={puzzle} xw={xw} />
         </div>
         <ClueList puzzle={puzzle} xw={xw} />
+        {showAnagram && isMobile && (
+          <AnagramHelper
+            xw={xw}
+            mobile
+            entry={anagramEntry}
+            onClose={() => setShowAnagram(false)}
+          />
+        )}
       </div>
 
       {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
           while the rest of the page scrolls. */}
       <div className="mobile-bar" onPointerDown={resume}>
         <ClueBanner xw={xw} />
-        <MobileKeyboard xw={xw} onAnagram={() => setShowAnagram(true)} />
+        <MobileKeyboard
+          xw={xw}
+          onAnagram={() => setShowAnagram((v) => !v)}
+          anagramEntry={showAnagram && isMobile ? anagramEntry : null}
+        />
       </div>
 
       {showModal && (
@@ -294,8 +325,13 @@ function Solver({
         </Modal>
       )}
 
-      {showAnagram && (
-        <AnagramHelper xw={xw} onClose={() => setShowAnagram(false)} />
+      {showAnagram && !isMobile && (
+        <AnagramHelper
+          xw={xw}
+          mobile={false}
+          entry={anagramEntry}
+          onClose={() => setShowAnagram(false)}
+        />
       )}
     </div>
   );
