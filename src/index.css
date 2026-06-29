@@ -474,40 +474,34 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
     var(--hl);
 }
-/* Wrong and revealed cells carry a tiled glyph in the accent colour — crosses
-   for wrong, eyes (the Reveal icon) for revealed. Each mask tile holds two rows
-   of glyphs offset half a step apart and is built to tile seamlessly, so the
-   pattern staggers (brick-style) and lines up across neighbouring cells; sizing
-   it to the whole cell keeps the glyphs proportional to the square. When the
-   cell is also selected, the glyph flips to the cell-grey so it reads against
-   the bright accent fill. The overlay sits behind the letter/number (z 1/2). */
+/* Revealed and wrong cells get one small marker tucked into the corner
+   opposite the clue number (bottom-right): an eye for a revealed cell, a cross
+   for a wrong one. It picks up the number's muted tone via currentColor, so it
+   matches the number and stays legible on any cell colour. */
 .cell.wrong::after,
 .cell.revealed::after {
   content: "";
   position: absolute;
-  inset: 0;
+  bottom: 1px;
+  right: 1px;
+  width: max(7px, calc(34cqw / var(--cols)));
+  height: max(7px, calc(34cqw / var(--cols)));
   pointer-events: none;
-  background: var(--accent);
-  opacity: 0.6;
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 50% 50%;
-  mask-size: 50% 50%;
-  -webkit-mask-position: 0 0;
-  mask-position: 0 0;
-}
-.cell.active.wrong::after,
-.cell.active.revealed::after {
-  background: var(--cell-bg);
-  opacity: 0.85;
+  background: color-mix(in srgb, currentColor 60%, transparent);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 .cell.wrong::after {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1.5 1.5l9 9M10.5 1.5l-9 9'/%3E%3Cpath d='M13.5 1.5l9 9M22.5 1.5l-9 9'/%3E%3Cpath d='M-4.5 13.5l9 9M4.5 13.5l-9 9'/%3E%3Cpath d='M7.5 13.5l9 9M16.5 13.5l-9 9'/%3E%3Cpath d='M19.5 13.5l9 9M28.5 13.5l-9 9'/%3E%3C/g%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1.5 1.5l9 9M10.5 1.5l-9 9'/%3E%3Cpath d='M13.5 1.5l9 9M22.5 1.5l-9 9'/%3E%3Cpath d='M-4.5 13.5l9 9M4.5 13.5l-9 9'/%3E%3Cpath d='M7.5 13.5l9 9M16.5 13.5l-9 9'/%3E%3Cpath d='M19.5 13.5l9 9M28.5 13.5l-9 9'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
 }
 .cell.revealed::after {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4'%3E%3Cellipse cx='6' cy='6' rx='5.4' ry='3.4'/%3E%3Cellipse cx='18' cy='6' rx='5.4' ry='3.4'/%3E%3Cellipse cx='0' cy='18' rx='5.4' ry='3.4'/%3E%3Cellipse cx='12' cy='18' rx='5.4' ry='3.4'/%3E%3Cellipse cx='24' cy='18' rx='5.4' ry='3.4'/%3E%3C/g%3E%3Cg fill='%23000'%3E%3Ccircle cx='6' cy='6' r='1.6'/%3E%3Ccircle cx='18' cy='6' r='1.6'/%3E%3Ccircle cx='0' cy='18' r='1.6'/%3E%3Ccircle cx='12' cy='18' r='1.6'/%3E%3Ccircle cx='24' cy='18' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.4'%3E%3Cellipse cx='6' cy='6' rx='5.4' ry='3.4'/%3E%3Cellipse cx='18' cy='6' rx='5.4' ry='3.4'/%3E%3Cellipse cx='0' cy='18' rx='5.4' ry='3.4'/%3E%3Cellipse cx='12' cy='18' rx='5.4' ry='3.4'/%3E%3Cellipse cx='24' cy='18' rx='5.4' ry='3.4'/%3E%3C/g%3E%3Cg fill='%23000'%3E%3Ccircle cx='6' cy='6' r='1.6'/%3E%3Ccircle cx='18' cy='6' r='1.6'/%3E%3Ccircle cx='0' cy='18' r='1.6'/%3E%3Ccircle cx='12' cy='18' r='1.6'/%3E%3Ccircle cx='24' cy='18' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cellipse cx='6' cy='6' rx='5' ry='3.2' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3Ccircle cx='6' cy='6' r='1.6' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cellipse cx='6' cy='6' rx='5' ry='3.2' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3Ccircle cx='6' cy='6' r='1.6' fill='%23000'/%3E%3C/svg%3E");
 }
 
 /* Rebus mode marks the single active cell with a dashed "marching ants" ring
