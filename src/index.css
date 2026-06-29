@@ -667,7 +667,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.howto p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--fg); }
+/* `.modal .howto p` (not `.howto p`) so it beats the generic muted
+   `.modal p` rule — otherwise the paragraph sections read greyed-out. */
+.modal .howto p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--fg); }
 .howto ul {
   margin: 0;
   padding-left: 18px;
@@ -677,7 +679,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 14px;
   line-height: 1.45;
 }
-.howto .howto-dim { color: var(--muted); font-size: 13px; }
+.modal .howto .howto-dim { color: var(--muted); font-size: 13px; }
 .shortcuts { border-collapse: collapse; margin: 4px 0; font-size: 14px; }
 .shortcuts td { padding: 3px 0; vertical-align: top; }
 .shortcuts td:first-child {
