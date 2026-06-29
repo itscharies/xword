@@ -807,6 +807,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
   align-content: center;
   align-items: center;
 }
+/* Tiles are draggable to reorder; suppress touch-scroll so the drag is smooth,
+   and let the non-dragged circle tiles glide to their new slots. */
+.ana-tile {
+  touch-action: none;
+  cursor: grab;
+}
+.ana-tiles.ana-circle .ana-tile {
+  transition: transform 0.12s ease;
+}
+.ana-tile.dragging {
+  cursor: grabbing;
+}
 
 /* How-to-play guide. */
 .howto {

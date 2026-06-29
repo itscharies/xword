@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Crossword } from "../hooks/useCrossword.ts";
+import type { AnagramTile } from "../hooks/useAnagramPool.ts";
 import { Modal } from "./Modal.tsx";
+import { AnagramTiles } from "./AnagramTiles.tsx";
 import { formatClue } from "../lib/clueFormat.ts";
 
 /** Letters currently entered across the active word's cells. */
@@ -17,8 +19,8 @@ function wordLetters(xw: Crossword): string {
 }
 
 /** Desktop anagram aid for cryptic clues: shows the clue and a pool of letters
- * (seeded with whatever's filled in) that you can shuffle and view in a circle
- * or grid, then type the answer to drop it into the grid. */
+ * (seeded with whatever's filled in) that you can shuffle and drag to reorder
+ * in a circle or grid, then type the answer to drop it into the grid. */
 export function AnagramHelper({
   xw,
   onClose,
@@ -32,8 +34,12 @@ export function AnagramHelper({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+  const idRef = useRef(0);
+  const toTiles = (s: string): AnagramTile[] =>
+    s.split("").map((ch) => ({ id: idRef.current++, ch }));
+
   const [pool, setPool] = useState(initial);
-  const [tiles, setTiles] = useState<string[]>(() => initial.split(""));
+  const [tiles, setTiles] = useState<AnagramTile[]>(() => toTiles(initial));
   const [view, setView] = useState<"circle" | "grid">("circle");
   const [answer, setAnswer] = useState("");
 
@@ -42,7 +48,7 @@ export function AnagramHelper({
   const setLetters = (v: string) => {
     const up = v.toUpperCase().replace(/[^A-Z]/g, "");
     setPool(up);
-    setTiles(up.split(""));
+    setTiles(toTiles(up));
   };
   const shuffle = () =>
     setTiles((t) => {
@@ -53,13 +59,20 @@ export function AnagramHelper({
       }
       return a;
     });
+  const move = (from: number, to: number) =>
+    setTiles((t) => {
+      if (from === to || from < 0 || to < 0 || from >= t.length || to >= t.length)
+        return t;
+      const a = [...t];
+      const [x] = a.splice(from, 1);
+      a.splice(to, 0, x);
+      return a;
+    });
   const fill = () => {
     if (!answer.trim()) return;
     xw.fillWord(answer);
     onClose();
   };
-
-  const radius = Math.min(95, 30 + tiles.length * 8);
 
   return (
     <Modal title="Anagram helper" onClose={onClose}>
@@ -85,31 +98,12 @@ export function AnagramHelper({
           />
         </label>
 
-        <div className={`ana-tiles ana-${view}`}>
-          {tiles.length === 0 ? (
-            <span className="ana-empty">Add some letters above.</span>
-          ) : (
-            tiles.map((t, i) => {
-              const style =
-                view === "circle"
-                  ? {
-                      transform: `translate(-50%, -50%) translate(${
-                        Math.cos((i / tiles.length) * 2 * Math.PI - Math.PI / 2) *
-                        radius
-                      }px, ${
-                        Math.sin((i / tiles.length) * 2 * Math.PI - Math.PI / 2) *
-                        radius
-                      }px)`,
-                    }
-                  : undefined;
-              return (
-                <span key={i} className="ana-tile" style={style}>
-                  {t}
-                </span>
-              );
-            })
-          )}
-        </div>
+        <AnagramTiles
+          tiles={tiles}
+          view={view}
+          onMove={move}
+          emptyText="Add some letters above."
+        />
 
         <div className="ana-controls">
           <button className="btn" onClick={shuffle} disabled={tiles.length < 2}>
