@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Crossword } from "../hooks/useCrossword.ts";
 import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
@@ -20,14 +21,30 @@ export function MobileKeyboard({
   const backspace = () =>
     anagramPool ? anagramPool.backspace() : xw.backspace();
 
+  // Track the pressed key in state rather than relying on `:active`: iOS Safari
+  // withholds `:active` for taps near the bottom edge (home-indicator / toolbar
+  // zone), so the lower rows never flashed. Pointer events fire everywhere, and
+  // state survives the per-second timer re-renders that a raw class toggle
+  // would lose.
+  const [pressed, setPressed] = useState<string | null>(null);
+  const down = (id: string) => () => setPressed(id);
+  const clear = () => setPressed(null);
+  const pc = (id: string) => (pressed === id ? "kb-pressed" : "");
+
   return (
-    <div className="keyboard">
+    <div
+      className="keyboard"
+      onPointerUp={clear}
+      onPointerCancel={clear}
+      onPointerLeave={clear}
+    >
       {ROWS.map((row, i) => (
         <div className="kb-row" key={i}>
           {i === 2 &&
             (xw.isCryptic ? (
               <button
-                className={`kb-key wide ${anagramPool ? "active" : ""}`}
+                className={`kb-key wide ${anagramPool ? "active" : ""} ${pc("anagram")}`}
+                onPointerDown={down("anagram")}
                 onClick={onAnagram}
                 aria-label="Anagram helper"
                 aria-pressed={!!anagramPool}
@@ -36,7 +53,8 @@ export function MobileKeyboard({
               </button>
             ) : (
               <button
-                className={`kb-key wide ${xw.rebus ? "active" : ""}`}
+                className={`kb-key wide ${xw.rebus ? "active" : ""} ${pc("rebus")}`}
+                onPointerDown={down("rebus")}
                 onClick={() => xw.toggleRebus()}
                 aria-pressed={xw.rebus}
                 aria-label="Rebus: type multiple letters in one square"
@@ -47,14 +65,19 @@ export function MobileKeyboard({
           {row.split("").map((ch) => (
             <button
               key={ch}
-              className="kb-key"
+              className={`kb-key ${pc(ch)}`}
+              onPointerDown={down(ch)}
               onClick={() => typeLetter(ch)}
             >
               {ch}
             </button>
           ))}
           {i === 2 && (
-            <button className="kb-key wide" onClick={backspace}>
+            <button
+              className={`kb-key wide ${pc("backspace")}`}
+              onPointerDown={down("backspace")}
+              onClick={backspace}
+            >
               ⌫
             </button>
           )}

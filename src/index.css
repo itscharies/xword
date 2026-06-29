@@ -690,7 +690,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .kb-key > * { pointer-events: none; }
 .kb-key.wide { flex: 1.5 1 0; }
 .kb-key.active { background: var(--accent-2); color: #000; }
-.kb-key:active {
+/* `.kb-pressed` is toggled from pointer events; iOS Safari withholds `:active`
+   for taps near the bottom edge (home-indicator / toolbar zone), so the lower
+   rows never flashed otherwise. */
+.kb-key:active,
+.kb-key.kb-pressed {
   background: var(--accent);
   color: #000;
   transform: translate(3px, 3px);
