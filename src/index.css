@@ -26,6 +26,7 @@
   --grid-line: #000000;
   --shaded: #3c3c3c;
   --wrong: #ff5247;
+  --wrong-rgb: 255, 82, 71;
   --revealed: #4aabff;
   color-scheme: dark;
 }
@@ -44,6 +45,7 @@
   --grid-line: #000000;
   --shaded: #d9d9d9; /* slightly greyed-in themed cells */
   --wrong: #e0192b;
+  --wrong-rgb: 224, 25, 43;
   --revealed: #0a59d0;
   color-scheme: light;
 }
@@ -472,30 +474,46 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
     var(--hl);
 }
-/* Wrong / revealed cells: a faint tiled pattern in the accent colour — crosses
-   for wrong, ticks for revealed — instead of clashing red/green text. The
-   overlay is inset to the cell (no transform), so it never spills past a
-   separator bar the way the old rotated slash did. */
-.cell.wrong::after,
+/* Wrong cells go red (text + a faint red wash). Revealed cells get a faint
+   tiled eye pattern in the accent — the same eye glyph as the Reveal button.
+   The eye tile carries two eyes offset half a tile apart, so the repeat
+   staggers every other row instead of looking like a rigid grid. Both overlays
+   are inset to the cell (no transform), so they never spill past a separator
+   bar the way the old rotated slash did, and they sit behind the letter/number
+   (z-index 1/2) so those stay legible. */
+.cell.wrong {
+  color: var(--wrong);
+}
+.cell.wrong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(var(--wrong-rgb), 0.2);
+}
 .cell.revealed::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--accent);
-  opacity: 0.45;
   pointer-events: none;
+  background: var(--accent);
+  opacity: 0.5;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
-  -webkit-mask-size: 11px 11px;
-  mask-size: 11px 11px;
+  -webkit-mask-size: 16px 16px;
+  mask-size: 16px 16px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.1'%3E%3Cellipse cx='4' cy='4' rx='2.8' ry='1.9'/%3E%3Cellipse cx='12' cy='12' rx='2.8' ry='1.9'/%3E%3C/g%3E%3Ccircle cx='4' cy='4' r='1' fill='%23000'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.1'%3E%3Cellipse cx='4' cy='4' rx='2.8' ry='1.9'/%3E%3Cellipse cx='12' cy='12' rx='2.8' ry='1.9'/%3E%3C/g%3E%3Ccircle cx='4' cy='4' r='1' fill='%23000'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23000'/%3E%3C/svg%3E");
 }
-.cell.wrong::after {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath d='M3 3l5 5m0-5l-5 5' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath d='M3 3l5 5m0-5l-5 5' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-}
-.cell.revealed::after {
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath d='M2.5 6l2 2.2 4-5.4' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cpath d='M2.5 6l2 2.2 4-5.4' stroke='%23000' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+/* When a wrong / revealed cell is also the selected one, darken the bright
+   accent fill so the red wash and the accent eye pattern still read on top —
+   the wrong/revealed state beats the plain selected highlight. */
+.cell.active.wrong,
+.cell.active.revealed,
+.cell.active.wrong.shaded,
+.cell.active.revealed.shaded {
+  background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
+    var(--hl);
 }
 
 .cell .num {
@@ -1028,7 +1046,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* Slightly deeper cell highlights — easier on the eyes on a bright phone. */
   :root { --hl: var(--accent-deep); --hl-rgb: var(--accent-deep-rgb); }
   /* The keyboard already carries the rebus toggle, so drop the toolbar one. */
-  .rebus-btn { display: none; }
+  .rebus-btn,
+  .anagram-btn { display: none; }
 
   /* env() insets keep content clear of the notch/status bar and the rounded
      screen edges when installed to the home screen (viewport-fit=cover). */

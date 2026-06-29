@@ -1,6 +1,6 @@
 import type { Crossword } from "../hooks/useCrossword.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
-import { AnagramIcon } from "./icons.tsx";
+import { AnagramCircleIcon } from "./icons.tsx";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
@@ -22,7 +22,7 @@ export function MobileKeyboard({
                 onClick={onAnagram}
                 aria-label="Anagram helper"
               >
-                <AnagramIcon />
+                <AnagramCircleIcon />
               </button>
             ) : (
               <button

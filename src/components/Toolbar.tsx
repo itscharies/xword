@@ -65,11 +65,14 @@ export function Toolbar({
       <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} />
       {xw.isCryptic ? (
         <button
-          className="btn rebus-btn"
+          className="btn anagram-btn"
           onClick={onAnagram}
           title="Anagram helper"
         >
-          <AnagramIcon />
+          <span className="btn-icon">
+            <AnagramIcon />
+          </span>
+          <span className="btn-label">Anagram</span>
         </button>
       ) : (
         <button
