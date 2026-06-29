@@ -67,10 +67,13 @@
       })(window.location);
     </script>
     <script>
-      // Apply saved theme/accent before paint to avoid a flash.
+      // Apply saved theme/accent before paint to avoid a flash. "system" (and
+      // an unset preference) resolve to the OS colour scheme.
       try {
         var t = localStorage.getItem("xword:theme");
         var a = localStorage.getItem("xword:accent");
+        if (t === "system")
+          t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         if (t) document.documentElement.dataset.theme = t;
         if (a) document.documentElement.dataset.accent = a;
       } catch (e) {}

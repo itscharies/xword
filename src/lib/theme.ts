@@ -1,4 +1,4 @@
-export type Mode = "light" | "dark";
+export type Mode = "light" | "dark" | "system";
 
 /** Selectable bright accent colours (kept in sync with [data-accent] in CSS). */
 export const ACCENTS = [
@@ -21,17 +21,42 @@ const ACCENT_KEY = "xword:accent";
 
 const root = () => document.documentElement;
 
+const prefersDark = () =>
+  typeof matchMedia !== "undefined" &&
+  matchMedia("(prefers-color-scheme: dark)").matches;
+
+/** Resolve a mode preference to the concrete theme to apply to data-theme. */
+const resolve = (mode: Mode): "light" | "dark" =>
+  mode === "system" ? (prefersDark() ? "dark" : "light") : mode;
+
+/** The stored preference: "light", "dark", or "system" (follow the OS). */
 export function getMode(): Mode {
-  return root().dataset.theme === "light" ? "light" : "dark";
+  try {
+    const m = localStorage.getItem(THEME_KEY);
+    if (m === "light" || m === "dark" || m === "system") return m;
+  } catch {
+    /* ignore */
+  }
+  return "dark";
 }
 
 export function setMode(mode: Mode): void {
-  root().dataset.theme = mode;
+  root().dataset.theme = resolve(mode);
   try {
     localStorage.setItem(THEME_KEY, mode);
   } catch {
     /* ignore */
   }
+}
+
+let themeWatched = false;
+/** In "system" mode, track the OS colour scheme and re-apply when it flips. */
+export function initTheme(): void {
+  if (themeWatched || typeof matchMedia === "undefined") return;
+  themeWatched = true;
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+    if (getMode() === "system") root().dataset.theme = e.matches ? "dark" : "light";
+  });
 }
 
 export function getAccent(): AccentId {

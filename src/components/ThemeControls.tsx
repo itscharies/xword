@@ -51,6 +51,13 @@ export function ThemeControls() {
           >
             ☀ Dark
           </button>
+          <button
+            className={`seg-btn ${mode === "system" ? "active" : ""}`}
+            onClick={() => choose("system")}
+            aria-pressed={mode === "system"}
+          >
+            ◐ System
+          </button>
         </div>
       </div>
 
