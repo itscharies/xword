@@ -8,6 +8,38 @@
     "author": "Anthony Grubb"
   },
   {
+    "source": "latimes",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "LA Times Crossword",
+    "author": "Zachary Edward-Brown"
+  },
+  {
+    "source": "st-large",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "st-midi",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Today's theme is a keyboard key - see if you can find it",
+    "author": "Phil Fraas"
+  },
+  {
+    "source": "st-mini",
+    "date": "20260629",
+    "isoDate": "2026-06-29",
+    "weekday": "Mon",
+    "title": "Seattle Times Mini",
+    "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
     "source": "gdn-quick",
     "date": "20260629",
     "isoDate": "2026-06-29",
