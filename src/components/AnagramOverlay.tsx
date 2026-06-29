@@ -27,7 +27,7 @@ export function AnagramOverlay({ pool }: { pool: AnagramPool }) {
 
   return (
     <div className="ana-overlay" role="dialog" aria-label="Anagram helper">
-      <div className={`ana-tiles ${view}`}>
+      <div className={`ana-tiles ana-${view}`}>
         {letters.length === 0 ? (
           <span className="ana-empty">Type letters to anagram.</span>
         ) : (

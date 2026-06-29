@@ -255,7 +255,10 @@ function Solver({
         </div>
       </div>
 
-      <div className="main" onPointerDown={resume}>
+      <div
+        className={`main ${showAnagram && isMobile ? "ana-open" : ""}`}
+        onPointerDown={resume}
+      >
         <div className="board">
           {/* Banner above the grid on desktop; hidden on mobile (shown in the
               sticky bottom bar instead). */}

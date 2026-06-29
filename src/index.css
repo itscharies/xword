@@ -744,8 +744,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ana-input:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
 /* Tiles: shared look, laid out in a circle (absolute) or a grid (flex). */
 .ana-tiles { position: relative; display: flex; }
-.ana-tiles.circle { height: 230px; }
-.ana-tiles.grid { flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 56px; }
+.ana-tiles.ana-circle { height: 230px; }
+.ana-tiles.ana-grid { flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 56px; }
 .ana-tile {
   width: 42px;
   height: 50px;
@@ -758,7 +758,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: var(--bw) solid var(--line);
   box-shadow: 3px 3px 0 var(--shadow-col);
 }
-.ana-tiles.circle .ana-tile { position: absolute; top: 50%; left: 50%; }
+.ana-tiles.ana-circle .ana-tile { position: absolute; top: 50%; left: 50%; }
 .ana-empty {
   position: absolute;
   top: 50%;
@@ -784,13 +784,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding-bottom: 12px;
   overflow-y: auto;
 }
+/* While the overlay covers the board, drop the grid's hard shadow — it extends
+   past the board box and would otherwise poke out from behind the overlay. */
+.main.ana-open .grid {
+  box-shadow: none;
+}
 .ana-overlay .ana-tiles {
   flex: 1;
 }
-.ana-overlay .ana-tiles.circle {
+.ana-overlay .ana-tiles.ana-circle {
   height: auto;
 }
-.ana-overlay .ana-tiles.grid {
+.ana-overlay .ana-tiles.ana-grid {
   align-content: center;
   align-items: center;
 }

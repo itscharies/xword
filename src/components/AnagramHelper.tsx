@@ -85,7 +85,7 @@ export function AnagramHelper({
           />
         </label>
 
-        <div className={`ana-tiles ${view}`}>
+        <div className={`ana-tiles ana-${view}`}>
           {tiles.length === 0 ? (
             <span className="ana-empty">Add some letters above.</span>
           ) : (
