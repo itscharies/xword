@@ -817,9 +817,21 @@ button { font: inherit; cursor: pointer; color: inherit; }
   -webkit-touch-callout: none;
 }
 .ana-tiles.ana-circle .ana-tile {
-  transition: transform 0.12s ease;
+  transition: transform 0.16s ease;
 }
-.ana-tile.dragging {
+.ana-dragging .ana-tile {
+  cursor: grabbing;
+}
+/* The grabbed tile stays in place as a faded ghost marking the drop slot; in
+   grid mode it keeps its full box so the other letters reflow apart around it. */
+.ana-tile.ana-ghost {
+  opacity: 0.28;
+  box-shadow: none;
+  border-style: dashed;
+}
+/* The clone that follows the finger/cursor — lifted off the board. */
+.ana-tile.ana-floating {
+  box-shadow: 4px 5px 0 var(--shadow-col);
   cursor: grabbing;
 }
 
