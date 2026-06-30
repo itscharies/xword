@@ -8,6 +8,38 @@
     "author": "Brad Lively"
   },
   {
+    "source": "latimes",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "LA Times Crossword",
+    "author": "Scott Earl & Katherine Baicker"
+  },
+  {
+    "source": "st-large",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "Seattle Times Crossword",
+    "author": "Penny Press"
+  },
+  {
+    "source": "st-midi",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "Close, but  . . .",
+    "author": "Phil Fraas"
+  },
+  {
+    "source": "st-mini",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "Seattle Times Mini",
+    "author": "Sowmya Ramkumar, Ed. John Lieb"
+  },
+  {
     "source": "gdn-quick",
     "date": "20260630",
     "isoDate": "2026-06-30",
