@@ -58,7 +58,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
           const entry = cell.solution ?? "";
           const cls = [
             "cell",
-            cell.black ? "black" : "",
+            cell.black ? (cell.void ? "void" : "black") : "",
             cell.shaded ? "shaded" : "",
             isActive ? "active" : inWord ? "word" : isLinked ? "linked" : "",
             isActive && b.rebus ? "rebus-sel" : "",

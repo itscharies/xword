@@ -137,6 +137,24 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
           </button>
         </div>
 
+        {/* Brush: solid block vs void (outside the puzzle) — paint mode only. */}
+        {b.mode === "paint" && (
+          <div className="seg" title="What clicking paints: a solid block or a void cell (outside the puzzle, for non-rectangular grids)">
+            <button
+              className={`seg-btn ${b.brush === "block" ? "active" : ""}`}
+              onClick={() => b.setBrush("block")}
+            >
+              ⬛ Block
+            </button>
+            <button
+              className={`seg-btn ${b.brush === "void" ? "active" : ""}`}
+              onClick={() => b.setBrush("void")}
+            >
+              ▢ Void
+            </button>
+          </div>
+        )}
+
         {/* Symmetry + rebus */}
         <button
           className={`btn ${b.symmetry ? "active" : ""}`}

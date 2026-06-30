@@ -91,6 +91,9 @@ export function useBuilder() {
   const [height, setHeightState] = useState(draft?.height ?? DEFAULT_SIZE);
   const [linked, setLinked] = useState(draft?.linked ?? true);
   const [symmetry, setSymmetry] = useState(draft?.symmetry ?? true);
+  // Paint brush: a solid "block" or a "void" cell (outside the puzzle, rendered
+  // blank — for non-rectangular grids). Both are non-open; only the look differs.
+  const [brush, setBrushState] = useState<"block" | "void">(draft?.brush ?? "block");
   // Cryptic puzzles offer the anagram helper and carry clue enumerations.
   const [cryptic, setCryptic] = useState(draft?.cryptic ?? false);
   // Set a "(3,4)" length enumeration on each clue on export (cryptic style).
@@ -124,6 +127,7 @@ export function useBuilder() {
   const modeRef = useRef(mode);
   const rebusRef = useRef(rebus);
   const symmetryRef = useRef(symmetry);
+  const brushRef = useRef(brush);
 
   const setGrid = (g: Cell[][]) => {
     gridRef.current = g;
@@ -146,6 +150,10 @@ export function useBuilder() {
     setRebusState(v);
   };
   const toggleRebus = useCallback(() => setRebus(!rebusRef.current), []);
+  const setBrush = useCallback((b: "block" | "void") => {
+    brushRef.current = b;
+    setBrushState(b);
+  }, []);
   const toggleSymmetry = useCallback(() => {
     symmetryRef.current = !symmetryRef.current;
     setSymmetry(symmetryRef.current);
@@ -303,6 +311,9 @@ export function useBuilder() {
     mutate(targets, (cell) => {
       if (black) {
         cell.black = true;
+        // A void cell is also "black" (closed); the flag just renders it blank.
+        if (brushRef.current === "void") cell.void = true;
+        else delete cell.void;
         delete cell.solution;
         delete cell.rebus;
         delete cell.circled;
@@ -311,6 +322,7 @@ export function useBuilder() {
         delete cell.barBottom;
       } else {
         delete cell.black;
+        delete cell.void;
       }
     });
   }, []);
@@ -627,6 +639,7 @@ export function useBuilder() {
       symmetry,
       cryptic,
       autoEnumerate,
+      brush,
       grid,
       clueText: [...clueText],
       links: [...links],
@@ -639,7 +652,7 @@ export function useBuilder() {
       date,
     });
   }, [
-    width, height, linked, symmetry, cryptic, autoEnumerate, grid, clueText,
+    width, height, linked, symmetry, cryptic, autoEnumerate, brush, grid, clueText,
     links, active, direction, mode, title, author, editor, date,
   ]);
 
@@ -657,6 +670,8 @@ export function useBuilder() {
     symmetry,
     cryptic,
     autoEnumerate,
+    brush,
+    setBrush,
     setSize,
     setWidth,
     setHeight,

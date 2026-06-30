@@ -1217,6 +1217,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .builder-info:hover,
 .builder-info:focus-visible { background: var(--surface-2); color: var(--fg); }
 
+/* Void cells render blank (page colour) in the solver. In the builder, give
+   them a faint dashed outline so they stay visible and clickable while editing. */
+.builder-grid .cell.void {
+  outline: 1px dashed color-mix(in srgb, var(--muted) 55%, transparent);
+  outline-offset: -3px;
+}
+
 /* Clue editor: each row carries a text input + an answer skeleton. */
 .builder-clue { align-items: flex-start !important; }
 .builder-clue-body {
