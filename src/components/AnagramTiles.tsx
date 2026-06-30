@@ -44,22 +44,44 @@ export function AnagramTiles({
     const d = dragRef.current;
     if (!d) return;
     const p = relPos(e);
-    // Reorder so the dragged tile takes the slot of whichever other tile its
-    // centre is now nearest to.
+    const n = tiles.length;
     let best = d.i;
-    let bestDist = Infinity;
-    ref.current?.querySelectorAll<HTMLElement>(".ana-tile").forEach((el) => {
-      const idx = Number(el.dataset.i);
-      if (idx === d.i) return;
-      const rr = el.getBoundingClientRect();
-      const dx = e.clientX - (rr.left + rr.width / 2);
-      const dy = e.clientY - (rr.top + rr.height / 2);
-      const dist = dx * dx + dy * dy;
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = idx;
+
+    if (view === "circle" && n > 1) {
+      // Map the pointer's angle around the centre straight to a slot index.
+      // This mapping doesn't depend on the current ordering, so unlike a
+      // nearest-neighbour hit-test it can't oscillate when neighbours shift
+      // under the pointer (the first/last-tile flicker).
+      const r = ref.current!.getBoundingClientRect();
+      const ang = Math.atan2(p.y - r.height / 2, p.x - r.width / 2);
+      let bestDiff = Infinity;
+      for (let i = 0; i < n; i++) {
+        const slot = (i / n) * 2 * Math.PI - Math.PI / 2;
+        const delta = Math.abs(
+          Math.atan2(Math.sin(ang - slot), Math.cos(ang - slot)),
+        );
+        if (delta < bestDiff) {
+          bestDiff = delta;
+          best = i;
+        }
       }
-    });
+    } else {
+      // Grid: reorder to whichever other tile's centre the pointer is nearest.
+      let bestDist = Infinity;
+      ref.current?.querySelectorAll<HTMLElement>(".ana-tile").forEach((el) => {
+        const idx = Number(el.dataset.i);
+        if (idx === d.i) return;
+        const rr = el.getBoundingClientRect();
+        const dx = e.clientX - (rr.left + rr.width / 2);
+        const dy = e.clientY - (rr.top + rr.height / 2);
+        const dist = dx * dx + dy * dy;
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = idx;
+        }
+      });
+    }
+
     if (best !== d.i) {
       onMove(d.i, best);
       setDrag({ i: best, x: p.x, y: p.y });
