@@ -812,6 +812,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ana-tile {
   touch-action: none;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .ana-tiles.ana-circle .ana-tile {
   transition: transform 0.12s ease;
