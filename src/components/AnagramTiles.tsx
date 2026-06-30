@@ -16,9 +16,10 @@ import type { AnagramTile } from "../hooks/useAnagramPool.ts";
  * the whole ring rotating). While dragging, the grabbed tile shows as a faded
  * ghost in the target slot and a clone follows the finger/cursor.
  *
- * The swap is always computed against `baseRef` — a snapshot of the order taken
- * when the drag began — so moving the pointer to a new slot never compounds
- * earlier swaps; it's recomputed fresh from the original layout each time. */
+ * Swaps are cumulative: the grabbed tile carries its current position, so
+ * sweeping it over several letters swaps it with each in turn (it ends up where
+ * you drop it, having traded places with everything it crossed) rather than
+ * always exchanging with the tile in its original slot. */
 export function AnagramTiles({
   tiles,
   view,
@@ -102,10 +103,11 @@ export function AnagramTiles({
     prevOrder.current = order;
   });
 
-  // Captured at grab time: the order to swap against, the grabbed tile's index
-  // in it, and each slot's centre (client coords) for stable grid hit-testing.
-  const baseRef = useRef<AnagramTile[]>([]);
-  const originRef = useRef(0);
+  // The live order during a drag and the grabbed tile's current index in it
+  // (updated on each swap so swaps compound), plus each slot's centre (client
+  // coords), snapshotted at grab time for stable grid hit-testing.
+  const orderRef = useRef<AnagramTile[]>([]);
+  const curIndexRef = useRef(0);
   const slotsRef = useRef<{ x: number; y: number }[]>([]);
 
   const relPos = (e: PointerEvent) => {
@@ -119,8 +121,8 @@ export function AnagramTiles({
     } catch {
       // no active pointer (e.g. synthetic events) — capture is best-effort
     }
-    baseRef.current = tiles;
-    originRef.current = tiles.findIndex((t) => t.id === id);
+    orderRef.current = tiles;
+    curIndexRef.current = tiles.findIndex((t) => t.id === id);
     slotsRef.current = [
       ...(ref.current?.querySelectorAll<HTMLElement>(".ana-tile") ?? []),
     ].map((el) => {
@@ -135,10 +137,10 @@ export function AnagramTiles({
     const d = dragRef.current;
     if (!d) return;
     const p = relPos(e);
-    const base = baseRef.current;
-    const origin = originRef.current;
-    const n = base.length;
-    let target = origin;
+    const order = orderRef.current;
+    const cur = curIndexRef.current;
+    const n = order.length;
+    let target = cur;
 
     if (view === "circle" && n > 1) {
       // Map the pointer's angle around the centre straight to a slot index.
@@ -171,12 +173,15 @@ export function AnagramTiles({
       });
     }
 
-    if (target !== origin && target >= 0 && target < n) {
-      const next = [...base];
-      [next[origin], next[target]] = [next[target], next[origin]];
+    if (target !== cur && target >= 0 && target < n) {
+      // Swap the grabbed tile (at its current index) with the tile in the slot
+      // under the pointer, then remember its new index so the next swap builds
+      // on this one.
+      const next = [...order];
+      [next[cur], next[target]] = [next[target], next[cur]];
+      orderRef.current = next;
+      curIndexRef.current = target;
       onReorder(next);
-    } else {
-      onReorder(base);
     }
     setDrag({ id: d.id, x: p.x, y: p.y });
   };
