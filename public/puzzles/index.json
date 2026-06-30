@@ -64,6 +64,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-crossword",
+    "date": "20260630",
+    "isoDate": "2026-06-30",
+    "weekday": "Tue",
+    "title": "New Yorker Crossword",
+    "author": "Erik Agard"
+  },
+  {
     "source": "nyt",
     "date": "260629",
     "isoDate": "2026-06-29",
