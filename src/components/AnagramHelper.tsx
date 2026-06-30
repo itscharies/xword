@@ -59,15 +59,6 @@ export function AnagramHelper({
       }
       return a;
     });
-  const move = (from: number, to: number) =>
-    setTiles((t) => {
-      if (from === to || from < 0 || to < 0 || from >= t.length || to >= t.length)
-        return t;
-      const a = [...t];
-      const [x] = a.splice(from, 1);
-      a.splice(to, 0, x);
-      return a;
-    });
   const fill = () => {
     if (!answer.trim()) return;
     xw.fillWord(answer);
@@ -101,7 +92,7 @@ export function AnagramHelper({
         <AnagramTiles
           tiles={tiles}
           view={view}
-          onMove={move}
+          onReorder={setTiles}
           emptyText="Add some letters above."
         />
 

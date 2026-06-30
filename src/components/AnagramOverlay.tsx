@@ -6,7 +6,7 @@ import { AnagramTiles } from "./AnagramTiles.tsx";
  * the keyboard, and shuffle / drag-to-reorder them in a circle or grid. Closing
  * is handled by toggling the keyboard's anagram key (no close button). */
 export function AnagramOverlay({ pool }: { pool: AnagramPool }) {
-  const { tiles, view, setView, add, backspace, shuffle, move } = pool;
+  const { tiles, view, setView, add, backspace, shuffle, reorder } = pool;
 
   // Physical keyboard (narrow desktop) adds to the pool too.
   useEffect(() => {
@@ -29,7 +29,7 @@ export function AnagramOverlay({ pool }: { pool: AnagramPool }) {
       <AnagramTiles
         tiles={tiles}
         view={view}
-        onMove={move}
+        onReorder={reorder}
         emptyText="Type letters to anagram."
       />
 

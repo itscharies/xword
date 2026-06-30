@@ -5,19 +5,23 @@ import type { AnagramTile } from "../hooks/useAnagramPool.ts";
  * reorder (works with both touch and mouse). Shared by the mobile overlay and
  * the desktop dialog.
  *
- * While dragging, the grabbed tile stays put as a faded "ghost" marking where
- * it will land, and a separate clone follows the finger/cursor. The other tiles
- * glide (circle) or reflow apart (grid) to open the gap. Keeping the ghost in
- * its slot means there's nothing to teleport on release. */
+ * Dragging *swaps* the grabbed tile with whatever sits in the slot under the
+ * pointer — a single exchange, so the rest of the list stays put (rather than
+ * the whole ring rotating). While dragging, the grabbed tile shows as a faded
+ * ghost in the target slot and a clone follows the finger/cursor.
+ *
+ * The swap is always computed against `baseRef` — a snapshot of the order taken
+ * when the drag began — so moving the pointer to a new slot never compounds
+ * earlier swaps; it's recomputed fresh from the original layout each time. */
 export function AnagramTiles({
   tiles,
   view,
-  onMove,
+  onReorder,
   emptyText,
 }: {
   tiles: AnagramTile[];
   view: "circle" | "grid";
-  onMove: (from: number, to: number) => void;
+  onReorder: (tiles: AnagramTile[]) => void;
   emptyText: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -30,6 +34,12 @@ export function AnagramTiles({
   const dragRef = useRef(drag);
   dragRef.current = drag;
 
+  // Captured at grab time: the order to swap against, the grabbed tile's index
+  // in it, and each slot's centre (client coords) for stable grid hit-testing.
+  const baseRef = useRef<AnagramTile[]>([]);
+  const originRef = useRef(0);
+  const slotsRef = useRef<{ x: number; y: number }[]>([]);
+
   const relPos = (e: PointerEvent) => {
     const r = ref.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -41,6 +51,14 @@ export function AnagramTiles({
     } catch {
       // no active pointer (e.g. synthetic events) — capture is best-effort
     }
+    baseRef.current = tiles;
+    originRef.current = tiles.findIndex((t) => t.id === id);
+    slotsRef.current = [
+      ...(ref.current?.querySelectorAll<HTMLElement>(".ana-tile") ?? []),
+    ].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
     const p = relPos(e);
     setDrag({ id, x: p.x, y: p.y });
   };
@@ -49,16 +67,14 @@ export function AnagramTiles({
     const d = dragRef.current;
     if (!d) return;
     const p = relPos(e);
-    const n = tiles.length;
-    const from = tiles.findIndex((t) => t.id === d.id);
-    if (from < 0) return;
-    let best = from;
+    const base = baseRef.current;
+    const origin = originRef.current;
+    const n = base.length;
+    let target = origin;
 
     if (view === "circle" && n > 1) {
       // Map the pointer's angle around the centre straight to a slot index.
-      // The mapping doesn't depend on the current ordering, so unlike a
-      // nearest-neighbour hit-test it can't oscillate when neighbours shift
-      // under a held pointer (the old first/last-tile flicker).
+      // Independent of the current ordering, so it can't oscillate.
       const r = ref.current!.getBoundingClientRect();
       const ang = Math.atan2(p.y - r.height / 2, p.x - r.width / 2);
       let bestDiff = Infinity;
@@ -69,27 +85,31 @@ export function AnagramTiles({
         );
         if (delta < bestDiff) {
           bestDiff = delta;
-          best = i;
+          target = i;
         }
       }
     } else if (view === "grid") {
-      // Insertion index = how many other tiles sit before the pointer in
-      // reading order. Monotonic in pointer position, so it can't oscillate as
-      // tiles reflow around the gap.
-      let count = 0;
-      ref.current?.querySelectorAll<HTMLElement>(".ana-tile").forEach((el) => {
-        if (el.dataset.dragging === "true") return; // ghost + clone
-        const rr = el.getBoundingClientRect();
-        const cx = rr.left + rr.width / 2;
-        const cy = rr.top + rr.height / 2;
-        const sameRow = Math.abs(cy - e.clientY) <= rr.height / 2;
-        if (cy < e.clientY - rr.height / 2 || (sameRow && cx < e.clientX))
-          count++;
+      // Nearest slot centre, hit-tested against the grab-time snapshot so the
+      // target stays stable even as the swap moves tiles around.
+      let bestDist = Infinity;
+      slotsRef.current.forEach((s, i) => {
+        const dx = e.clientX - s.x;
+        const dy = e.clientY - s.y;
+        const dist = dx * dx + dy * dy;
+        if (dist < bestDist) {
+          bestDist = dist;
+          target = i;
+        }
       });
-      best = count;
     }
 
-    if (best !== from) onMove(from, best);
+    if (target !== origin && target >= 0 && target < n) {
+      const next = [...base];
+      [next[origin], next[target]] = [next[target], next[origin]];
+      onReorder(next);
+    } else {
+      onReorder(base);
+    }
     setDrag({ id: d.id, x: p.x, y: p.y });
   };
 

@@ -13,8 +13,8 @@ export interface AnagramPool {
   add: (ch: string) => void;
   backspace: () => void;
   shuffle: () => void;
-  /** Move the tile at `from` to index `to` (drag-to-reorder). */
-  move: (from: number, to: number) => void;
+  /** Replace the tile order wholesale (drag-to-reorder). */
+  reorder: (tiles: AnagramTile[]) => void;
 }
 
 /**
@@ -52,24 +52,7 @@ export function useAnagramPool(open: boolean): AnagramPool {
     [],
   );
 
-  const move = useCallback(
-    (from: number, to: number) =>
-      setTiles((t) => {
-        if (
-          from === to ||
-          from < 0 ||
-          to < 0 ||
-          from >= t.length ||
-          to >= t.length
-        )
-          return t;
-        const a = [...t];
-        const [x] = a.splice(from, 1);
-        a.splice(to, 0, x);
-        return a;
-      }),
-    [],
-  );
+  const reorder = useCallback((next: AnagramTile[]) => setTiles(next), []);
 
-  return { tiles, view, setView, add, backspace, shuffle, move };
+  return { tiles, view, setView, add, backspace, shuffle, reorder };
 }
