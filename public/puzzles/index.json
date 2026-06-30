@@ -1,6 +1,14 @@
 [
   {
     "source": "nyt",
+    "date": "260701",
+    "isoDate": "2026-07-01",
+    "weekday": "Wed",
+    "title": "NY Times, Wed, Jul 1, 2026",
+    "author": "Dario Salvucci"
+  },
+  {
+    "source": "nyt",
     "date": "260630",
     "isoDate": "2026-06-30",
     "weekday": "Tue",
