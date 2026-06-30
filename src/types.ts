@@ -59,6 +59,10 @@ export interface Puzzle {
     across: Clue[];
     down: Clue[];
   };
+  /** Whether this is a cryptic puzzle (offers the anagram helper, shows clue
+   * enumerations). Authored puzzles set it explicitly; source-based puzzles
+   * fall back to inferring it from their source's type. */
+  cryptic?: boolean;
 }
 
 /** One entry in public/puzzles/index.json. */

@@ -79,6 +79,59 @@ export function saveLastDate(date: string): void {
   }
 }
 
+// ---- crossword builder (/create) draft ----------------------------------
+
+import type { Cell, Direction } from "../types.ts";
+
+/** The full editable state of the builder, autosaved so a draft survives a
+ *  reload or revisit. `clueText` is the Map serialized as entries. */
+export interface BuilderDraft {
+  width: number;
+  height: number;
+  linked: boolean;
+  symmetry: boolean;
+  cryptic: boolean;
+  autoEnumerate: boolean;
+  grid: Cell[][];
+  clueText: [string, string][];
+  /** Cross-references: source slot key -> target slot keys, as Map entries. */
+  links: [string, string[]][];
+  active: { row: number; col: number };
+  direction: Direction;
+  mode: "paint" | "fill";
+  title: string;
+  author: string;
+  editor: string;
+  date: string;
+}
+
+const BUILDER_KEY = "xword:builder-draft";
+
+export function loadBuilderDraft(): BuilderDraft | null {
+  try {
+    const raw = localStorage.getItem(BUILDER_KEY);
+    return raw ? (JSON.parse(raw) as BuilderDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBuilderDraft(draft: BuilderDraft): void {
+  try {
+    localStorage.setItem(BUILDER_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage full or unavailable — editing still works in-memory.
+  }
+}
+
+export function clearBuilderDraft(): void {
+  try {
+    localStorage.removeItem(BUILDER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 const ZOOM_KEY = "xword:zoom";
 export type ZoomMode = "fit" | "scroll";
 

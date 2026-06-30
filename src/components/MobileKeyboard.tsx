@@ -1,17 +1,26 @@
 import { useState } from "react";
-import type { Crossword } from "../hooks/useCrossword.ts";
 import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { AnagramCircleIcon } from "./icons.tsx";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
+/** The slice of the solver/builder engine the on-screen keyboard drives. Both
+ *  `Crossword` and `Builder` satisfy this, so the keyboard is shared. */
+export interface KeyboardEngine {
+  typeLetter: (ch: string) => void;
+  backspace: () => void;
+  toggleRebus: () => void;
+  rebus: boolean;
+  isCryptic: boolean;
+}
+
 export function MobileKeyboard({
   xw,
   onAnagram,
   anagramPool,
 }: {
-  xw: Crossword;
+  xw: KeyboardEngine;
   onAnagram: () => void;
   /** When the anagram overlay is open, keystrokes feed its letter pool. */
   anagramPool?: AnagramPool | null;

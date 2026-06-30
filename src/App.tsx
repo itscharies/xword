@@ -16,6 +16,7 @@ import { CompletionModal } from "./components/CompletionModal.tsx";
 import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
+import { Builder } from "./components/Builder.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 
@@ -77,6 +78,10 @@ export default function App() {
       .then(setIndex)
       .catch((e) => setError(String(e)));
   }, []);
+
+  // Secret builder page — self-contained, so it works even before (or without)
+  // the puzzle catalogue loading.
+  if (route === "create") return <Builder onOpenArchive={() => goTo("")} />;
 
   if (error) return <div className="error">Failed to load puzzles: {error}</div>;
   if (!index || index.length === 0)

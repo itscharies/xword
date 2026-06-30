@@ -512,8 +512,9 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     [clueThrough],
   );
 
-  // Cryptic puzzles get the anagram helper instead of the rebus toggle.
-  const isCryptic = SOURCES[puzzle.source]?.type === "Cryptic";
+  // Cryptic puzzles get the anagram helper instead of the rebus toggle. An
+  // authored puzzle states it outright; otherwise infer from the source type.
+  const isCryptic = puzzle.cryptic ?? SOURCES[puzzle.source]?.type === "Cryptic";
 
   // ---- completion ---------------------------------------------------------
 

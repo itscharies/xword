@@ -1138,6 +1138,139 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* ---- responsive --------------------------------------------------------- */
 
+/* ---- builder (/new) ----------------------------------------------------- */
+
+.builder-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.builder-group { display: flex; align-items: flex-end; gap: 8px; }
+.builder-decor { flex-wrap: wrap; }
+
+.builder-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.builder-field input,
+.builder-field select {
+  background: var(--surface);
+  color: var(--fg);
+  border: var(--bw) solid var(--line);
+  padding: 7px 9px;
+  font: inherit;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.builder-field input[type="number"] { width: 64px; }
+.builder-field input:focus-visible,
+.builder-field select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Match the rebus glyph button to the height of the other control buttons
+   (its solver-toolbar padding is shorter, which read as "shorted" here). */
+.builder-controls .rebus-btn { display: inline-flex; padding: 9px 16px; }
+.builder-controls .btn:disabled { opacity: 0.45; cursor: default; }
+
+.builder-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  border-top: 2px solid var(--line);
+  padding-top: 14px;
+}
+.builder-export { margin-left: auto; }
+
+/* Puzzle-level settings (style, clue lengths) with an info affordance. */
+.builder-settings { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+.builder-setting { display: flex; align-items: center; gap: 8px; }
+.builder-field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.builder-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: help;
+}
+.builder-info:hover,
+.builder-info:focus-visible { background: var(--surface-2); color: var(--fg); }
+
+/* Clue editor: each row carries a text input + an answer skeleton. */
+.builder-clue { align-items: flex-start !important; }
+.builder-clue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.clue-input {
+  width: 100%;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 500;
+  padding: 5px 8px;
+}
+.clue-answer {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+/* Cross-reference editor shown on the active clue row. */
+.clue-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.clue-links-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--accent-2);
+  color: #000;
+  border: 2px solid var(--line);
+}
+.link-select {
+  background: var(--surface);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 @media (max-width: 820px) {
   /* Slightly deeper cell highlights — easier on the eyes on a bright phone. */
   :root { --hl: var(--accent-deep); --hl-rgb: var(--accent-deep-rgb); }
@@ -1159,8 +1292,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* Thinner circle stroke to match the 1px gridlines on small cells. */
   .cell .circle { border-width: 1px; }
   .clue-banner { width: 100%; }
-  /* Full clue lists are redundant on mobile — the banner + keyboard suffice. */
+  /* Full clue lists are redundant on mobile — the banner + keyboard suffice.
+     The builder's clue editor stays (single column): it's how you write clues. */
   .clues { display: none; }
+  .builder-clues { display: grid; grid-template-columns: 1fr; }
+  .builder-controls { gap: 8px; }
   /* The desktop banner is replaced by the one in the mobile bar. */
   .banner-desktop { display: none; }
   .keyboard { display: flex; }
