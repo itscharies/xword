@@ -655,6 +655,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .clue-col li.linked { border-left-color: var(--accent-2); border-left-style: dashed; }
 .clue-col li .cn { font-weight: 800; color: var(--muted); min-width: 24px; text-align: right; }
 .clue-col li.done .ct { color: var(--muted); text-decoration: line-through; }
+/* Word-length enumeration after a clue, e.g. (4,5) — kept subtle. */
+.enum { color: var(--muted); white-space: nowrap; }
 
 /* ---- on-screen keyboard ------------------------------------------------- */
 

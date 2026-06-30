@@ -1,6 +1,7 @@
 import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
+import { splitEnumeration } from "../src/lib/enumeration.ts";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -91,13 +92,15 @@ export function parseGuardian(jsonText: string, source: PuzzleSource): Puzzle {
   const down: Clue[] = [];
   for (const e of cw.entries) {
     if (!e.clue) continue; // grouped multi-part answers repeat with empty clues
+    const { clue: text, enumeration } = splitEnumeration(e.clue);
     const clue: Clue = {
       number: e.number,
-      clue: e.clue,
+      clue: text,
       answer: String(e.solution ?? "").toUpperCase(),
       row: e.position.y,
       col: e.position.x,
       len: e.length,
+      ...(enumeration ? { enumeration } : {}),
     };
     (e.direction === "across" ? across : down).push(clue);
   }

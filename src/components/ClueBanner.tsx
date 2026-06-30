@@ -94,6 +94,7 @@ export function ClueBanner({ xw }: { xw: Crossword }) {
               {clue.direction === "across" ? "A" : "D"}
             </b>
             <span dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }} />
+            {clue.enumeration && <span className="enum"> ({clue.enumeration})</span>}
           </>
         ) : (
           <span>Select a cell to begin</span>

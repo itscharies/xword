@@ -33,6 +33,10 @@ export interface Clue {
   row: number;
   col: number;
   len: number;
+  /** Word-length enumeration shown after a (mainly cryptic) clue, without the
+   * surrounding parentheses — e.g. "4,5" or "7". Absent when the source doesn't
+   * enumerate (most American puzzles). The `clue` text excludes it. */
+  enumeration?: string;
 }
 
 /** A fully parsed puzzle, as stored in public/puzzles/<source>/<date>.json. */

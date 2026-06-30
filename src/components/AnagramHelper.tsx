@@ -73,7 +73,9 @@ export function AnagramHelper({
           dangerouslySetInnerHTML={{
             __html: `<b>${clue.number}${
               clue.direction === "across" ? "A" : "D"
-            }</b> ${formatClue(clue.clue)}`,
+            }</b> ${formatClue(clue.clue)}${
+              clue.enumeration ? ` (${clue.enumeration})` : ""
+            }`,
           }}
         />
 

@@ -61,10 +61,12 @@ function Column({
               onClick={() => xw.selectClue({ ...clue, direction })}
             >
               <span className="cn">{clue.number}</span>
-              <span
-                className="ct"
-                dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }}
-              />
+              <span className="ct">
+                <span dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }} />
+                {clue.enumeration && (
+                  <span className="enum"> ({clue.enumeration})</span>
+                )}
+              </span>
             </li>
           );
         })}
