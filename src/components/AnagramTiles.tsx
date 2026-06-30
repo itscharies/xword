@@ -1,4 +1,10 @@
-import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
 import type { AnagramTile } from "../hooks/useAnagramPool.ts";
 
 /** The scrambled-letter tiles, laid out in a circle or grid and draggable to
@@ -33,6 +39,68 @@ export function AnagramTiles({
   );
   const dragRef = useRef(drag);
   dragRef.current = drag;
+
+  // Grid tiles sit in normal flow, so reordering them snaps instantly. FLIP the
+  // moved ones — translate each from its previous position to its new one then
+  // release to the CSS transition — so a swap glides as it happens, the same as
+  // the circle's transform animation. (Circle tiles are positioned by transform
+  // already, so they animate on their own and are skipped here.)
+  const prevRects = useRef(new Map<string, { left: number; top: number }>());
+  const prevOrder = useRef("");
+  const rafRef = useRef(0);
+  useLayoutEffect(() => {
+    const container = ref.current;
+    if (!container || view !== "grid") {
+      prevRects.current.clear();
+      prevOrder.current = "";
+      return;
+    }
+    // Only animate when the order actually changed — not on the pointer-move
+    // re-renders in between, which would re-measure mid-flight and fight the
+    // running transition.
+    const order = tiles.map((t) => t.id).join(",");
+    if (order === prevOrder.current) return;
+
+    const els = [
+      ...container.querySelectorAll<HTMLElement>(
+        ".ana-tile:not(.ana-floating)",
+      ),
+    ];
+    // Clear any in-flight transform so we measure true settled positions.
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    els.forEach((el) => {
+      el.style.transition = "none";
+      el.style.transform = "";
+    });
+    const next = new Map<string, { left: number; top: number }>();
+    const flips: Array<[HTMLElement, number, number]> = [];
+    els.forEach((el) => {
+      const id = el.dataset.id;
+      if (!id) return;
+      const rect = el.getBoundingClientRect();
+      next.set(id, { left: rect.left, top: rect.top });
+      const prev = prevRects.current.get(id);
+      if (!prev) return;
+      const dx = prev.left - rect.left;
+      const dy = prev.top - rect.top;
+      if (dx || dy) flips.push([el, dx, dy]);
+    });
+    // Pin each moved tile to its old position…
+    flips.forEach(([el, dx, dy]) => {
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    // …then release on the next frame so the browser paints the pinned state
+    // first and actually runs the transition to the new slot (releasing in the
+    // same frame gets coalesced into no animation).
+    rafRef.current = requestAnimationFrame(() => {
+      els.forEach((el) => {
+        el.style.transition = "";
+        el.style.transform = "";
+      });
+    });
+    prevRects.current = next;
+    prevOrder.current = order;
+  });
 
   // Captured at grab time: the order to swap against, the grabbed tile's index
   // in it, and each slot's centre (client coords) for stable grid hit-testing.
@@ -146,6 +214,7 @@ export function AnagramTiles({
             <span
               key={tile.id}
               data-i={i}
+              data-id={tile.id}
               data-dragging={isDrag ? "true" : "false"}
               className={`ana-tile ${isDrag ? "ana-ghost" : ""}`}
               style={slotStyle(i)}

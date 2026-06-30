@@ -816,7 +816,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
-.ana-tiles.ana-circle .ana-tile {
+.ana-tiles.ana-circle .ana-tile,
+.ana-tiles.ana-grid .ana-tile {
   transition: transform 0.16s ease;
 }
 .ana-dragging .ana-tile {
