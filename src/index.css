@@ -612,6 +612,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .clue-banner .text:active { cursor: grabbing; }
 /* Bold but secondary — the clue number/direction sits behind the clue text. */
 .clue-banner .text b { white-space: nowrap; font-weight: 800; color: rgba(0, 0, 0, 0.5); }
+/* Match the enumeration "(3)" to the "1A" label rather than the muted grey used
+   in the clue list — grey reads as off-theme on the accent-coloured banner. */
+.clue-banner .enum { color: rgba(0, 0, 0, 0.5); }
 
 /* ---- clue lists --------------------------------------------------------- */
 
