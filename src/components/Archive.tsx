@@ -5,6 +5,7 @@ import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
 import { getFilters, setFilters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
+import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { CheckIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
@@ -244,6 +245,7 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
+          <SaveDataControls />
         </Modal>
       )}
 
