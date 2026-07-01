@@ -32,6 +32,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "Custom",
+    "date": "20260701",
+    "isoDate": "2026-07-01",
+    "weekday": "Wed",
+    "title": "Just Another Mini",
+    "author": "Caleb Charles"
+  },
+  {
     "source": "nyt",
     "date": "260630",
     "isoDate": "2026-06-30",

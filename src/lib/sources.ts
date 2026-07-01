@@ -17,7 +17,8 @@ export type PuzzleSource =
   | "gdn-prize"
   | "gdn-mini"
   | "tny-crossword"
-  | "tny-mini";
+  | "tny-mini"
+  | "Custom";
 
 export interface SourceMeta {
   /** Full name, shown in the solver header and archive cards. */
@@ -54,6 +55,8 @@ export const SOURCES: Record<PuzzleSource, SourceMeta> = {
     type: "Crossword",
   },
   "tny-mini": { label: "New Yorker Mini", paper: "New Yorker", type: "Mini" },
+  // Puzzles authored in-app with the /create builder.
+  Custom: { label: "Custom", paper: "Custom", type: "Mini" },
 };
 
 /** Display + tie-break order when several puzzles share a date. The first
@@ -73,6 +76,7 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "gdn-mini",
   "tny-crossword",
   "tny-mini",
+  "Custom",
 ];
 
 /** Distinct papers / types in display order, for the archive filters. */
