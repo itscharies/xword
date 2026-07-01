@@ -7,10 +7,12 @@ export interface ClueRef {
 
 // Match a run of clue numbers terminated by a direction word, e.g.
 //   "17-, 22-, 33- and 47-Across"   -> 17,22,33,47 across
+//   "20-, 30-, or 46-Across"         -> 20,30,46 across
 //   "See 23-Down"                    -> 23 down
 //   "With 1-Across, ..."             -> 1 across
 // A trailing "Across"/"Down" applies to every bare "<n>-" before it in the run.
-const REF_RE = /((?:\d+\s*-\s*[, ]*(?:and\s+)?)+)(Across|Down)/gi;
+// Numbers may be joined by commas/spaces or the words and/or/nor.
+const REF_RE = /((?:\d+\s*-\s*[, ]*(?:(?:and|or|nor)\s+)?)+)(Across|Down)/gi;
 
 /**
  * Extract cross-references to other entries from a clue's text, so the app can
