@@ -1,5 +1,13 @@
 [
   {
+    "source": "Other",
+    "date": "20260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "Just Another Mini",
+    "author": "Caleb Charles"
+  },
+  {
     "source": "nyt",
     "date": "260701",
     "isoDate": "2026-07-01",
