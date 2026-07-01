@@ -8,6 +8,30 @@
     "author": "Dario Salvucci"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260701",
+    "isoDate": "2026-07-01",
+    "weekday": "Wed",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260701",
+    "isoDate": "2026-07-01",
+    "weekday": "Wed",
+    "title": "Guardian Cryptic",
+    "author": "Fed"
+  },
+  {
+    "source": "gdn-mini",
+    "date": "20260701",
+    "isoDate": "2026-07-01",
+    "weekday": "Wed",
+    "title": "Guardian Mini",
+    "author": "The Guardian"
+  },
+  {
     "source": "nyt",
     "date": "260630",
     "isoDate": "2026-06-30",
