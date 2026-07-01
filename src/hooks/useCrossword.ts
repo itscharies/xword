@@ -468,11 +468,13 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       const wr = new Set(wrongRef.current);
       for (const { row, col } of cells) {
         const sol = grid[row][col].solution;
-        if (sol) {
-          g[row][col] = sol;
-          rev.add(keyOf(row, col));
-          wr.delete(keyOf(row, col));
-        }
+        if (!sol) continue;
+        // Leave cells the solver already answered correctly untouched — only
+        // fill and flag the ones they hadn't got, so reveal marks just those.
+        if (g[row][col] === sol) continue;
+        g[row][col] = sol;
+        rev.add(keyOf(row, col));
+        wr.delete(keyOf(row, col));
       }
       setEntries(g);
       setRevealed(rev);
