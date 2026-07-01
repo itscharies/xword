@@ -612,7 +612,7 @@ export function useBuilder() {
     }
     return {
       // Authored in-app, not from one of the syndicated collections.
-      source: "Custom" as PuzzleSource,
+      source: "Other" as PuzzleSource,
       date: iso.replace(/-/g, ""),
       isoDate: iso,
       weekday,

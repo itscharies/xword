@@ -1,5 +1,5 @@
 {
-  "source": "Custom",
+  "source": "Other",
   "date": "20260701",
   "isoDate": "2026-07-01",
   "weekday": "Wed",
@@ -200,7 +200,7 @@
     "down": [
       {
         "number": 1,
-        "clue": "Another jam",
+        "clue": "Another jam?",
         "answer": "ENCORE",
         "row": 0,
         "col": 2,

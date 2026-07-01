@@ -178,12 +178,18 @@ export function Archive({
               // the theme as the title outright (date-only titles were already
               // replaced with the source label at parse time, so a title that
               // still differs from the label is a real theme — e.g. midi).
+              // "Other" (in-app authored) puzzles have no collection name, so
+              // their title stands in as the main label and isn't repeated.
+              const mainLabel =
+                p.source === "Other" ? p.title : SOURCES[p.source].label;
               const theme =
-                p.source === "nyt"
-                  ? themeName(p.title)
-                  : p.title !== SOURCES[p.source].label
-                    ? p.title
-                    : null;
+                p.source === "Other"
+                  ? null
+                  : p.source === "nyt"
+                    ? themeName(p.title)
+                    : p.title !== SOURCES[p.source].label
+                      ? p.title
+                      : null;
               const prog = loadProgress(p.source, p.date);
               const done = prog?.completed ?? false;
               const rating = prog?.rating ?? 0;
@@ -203,7 +209,7 @@ export function Archive({
                     className={`archive-item ${done ? "done" : ""}`}
                     onClick={() => onPick(p.source, p.date)}
                   >
-                    <span className="ai-source">{SOURCES[p.source].label}</span>
+                    <span className="ai-source">{mainLabel}</span>
                     {theme && <span className="ai-theme">{theme}</span>}
                     <span className="ai-author">By {p.author}</span>
                     {rating > 0 && <StarRating value={rating} />}
