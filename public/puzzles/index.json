@@ -1,5 +1,37 @@
 [
   {
+    "source": "nyt",
+    "date": "260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "NY Times, Thu, Jul 2, 2026",
+    "author": "John Kugelman"
+  },
+  {
+    "source": "gdn-quick",
+    "date": "20260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "Guardian Cryptic",
+    "author": "Paul"
+  },
+  {
+    "source": "gdn-mini",
+    "date": "20260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "Guardian Mini",
+    "author": "The Guardian"
+  },
+  {
     "source": "Other",
     "date": "20260702",
     "isoDate": "2026-07-02",
