@@ -33,7 +33,7 @@
     ],
     [
       {
-        "solution": "A",
+        "solution": "U",
         "number": 5
       },
       {
@@ -176,8 +176,8 @@
       },
       {
         "number": 5,
-        "clue": "Star-like spice",
-        "answer": "ANIS",
+        "clue": "Tertiary institutions, in brief",
+        "answer": "UNIS",
         "row": 1,
         "col": 0,
         "len": 4
