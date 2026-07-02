@@ -1383,6 +1383,36 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .builder-suggest-attr a { color: inherit; text-decoration: underline; }
 
+/* Hover-to-define popover (fixed to the viewport at the chip's position). */
+.def-popover {
+  position: fixed;
+  z-index: 50;
+  width: 260px;
+  max-width: 90vw;
+  background: var(--surface);
+  color: var(--fg);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+/* Flipped above the chip when there's no room below (anchor its bottom edge). */
+.def-popover.above { transform: translateY(-100%); }
+.def-title { font-weight: 800; margin-bottom: 4px; }
+.def-extract { margin: 0 0 8px; }
+.def-msg { margin: 0 0 8px; color: var(--muted); }
+.def-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+}
+.def-src { color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.def-foot a { color: var(--accent-deep); font-weight: 700; text-decoration: none; }
+.def-foot a:hover { text-decoration: underline; }
+
 @media (max-width: 820px) {
   /* Slightly deeper cell highlights — easier on the eyes on a bright phone. */
   :root { --hl: var(--accent-deep); --hl-rgb: var(--accent-deep-rgb); }
