@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuthContext.tsx";
-import { publishPuzzle, type Visibility } from "../lib/puzzles.ts";
+import { publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
 import type { Puzzle } from "../types.ts";
 
 const BASE = import.meta.env.BASE_URL;
@@ -16,9 +16,13 @@ const VISIBILITY_OPTIONS: { value: Visibility; label: string; hint: string }[] =
 export function PublishDialog({
   puzzle,
   onClose,
+  existingId,
 }: {
   puzzle: Puzzle;
   onClose: () => void;
+  /** Set when publishing a puzzle already saved as a draft — updates that
+   *  row in place instead of inserting a duplicate. */
+  existingId?: string | null;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState(puzzle.title || "Untitled puzzle");
@@ -32,12 +36,13 @@ export function PublishDialog({
     if (!user || publishing) return;
     setPublishing(true);
     setError(null);
-    const { id, error } = await publishPuzzle(
-      user.id,
-      title.trim(),
-      { ...puzzle, title: title.trim() },
-      visibility,
-    );
+    const finalPuzzle = { ...puzzle, title: title.trim() };
+    const { id, error } = existingId
+      ? await updatePuzzle(existingId, title.trim(), finalPuzzle, visibility).then((r) => ({
+          id: existingId,
+          error: r.error,
+        }))
+      : await publishPuzzle(user.id, title.trim(), finalPuzzle, visibility);
     setPublishing(false);
     if (error) setError(error);
     else setPublishedId(id);

@@ -821,6 +821,37 @@ export function useBuilder() {
     window.location.reload();
   }, []);
 
+  // Load an already-parsed Puzzle (e.g. a syndicated one an admin is
+  // fixing) into the editing state, replacing whatever draft was here.
+  // `links` is left empty — any cross-references already read as plain
+  // "(see N-Across)" text inside the imported clue strings, so nothing is
+  // lost; re-linking is only needed if the author wants the highlight UI.
+  const importPuzzle = useCallback((puzzle: Puzzle) => {
+    setWidthState(puzzle.width);
+    setHeightState(puzzle.height);
+    setLinked(puzzle.width === puzzle.height);
+    setGrid(puzzle.grid.map((row) => row.map((c) => ({ ...c }))));
+    setActive({ row: 0, col: 0 });
+    setDirection("across");
+    setMode("fill");
+    setCryptic(Boolean(puzzle.cryptic));
+    setLinks(new Map());
+
+    const nextClueText = new Map<string, string>();
+    for (const c of puzzle.clues.across) {
+      nextClueText.set(slotKey({ row: c.row, col: c.col, direction: "across" }), c.clue);
+    }
+    for (const c of puzzle.clues.down) {
+      nextClueText.set(slotKey({ row: c.row, col: c.col, direction: "down" }), c.clue);
+    }
+    setClueText(nextClueText);
+
+    setTitle(puzzle.title);
+    setAuthor(puzzle.author);
+    setEditor(puzzle.editor);
+    setDate(puzzle.isoDate || puzzle.date);
+  }, []);
+
   return {
     // dimensions
     width,
@@ -886,6 +917,7 @@ export function useBuilder() {
     unlinkClue,
     handleKeyDown,
     buildPuzzle,
+    importPuzzle,
   };
 }
 

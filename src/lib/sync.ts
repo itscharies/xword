@@ -139,3 +139,25 @@ export async function pullCommunityProgress(
     .maybeSingle();
   return data?.data ?? null;
 }
+
+/** Same as pullCommunityProgress, but for a syndicated (source, date) puzzle.
+ *  reconcileAll already does a bulk version of this on sign-in, but that's a
+ *  one-off race against whichever puzzle happens to mount first — a fresh
+ *  device opening a puzzle link straight away can render Solver before that
+ *  bulk reconcile finishes, and nothing re-reads localStorage afterwards.
+ *  Pulling per-puzzle here, before Solver mounts, closes that gap. */
+export async function pullProgress(
+  userId: string,
+  source: PuzzleSource,
+  date: string,
+): Promise<Progress | null> {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("progress")
+    .select("data")
+    .eq("user_id", userId)
+    .eq("source", source)
+    .eq("puzzle_date", date)
+    .maybeSingle();
+  return data?.data ?? null;
+}

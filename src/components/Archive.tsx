@@ -11,6 +11,7 @@ import { CheckIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { avatarUrl } from "../lib/auth.ts";
 import { listFeed } from "../lib/puzzles.ts";
 
@@ -69,13 +70,11 @@ export function Archive({
   index,
   onPick,
   onOpenAccount,
-  onOpenCreate,
   onOpenPuzzle,
 }: {
   index: PuzzleIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenAccount: () => void;
-  onOpenCreate: () => void;
   onOpenPuzzle: (id: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
@@ -83,6 +82,7 @@ export function Archive({
   // Re-renders (and thus re-reads every `loadProgress` call below) whenever
   // a sign-in reconcile finishes and rewrites localStorage underneath us.
   const { user } = useAuth();
+  useDocumentTitle("");
 
   const [feed, setFeed] = useState<Awaited<ReturnType<typeof listFeed>>>([]);
   useEffect(() => {
@@ -154,14 +154,6 @@ export function Archive({
             title="How to play"
           >
             ℹ
-          </button>
-          <button
-            className="btn icon-btn cog-btn"
-            onClick={onOpenCreate}
-            aria-label="Create a puzzle"
-            title="Create a puzzle"
-          >
-            +
           </button>
           <button
             className="btn icon-btn cog-btn account-btn"
@@ -309,7 +301,8 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
-          <SaveDataControls />
+          {/* Signed-in progress lives in Supabase, not a local JSON backup. */}
+          {!user && <SaveDataControls />}
         </Modal>
       )}
 

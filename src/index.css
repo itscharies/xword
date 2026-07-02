@@ -246,6 +246,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .account-body { display: flex; flex-direction: column; gap: 18px; max-width: 480px; }
 
+/* A follow-row entry that's clickable but shouldn't look like a boxed
+   button — used for "My puzzles" list items. */
+.btn-plain-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+}
+
 /* Header account button's icon slot doubles as an avatar frame. */
 .account-btn-avatar {
   width: 28px;

@@ -1,38 +1,32 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { useProfile } from "../hooks/useProfile.ts";
+import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { avatarUrl } from "../lib/auth.ts";
 import {
-  claimProfile,
   follow,
-  getProfile,
   listFollowing,
   searchProfiles,
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
+import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
 import { UserIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
  *  Google sign-in; signed in with no `profiles` row yet -> claim a
  *  username/display name; otherwise -> account summary + follow search. */
-export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
+export function AccountPage({
+  onOpenArchive,
+  onOpenMine,
+}: {
+  onOpenArchive: () => void;
+  onOpenMine: () => void;
+}) {
   const { status, user, signInWithGoogle, signOut } = useAuth();
-  const [profile, setProfile] = useState<Profile | null | "loading">("loading");
-
-  useEffect(() => {
-    if (!user) {
-      setProfile("loading");
-      return;
-    }
-    let cancelled = false;
-    getProfile(user.id).then((p) => {
-      if (!cancelled) setProfile(p);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  const profile = useProfile();
+  useDocumentTitle("Account");
 
   let body: React.ReactNode = null;
   if (status !== "loading") {
@@ -41,7 +35,7 @@ export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
     } else if (profile === "loading") {
       body = null;
     } else if (!profile) {
-      body = <ClaimProfileForm userId={user.id} onClaimed={setProfile} />;
+      body = <ClaimProfileForm userId={user.id} />;
     } else {
       body = (
         <>
@@ -49,6 +43,7 @@ export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
             avatar={avatarUrl(user)}
             profile={profile}
             onSignOut={() => void signOut()}
+            onOpenMine={onOpenMine}
           />
           <FollowPanel userId={user.id} />
         </>
@@ -101,10 +96,12 @@ function AccountSummary({
   avatar,
   profile,
   onSignOut,
+  onOpenMine,
 }: {
   avatar: string | null;
   profile: Profile;
   onSignOut: () => void;
+  onOpenMine: () => void;
 }) {
   return (
     <div className="setting-row">
@@ -121,63 +118,13 @@ function AccountSummary({
           <div className="account-display-name">{profile.display_name}</div>
           <div className="savedata-status">@{profile.username}</div>
         </div>
+        <button className="btn" onClick={onOpenMine}>
+          My puzzles
+        </button>
         <button className="btn" onClick={onSignOut}>
           Sign out
         </button>
       </div>
-    </div>
-  );
-}
-
-function ClaimProfileForm({
-  userId,
-  onClaimed,
-}: {
-  userId: string;
-  onClaimed: (p: Profile) => void;
-}) {
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saving) return;
-    setSaving(true);
-    setFormError(null);
-    const { error } = await claimProfile(userId, username.trim().toLowerCase(), displayName);
-    setSaving(false);
-    if (error) setFormError(error);
-    else onClaimed({ user_id: userId, username: username.trim().toLowerCase(), display_name: displayName.trim() });
-  };
-
-  return (
-    <div className="setting-row">
-      <span className="setting-label">Set up your profile</span>
-      <form className="settings" onSubmit={submit} style={{ gap: 10 }}>
-        <input
-          className="text-input"
-          placeholder="Display name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          maxLength={40}
-          required
-        />
-        <input
-          className="text-input"
-          placeholder="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase())}
-          pattern="[a-z0-9_]{3,20}"
-          title="3-20 lowercase letters, numbers, or underscores"
-          required
-        />
-        <button className="btn" type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save profile"}
-        </button>
-      </form>
-      {formError && <span className="savedata-status">{formError}</span>}
     </div>
   );
 }

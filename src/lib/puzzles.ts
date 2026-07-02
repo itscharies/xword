@@ -5,7 +5,7 @@ import { supabase } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { Profile } from "./profile.ts";
 
-export type Visibility = "public" | "mutual" | "unlisted";
+export type Visibility = "public" | "mutual" | "unlisted" | "draft";
 
 export interface PublishedPuzzle {
   id: string;
@@ -65,4 +65,39 @@ export async function listFeed(
   return data
     .filter((p) => byId.has(p.author_id))
     .map((p) => ({ ...p, author: byId.get(p.author_id)! }) as PublishedPuzzle & { author: Profile });
+}
+
+/** Puzzles the given user has published themselves, newest first —
+ *  RLS's "own rows" clause means this sees every visibility tier. */
+export async function listMyPuzzles(userId: string): Promise<PublishedPuzzle[]> {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("puzzles")
+    .select("id, author_id, title, data, visibility, completions, created_at")
+    .eq("author_id", userId)
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+export async function deletePuzzle(id: string): Promise<void> {
+  if (!supabase) return;
+  await supabase.from("puzzles").delete().eq("id", id);
+}
+
+/** Updates a puzzle the caller already owns a row for — used both to
+ *  re-save a draft in place (no duplicate rows on repeat saves) and to
+ *  publish one (flipping its visibility off 'draft' rather than inserting
+ *  a second row alongside it). */
+export async function updatePuzzle(
+  id: string,
+  title: string,
+  data: Puzzle,
+  visibility: Visibility,
+): Promise<{ error: string | null }> {
+  if (!supabase) return { error: "Supabase isn't configured." };
+  const { error } = await supabase
+    .from("puzzles")
+    .update({ title, data, visibility })
+    .eq("id", id);
+  return { error: error?.message ?? null };
 }

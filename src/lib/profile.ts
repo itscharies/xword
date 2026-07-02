@@ -7,6 +7,7 @@ export interface Profile {
   user_id: string;
   username: string;
   display_name: string;
+  is_admin?: boolean;
 }
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -19,7 +20,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("user_id, username, display_name")
+    .select("user_id, username, display_name, is_admin")
     .eq("user_id", userId)
     .maybeSingle();
   return data;

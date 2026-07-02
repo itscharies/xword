@@ -12,9 +12,17 @@ import {
   saveCommunityProgress,
   saveProgress,
 } from "./lib/storage.ts";
-import { pullCommunityProgress, pushCommunityProgress, pushProgress } from "./lib/sync.ts";
+import {
+  pullCommunityProgress,
+  pullProgress,
+  pushCommunityProgress,
+  pushProgress,
+} from "./lib/sync.ts";
 import { getPuzzleById } from "./lib/puzzles.ts";
+import { getSyndicatedPuzzle } from "./lib/syndicated.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
+import { useProfile } from "./hooks/useProfile.ts";
+import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
@@ -26,6 +34,7 @@ import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
+import { MyPuzzlesPage } from "./components/MyPuzzlesPage.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
@@ -57,6 +66,22 @@ const goTo = (route: string) => {
   window.history.pushState(null, "", BASE + route);
   window.dispatchEvent(new PopStateEvent("popstate"));
 };
+
+/** A syndicated puzzle, preferring the database copy over the static file if
+ *  one exists — checked in parallel so the common (not-yet-in-the-database)
+ *  case pays no extra latency. */
+async function fetchSyndicatedPuzzle(
+  source: PuzzleSource,
+  date: string,
+): Promise<Puzzle | null> {
+  const [fromDb, base] = await Promise.all([
+    getSyndicatedPuzzle(source, date),
+    fetch(`${BASE}puzzles/${source}/${date}.json`)
+      .then((r) => r.json() as Promise<Puzzle>)
+      .catch(() => null),
+  ]);
+  return fromDb ?? base;
+}
 
 export default function App() {
   const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
@@ -99,7 +124,24 @@ export default function App() {
 
   // Account page — also self-contained, so signing in doesn't depend on the
   // puzzle catalogue having loaded (and survives the OAuth redirect back).
-  if (route === "account") return <AccountPage onOpenArchive={() => goTo("")} />;
+  if (route === "account") {
+    return (
+      <AccountPage onOpenArchive={() => goTo("")} onOpenMine={() => goTo("mine")} />
+    );
+  }
+
+  // The signed-in user's own published puzzles + the entry point into the
+  // Builder — replaces the old header "+" button.
+  if (route === "mine") {
+    return (
+      <MyPuzzlesPage
+        onOpenArchive={() => goTo("")}
+        onOpenCreate={() => goTo("create")}
+        onOpenPuzzle={(id) => goTo(`p/${id}`)}
+        onOpenDraft={(id) => goTo(`draft/${id}`)}
+      />
+    );
+  }
 
   // Published community puzzle — also self-contained; it isn't in the
   // static index.json catalogue at all, it's fetched from Supabase.
@@ -109,6 +151,34 @@ export default function App() {
         key={route}
         id={route.slice(2)}
         onOpenArchive={() => goTo("")}
+      />
+    );
+  }
+
+  // Admin fix-up: load an existing syndicated puzzle into the Builder.
+  if (route.startsWith("edit/")) {
+    const [editSource, editDate] = route.slice(5).split("/");
+    if (isSource(editSource) && editDate) {
+      return (
+        <EditPuzzleView
+          key={route}
+          source={editSource}
+          date={editDate}
+          onOpenArchive={() => goTo("")}
+          onOpenAccount={() => goTo("account")}
+        />
+      );
+    }
+  }
+
+  // Continue an unpublished draft from My Puzzles.
+  if (route.startsWith("draft/")) {
+    return (
+      <DraftPuzzleView
+        key={route}
+        id={route.slice(6)}
+        onOpenArchive={() => goTo("")}
+        onOpenAccount={() => goTo("account")}
       />
     );
   }
@@ -129,7 +199,6 @@ export default function App() {
         index={index}
         onPick={(source, d) => goTo(`${source}/${d}`)}
         onOpenAccount={() => goTo("account")}
-        onOpenCreate={() => goTo("create")}
         onOpenPuzzle={(id) => goTo(`p/${id}`)}
       />
     );
@@ -154,15 +223,35 @@ function PuzzleView({
   date: string;
   onOpenArchive: () => void;
 }) {
+  const { user } = useAuth();
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
 
+  // Pull this puzzle's remote progress into localStorage *before* mounting
+  // Solver (which reads localStorage synchronously on mount) — without this,
+  // a fresh device opening a puzzle link directly can render Solver before
+  // the once-per-sign-in reconcileAll finishes, and nothing re-reads
+  // localStorage afterwards, so the other device's progress never appears.
   useEffect(() => {
     setPuzzle(null);
-    fetch(`${BASE}puzzles/${source}/${date}.json`)
-      .then((r) => r.json() as Promise<Puzzle>)
-      .then(setPuzzle)
-      .catch(() => setPuzzle(null));
-  }, [source, date]);
+    let cancelled = false;
+    (async () => {
+      const p = await fetchSyndicatedPuzzle(source, date);
+      if (cancelled) return;
+      if (user) {
+        const remote = await pullProgress(user.id, source, date);
+        if (remote) {
+          const local = loadProgress(source, date);
+          if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+            saveProgress(source, date, remote);
+          }
+        }
+      }
+      if (!cancelled) setPuzzle(p);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [source, date, user]);
 
   if (!puzzle) return <div className="loading">Loading puzzle…</div>;
   return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
@@ -228,6 +317,82 @@ function CommunityPuzzleView({
   );
 }
 
+/** Continue an unpublished draft from My Puzzles — loads it back into the
+ *  Builder rather than the Solver. */
+function DraftPuzzleView({
+  id,
+  onOpenArchive,
+  onOpenAccount,
+}: {
+  id: string;
+  onOpenArchive: () => void;
+  onOpenAccount: () => void;
+}) {
+  const [row, setRow] = useState<Awaited<ReturnType<typeof getPuzzleById>>>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    setRow(null);
+    setNotFound(false);
+    let cancelled = false;
+    getPuzzleById(id).then((r) => {
+      if (cancelled) return;
+      if (!r) setNotFound(true);
+      else setRow(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (notFound) return <div className="error">Draft not found.</div>;
+  if (!row) return <div className="loading">Loading draft…</div>;
+  return (
+    <Builder
+      onOpenArchive={onOpenArchive}
+      onOpenAccount={onOpenAccount}
+      draftPuzzle={{ id: row.id, puzzle: row.data }}
+    />
+  );
+}
+
+/** Admin-only: load an existing syndicated puzzle into the Builder to fix
+ *  bad parsing. Fetches the same way PuzzleView does (database-or-static)
+ *  so editing always starts from what solvers currently see. */
+function EditPuzzleView({
+  source,
+  date,
+  onOpenArchive,
+  onOpenAccount,
+}: {
+  source: PuzzleSource;
+  date: string;
+  onOpenArchive: () => void;
+  onOpenAccount: () => void;
+}) {
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+
+  useEffect(() => {
+    setPuzzle(null);
+    let cancelled = false;
+    fetchSyndicatedPuzzle(source, date).then((p) => {
+      if (!cancelled) setPuzzle(p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [source, date]);
+
+  if (!puzzle) return <div className="loading">Loading puzzle…</div>;
+  return (
+    <Builder
+      onOpenArchive={onOpenArchive}
+      onOpenAccount={onOpenAccount}
+      editing={{ source, date, puzzle }}
+    />
+  );
+}
+
 function Solver({
   puzzle,
   onOpenArchive,
@@ -247,6 +412,9 @@ function Solver({
     [communityId, puzzle.source, puzzle.date],
   );
   const xw = useCrossword(puzzle, saved);
+  const profile = useProfile();
+  const canEdit = !communityId && profile !== "loading" && profile?.is_admin;
+  useDocumentTitle(puzzle.title);
 
   const [paused, setPausedState] = useState(false);
   const pausedRef = useRef(paused);
@@ -342,6 +510,11 @@ function Solver({
             </div>
           </div>
         </div>
+        {canEdit && (
+          <button className="btn" onClick={() => goTo(`edit/${puzzle.source}/${puzzle.date}`)}>
+            ✎ Fix parsing
+          </button>
+        )}
       </header>
 
       <div className="actionbar">

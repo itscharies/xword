@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useBuilder } from "../hooks/useBuilder.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { getProfile } from "../lib/profile.ts";
+import { publishPuzzle, updatePuzzle } from "../lib/puzzles.ts";
+import { saveSyndicatedPuzzle } from "../lib/syndicated.ts";
 import type { Puzzle } from "../types.ts";
+import type { PuzzleSource } from "../lib/sources.ts";
 import { BuilderGrid } from "./BuilderGrid.tsx";
 import { BuilderClues } from "./BuilderClues.tsx";
 import { BuilderSuggestions } from "./BuilderSuggestions.tsx";
@@ -11,19 +15,6 @@ import { RebusIcon } from "./RebusIcon.tsx";
 import { Modal } from "./Modal.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
 import { Logo } from "./Logo.tsx";
-
-/** Serialize the built puzzle to a downloaded JSON file. */
-function download(filename: string, json: string) {
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
 /** Squares with no letter, or clues with no text — the same rough
  *  completeness check applies whether the puzzle is being exported or
@@ -43,9 +34,17 @@ function puzzleWarnings(puzzle: Puzzle): string[] {
 export function Builder({
   onOpenArchive,
   onOpenAccount,
+  editing,
+  draftPuzzle,
 }: {
   onOpenArchive: () => void;
   onOpenAccount: () => void;
+  /** Set when an admin opened this Builder to fix an existing syndicated
+   *  puzzle rather than author a new one — see App.tsx's EditPuzzleView. */
+  editing?: { source: PuzzleSource; date: string; puzzle: Puzzle };
+  /** Set when continuing a puzzle already saved as a draft — see App.tsx's
+   *  DraftPuzzleView. Mutually exclusive with `editing`. */
+  draftPuzzle?: { id: string; puzzle: Puzzle };
 }) {
   const b = useBuilder();
   const { user } = useAuth();
@@ -53,6 +52,27 @@ export function Builder({
   const formRef = useRef<HTMLDivElement>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(draftPuzzle?.id ?? null);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [draftSaved, setDraftSaved] = useState(false);
+
+  useDocumentTitle(
+    editing ? `Fixing: ${editing.puzzle.title}` : "Crossword builder",
+  );
+
+  // Load the puzzle being fixed/continued once, replacing whatever local
+  // draft was here.
+  const imported = useRef(false);
+  useEffect(() => {
+    if (!imported.current && (editing || draftPuzzle)) {
+      imported.current = true;
+      b.importPuzzle((editing ?? draftPuzzle)!.puzzle);
+    }
+  }, [editing, draftPuzzle, b]);
 
   // Physical keyboard → builder, unless a text field (clue / metadata) is
   // focused, so typing into inputs doesn't leak into the grid.
@@ -66,17 +86,32 @@ export function Builder({
     return () => window.removeEventListener("keydown", handler);
   }, [b.handleKeyDown]);
 
-  const onExport = () => {
+  const saveFix = async () => {
+    if (!editing || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    const { error } = await saveSyndicatedPuzzle(editing.source, editing.date, b.buildPuzzle());
+    setSaving(false);
+    if (error) setSaveError(error);
+    else setSaved(true);
+  };
+
+  const saveDraft = async () => {
+    if (!user || draftSaving) return;
+    setDraftSaving(true);
+    setDraftError(null);
+    setDraftSaved(false);
     const puzzle = b.buildPuzzle();
-    const warnings = puzzleWarnings(puzzle);
-    if (warnings.length) {
-      const ok = window.confirm(
-        `Heads up: ${warnings.join(" and ")}. Download anyway?`,
-      );
-      if (!ok) return;
+    const title = puzzle.title.trim() || "Untitled draft";
+    const { id, error } = draftId
+      ? await updatePuzzle(draftId, title, puzzle, "draft").then((r) => ({ id: draftId, error: r.error }))
+      : await publishPuzzle(user.id, title, puzzle, "draft");
+    setDraftSaving(false);
+    if (error) setDraftError(error);
+    else {
+      if (id) setDraftId(id);
+      setDraftSaved(true);
     }
-    const name = `${puzzle.date || "puzzle"}.json`;
-    download(name, JSON.stringify(puzzle, null, 2));
   };
 
   const openPublish = () => {
@@ -95,22 +130,26 @@ export function Builder({
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
           <div className="title-block">
-            <h1>Crossword builder</h1>
+            <h1>{editing ? `Fixing: ${editing.puzzle.title}` : "Crossword builder"}</h1>
             <div className="byline">
-              Lay out a grid, fill it in, export JSON · autosaved
+              {editing
+                ? "Correct the grid or clues, then save the fix"
+                : "Lay out a grid, fill it in · autosaved"}
             </div>
           </div>
         </div>
-        <button
-          className="btn"
-          onClick={() => {
-            if (window.confirm("Discard this draft and start a blank grid?"))
-              b.clearDraft();
-          }}
-          title="Discard the saved draft and start fresh"
-        >
-          New / Clear
-        </button>
+        {!editing && (
+          <button
+            className="btn"
+            onClick={() => {
+              if (window.confirm("Discard this draft and start a blank grid?"))
+                b.clearDraft();
+            }}
+            title="Discard the saved draft and start fresh"
+          >
+            New / Clear
+          </button>
+        )}
       </header>
 
       <div className="builder-controls">
@@ -306,14 +345,30 @@ export function Builder({
         </div>
 
         <div className="builder-export">
-          {user && (
-            <button className="btn" onClick={openPublish}>
-              ⇪ Publish
-            </button>
+          {editing ? (
+            <>
+              {saved && <span className="savedata-status">Fix saved.</span>}
+              {saveError && <span className="savedata-status">{saveError}</span>}
+              <button className="btn btn-accent" onClick={() => void saveFix()} disabled={saving}>
+                {saving ? "Saving…" : "✓ Save fix"}
+              </button>
+            </>
+          ) : user ? (
+            <>
+              {draftSaved && <span className="savedata-status">Draft saved.</span>}
+              {draftError && <span className="savedata-status">{draftError}</span>}
+              <button className="btn" onClick={() => void saveDraft()} disabled={draftSaving}>
+                {draftSaving ? "Saving…" : "💾 Save draft"}
+              </button>
+              <button className="btn btn-accent" onClick={openPublish}>
+                ⇪ Publish
+              </button>
+            </>
+          ) : (
+            <span className="savedata-status">
+              Sign in from the Account page to save drafts or publish.
+            </span>
           )}
-          <button className="btn btn-accent" onClick={onExport}>
-            ⬇ Download JSON
-          </button>
         </div>
       </div>
 
@@ -330,6 +385,7 @@ export function Builder({
             <PublishDialog
               puzzle={b.buildPuzzle()}
               onClose={() => setShowPublish(false)}
+              existingId={draftId}
             />
           )}
         </Modal>
