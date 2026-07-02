@@ -152,14 +152,14 @@ export function BuilderGrid({ b }: { b: Builder }) {
         row.map((cell, c) => {
           const k = keyOf(r, c);
           const showSel = mode === "fill";
+          // In multi-select (or mid-marquee) only the selection is highlighted —
+          // the active cell + across/down word + linked highlights step aside.
+          const multi = selDisplay.size > 0;
           const isActive =
-            showSel &&
-            b.selected.size === 0 &&
-            b.active.row === r &&
-            b.active.col === c;
+            showSel && !multi && b.active.row === r && b.active.col === c;
           const isSelected = showSel && selDisplay.has(k);
-          const inWord = b.highlighted.has(k);
-          const isLinked = b.linkedCells.has(k);
+          const inWord = !multi && b.highlighted.has(k);
+          const isLinked = !multi && b.linkedCells.has(k);
           const entry = cell.solution ?? "";
           const cls = [
             "cell",
