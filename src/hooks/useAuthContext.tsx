@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
-import { getSession, onAuthStateChange, signInWithOtp, signOut } from "../lib/auth.ts";
+import { getSession, onAuthStateChange, signInWithGoogle, signOut } from "../lib/auth.ts";
 import { reconcileAll } from "../lib/sync.ts";
 
 interface AuthValue {
   status: "loading" | "signed-out" | "signed-in";
   user: User | null;
-  signInWithOtp: (email: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   /** Bumps every time a sign-in reconcile finishes, so components reading
    *  localStorage directly (Archive's per-item badges) know to re-render. */
@@ -52,10 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || reconciledFor.current === user.id) return;
     reconciledFor.current = user.id;
-    reconcileAll(user.id).then(() => setSyncVersion((v) => v + 1));
+    reconcileAll(user.id)
+      .catch(() => {})
+      .then(() => setSyncVersion((v) => v + 1));
   }, [user]);
 
-  const value: AuthValue = { status, user, signInWithOtp, signOut, syncVersion };
+  const value: AuthValue = { status, user, signInWithGoogle, signOut, syncVersion };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

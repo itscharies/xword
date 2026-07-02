@@ -19,6 +19,7 @@ import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
+import { AccountPage } from "./components/AccountPage.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 
@@ -85,6 +86,10 @@ export default function App() {
   // the puzzle catalogue loading.
   if (route === "create") return <Builder onOpenArchive={() => goTo("")} />;
 
+  // Account page — also self-contained, so signing in doesn't depend on the
+  // puzzle catalogue having loaded (and survives the OAuth redirect back).
+  if (route === "account") return <AccountPage onOpenArchive={() => goTo("")} />;
+
   if (error) return <div className="error">Failed to load puzzles: {error}</div>;
   if (!index || index.length === 0)
     return <div className="loading">Loading…</div>;
@@ -97,7 +102,11 @@ export default function App() {
 
   if (!valid) {
     return (
-      <Archive index={index} onPick={(source, d) => goTo(`${source}/${d}`)} />
+      <Archive
+        index={index}
+        onPick={(source, d) => goTo(`${source}/${d}`)}
+        onOpenAccount={() => goTo("account")}
+      />
     );
   }
 

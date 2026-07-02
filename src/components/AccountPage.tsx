@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { avatarUrl } from "../lib/auth.ts";
 import {
   claimProfile,
   follow,
@@ -9,12 +10,13 @@ import {
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
+import { UserIcon } from "./icons.tsx";
 
-/** Body of the "Account" modal. Branches on auth + profile state: signed
- *  out -> magic link form; signed in with no `profiles` row yet -> claim a
- *  username/display name; otherwise -> account info + follow search. */
-export function SignIn() {
-  const { status, user, signInWithOtp, signOut } = useAuth();
+/** Full "/account" page. Branches on auth + profile state: signed out ->
+ *  Google sign-in; signed in with no `profiles` row yet -> claim a
+ *  username/display name; otherwise -> account summary + follow search. */
+export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
+  const { status, user, signInWithGoogle, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null | "loading">("loading");
 
   useEffect(() => {
@@ -31,73 +33,98 @@ export function SignIn() {
     };
   }, [user]);
 
-  if (status === "loading") return null;
-
-  if (!user) return <SignInForm signInWithOtp={signInWithOtp} />;
-
-  if (profile === "loading") return null;
-
-  if (!profile) {
-    return (
-      <ClaimProfileForm userId={user.id} onClaimed={setProfile} />
-    );
+  let body: React.ReactNode = null;
+  if (status !== "loading") {
+    if (!user) {
+      body = <SignInPrompt signInWithGoogle={signInWithGoogle} />;
+    } else if (profile === "loading") {
+      body = null;
+    } else if (!profile) {
+      body = <ClaimProfileForm userId={user.id} onClaimed={setProfile} />;
+    } else {
+      body = (
+        <>
+          <AccountSummary
+            avatar={avatarUrl(user)}
+            profile={profile}
+            onSignOut={() => void signOut()}
+          />
+          <FollowPanel userId={user.id} />
+        </>
+      );
+    }
   }
 
   return (
-    <>
-      <div className="setting-row">
-        <span className="setting-label">Account</span>
-        <div className="savedata-actions">
-          <span>
-            {profile.display_name} <span className="savedata-status">@{profile.username}</span>
-          </span>
-          <button className="btn" onClick={() => void signOut()}>
-            Sign out
-          </button>
-        </div>
-      </div>
-      <FollowPanel userId={user.id} />
-    </>
+    <div className="app account-page">
+      <header className="header">
+        <button
+          className="title-block title-link"
+          onClick={onOpenArchive}
+          title="Back to archive"
+        >
+          <h1>Account</h1>
+        </button>
+      </header>
+
+      <div className="account-body">{body}</div>
+    </div>
   );
 }
 
-function SignInForm({
-  signInWithOtp,
+function SignInPrompt({
+  signInWithGoogle,
 }: {
-  signInWithOtp: (email: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
 }) {
-  const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || sending) return;
-    setSending(true);
+  const google = async () => {
     setMessage(null);
-    const { error } = await signInWithOtp(email.trim());
-    setSending(false);
-    setMessage(error ? error : "Check your email for a sign-in link.");
+    const { error } = await signInWithGoogle();
+    if (error) setMessage(error);
+    // On success the page navigates away to Google, so there's nothing else to do here.
   };
 
   return (
     <div className="setting-row">
       <span className="setting-label">Sign in</span>
-      <form className="savedata-actions" onSubmit={submit}>
-        <input
-          className="text-input"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
-        <button className="btn" type="submit" disabled={sending}>
-          {sending ? "Sending…" : "Send magic link"}
-        </button>
-      </form>
+      <button className="btn" onClick={() => void google()}>
+        Continue with Google
+      </button>
       {message && <span className="savedata-status">{message}</span>}
+    </div>
+  );
+}
+
+function AccountSummary({
+  avatar,
+  profile,
+  onSignOut,
+}: {
+  avatar: string | null;
+  profile: Profile;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="setting-row">
+      <span className="setting-label">Account</span>
+      <div className="account-summary">
+        {avatar ? (
+          <img className="account-avatar" src={avatar} alt="" />
+        ) : (
+          <span className="account-avatar account-avatar-fallback">
+            <UserIcon />
+          </span>
+        )}
+        <div className="account-identity">
+          <div className="account-display-name">{profile.display_name}</div>
+          <div className="savedata-status">@{profile.username}</div>
+        </div>
+        <button className="btn" onClick={onSignOut}>
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }
@@ -111,17 +138,17 @@ function ClaimProfileForm({
 }) {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
     setSaving(true);
-    setError(null);
+    setFormError(null);
     const { error } = await claimProfile(userId, username.trim().toLowerCase(), displayName);
     setSaving(false);
-    if (error) setError(error);
+    if (error) setFormError(error);
     else onClaimed({ user_id: userId, username: username.trim().toLowerCase(), display_name: displayName.trim() });
   };
 
@@ -150,7 +177,7 @@ function ClaimProfileForm({
           {saving ? "Saving…" : "Save profile"}
         </button>
       </form>
-      {error && <span className="savedata-status">{error}</span>}
+      {formError && <span className="savedata-status">{formError}</span>}
     </div>
   );
 }

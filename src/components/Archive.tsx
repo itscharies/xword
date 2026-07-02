@@ -7,11 +7,11 @@ import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
-import { SignIn } from "./SignIn.tsx";
 import { CheckIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { avatarUrl } from "../lib/auth.ts";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -67,13 +67,14 @@ function FilterRow({
 export function Archive({
   index,
   onPick,
+  onOpenAccount,
 }: {
   index: PuzzleIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
+  onOpenAccount: () => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [showAccount, setShowAccount] = useState(false);
   // Re-renders (and thus re-reads every `loadProgress` call below) whenever
   // a sign-in reconcile finishes and rewrites localStorage underneath us.
   const { user } = useAuth();
@@ -141,12 +142,16 @@ export function Archive({
             ℹ
           </button>
           <button
-            className="btn icon-btn cog-btn"
-            onClick={() => setShowAccount(true)}
+            className="btn icon-btn cog-btn account-btn"
+            onClick={onOpenAccount}
             aria-label={user ? "Account" : "Sign in"}
             title={user ? user.email : "Sign in"}
           >
-            <UserIcon />
+            {avatarUrl(user) ? (
+              <img className="account-btn-avatar" src={avatarUrl(user)!} alt="" />
+            ) : (
+              <UserIcon />
+            )}
           </button>
           <button
             className="btn icon-btn cog-btn"
@@ -266,12 +271,6 @@ export function Archive({
       {showInfo && (
         <Modal title="How to play" onClose={() => setShowInfo(false)}>
           <HowToPlay />
-        </Modal>
-      )}
-
-      {showAccount && (
-        <Modal title="Account" onClose={() => setShowAccount(false)}>
-          <SignIn />
         </Modal>
       )}
     </div>

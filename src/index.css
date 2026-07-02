@@ -236,6 +236,35 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-bottom: 1px solid var(--line);
 }
 
+.account-body { display: flex; flex-direction: column; gap: 18px; max-width: 480px; }
+
+/* Header account button's icon slot doubles as an avatar frame. */
+.account-btn-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-summary { display: flex; align-items: center; gap: 12px; }
+.account-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.account-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  color: var(--muted);
+}
+.account-identity { flex: 1; min-width: 0; }
+.account-display-name { font-weight: 700; }
+
 .seg { display: flex; gap: 0; border: var(--bw) solid var(--line); width: fit-content; }
 .seg-btn {
   display: inline-flex;
