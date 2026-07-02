@@ -30,8 +30,10 @@ export function BuilderGrid({ b }: { b: Builder }) {
   // render live; the preview ref is read on release to commit the selection.
   const dragging = useRef(false);
   const start = useRef<{ r: number; c: number } | null>(null);
-  const shiftStart = useRef(false);
   const moved = useRef(false);
+  // How this marquee affects the selection, decided at drag start: plain drag
+  // replaces; shift-drag adds, or removes when it started on a selected cell.
+  const dragOp = useRef<"replace" | "add" | "remove">("replace");
   const previewRef = useRef<Set<string> | null>(null);
   const [preview, setPreview] = useState<Set<string> | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -89,7 +91,11 @@ export function BuilderGrid({ b }: { b: Builder }) {
     dragging.current = true;
     moved.current = false;
     start.current = { r, c };
-    shiftStart.current = e.shiftKey;
+    dragOp.current = !e.shiftKey
+      ? "replace"
+      : b.selected.has(keyOf(r, c))
+        ? "remove"
+        : "add";
     previewRef.current = null;
     setPreview(null);
     setRect(null);
@@ -118,15 +124,14 @@ export function BuilderGrid({ b }: { b: Builder }) {
     }
     if (!dragging.current || !start.current) return;
     dragging.current = false;
-    const additive = shiftStart.current || e.shiftKey;
     if (moved.current && previewRef.current) {
       const cells = [...previewRef.current].map((k) => {
         const [r, c] = k.split(",").map(Number);
         return { row: r, col: c };
       });
-      b.selectCells(cells, additive);
+      b.selectCells(cells, dragOp.current);
     } else {
-      b.selectCell(start.current.r, start.current.c, additive);
+      b.selectCell(start.current.r, start.current.c, e.shiftKey);
     }
     start.current = null;
     previewRef.current = null;
@@ -134,9 +139,20 @@ export function BuilderGrid({ b }: { b: Builder }) {
     setRect(null);
   };
 
-  // Cells shown selected: the committed selection plus any live marquee preview.
-  const selDisplay = new Set(b.selected);
-  if (preview) for (const k of preview) selDisplay.add(k);
+  // Cells shown selected: the committed selection, adjusted by any live marquee
+  // preview according to the drag op (replace shows just the block; add unions;
+  // remove subtracts, so dragged-over cells visibly de-highlight).
+  let selDisplay: Set<string>;
+  if (preview) {
+    if (dragOp.current === "replace") selDisplay = new Set(preview);
+    else {
+      selDisplay = new Set(b.selected);
+      for (const k of preview)
+        dragOp.current === "remove" ? selDisplay.delete(k) : selDisplay.add(k);
+    }
+  } else {
+    selDisplay = new Set(b.selected);
+  }
 
   return (
     <div

@@ -392,20 +392,26 @@ export function useBuilder() {
     [isOpen, lookup],
   );
 
-  /** Replace or extend (shift) the multi-selection with a block of cells (from
-   *  a marquee drag). Only open cells are included. */
+  /** Apply a marquee block to the multi-selection. "replace" starts fresh,
+   *  "add" unions, "remove" subtracts (shift-drag over already-selected cells).
+   *  Only open cells are affected. */
   const selectCells = useCallback(
-    (cells: Pos[], additive: boolean) => {
+    (cells: Pos[], op: "replace" | "add" | "remove") => {
       const open = cells.filter((p) => isOpen(p.row, p.col));
-      if (open.length <= 1 && !additive) {
+      if (open.length <= 1 && op === "replace") {
         // A tiny drag over one cell behaves like a plain click.
         if (open.length === 1) selectCell(open[0].row, open[0].col);
         return;
       }
-      const next = additive ? new Set(selectedRef.current) : new Set<string>();
-      for (const p of open) next.add(keyOf(p.row, p.col));
+      const next =
+        op === "replace" ? new Set<string>() : new Set(selectedRef.current);
+      for (const p of open) {
+        const k = keyOf(p.row, p.col);
+        if (op === "remove") next.delete(k);
+        else next.add(k);
+      }
       setSelected(next);
-      if (open.length) setActive(open[0]);
+      if (op !== "remove" && open.length) setActive(open[0]);
     },
     [isOpen, selectCell],
   );
