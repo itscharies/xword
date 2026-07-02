@@ -126,18 +126,21 @@ export function setAutoAdvance(on: boolean): void {
 const FILTER_KEY = "xword:filters";
 
 export interface Filters {
-  paper: string;
+  /** "all", a paper name from lib/sources.ts's PAPERS, or `person:<user_id>`
+   *  to narrow to one followed person's puzzles instead of the syndicated
+   *  archive. */
+  source: string;
   type: string;
 }
 
-/** The archive's last-used Paper/Type filters, so they survive navigation. */
+/** The archive's last-used Source/Type filters, so they survive navigation. */
 export function getFilters(): Filters {
   try {
     const raw = localStorage.getItem(FILTER_KEY);
-    const f = raw ? (JSON.parse(raw) as Partial<Filters>) : {};
-    return { paper: f.paper ?? "all", type: f.type ?? "all" };
+    const f = raw ? (JSON.parse(raw) as Partial<Filters> & { paper?: string }) : {};
+    return { source: f.source ?? f.paper ?? "all", type: f.type ?? "all" };
   } catch {
-    return { paper: "all", type: "all" };
+    return { source: "all", type: "all" };
   }
 }
 

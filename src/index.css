@@ -1128,36 +1128,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   }
 }
 
-/* Source filter chips — one row per dimension (Paper, Type). */
-.archive-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 4px 0 16px;
-}
-/* Each row stays on a single line and scrolls sideways if it overflows; the
-   right/bottom padding leaves room so the chips' hard shadows aren't clipped
-   by the scroll box. */
-.archive-filter {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px var(--sh) var(--sh) 0;
-  scrollbar-width: none;
-}
-.archive-filter::-webkit-scrollbar { display: none; }
-.filter-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  width: 48px;
-  flex-shrink: 0;
-}
+/* The Filters button that opens the filters modal, replacing the old
+   always-visible chip bar. */
+.archive-filters-bar { margin: 4px 0 16px; }
+.filters-btn { font-weight: 700; }
+
+/* Filter chips inside the modal — wrap onto multiple lines rather than
+   scrolling sideways, since the modal gives them vertical room. */
+.filter-chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-chip {
   background: var(--surface);
   color: var(--fg);
@@ -1168,10 +1146,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  /* Keep each label on one line — don't let it shrink/wrap (e.g. "NY Times"
-     splitting in two); the row scrolls sideways instead. */
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 @media (hover: hover) {
   .filter-chip:hover { background: var(--accent-2); color: #000; }
