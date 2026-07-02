@@ -99,9 +99,15 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   // ---- state (mirrored by refs) ------------------------------------------
 
   const blank = () => grid.map((row) => row.map(() => ""));
-  const [entries, setEntriesState] = useState<string[][]>(
-    () => saved?.entries ?? blank(),
-  );
+  // Saved progress can predate a grid resize (e.g. an admin's "Fix parsing"
+  // edit, or a puzzle re-synced with different dimensions) — a shape
+  // mismatch here would otherwise crash Grid.tsx indexing a row/cell that no
+  // longer exists, so fall back to blank rather than trust it blindly.
+  const [entries, setEntriesState] = useState<string[][]>(() => {
+    const e = saved?.entries;
+    const valid = !!e && e.length === height && e.every((row) => row.length === width);
+    return valid ? e! : blank();
+  });
   const [active, setActiveState] = useState<Pos>(firstOpen);
   const [direction, setDirectionState] = useState<Direction>("across");
   const [revealed, setRevealedState] = useState<Set<string>>(
