@@ -14,10 +14,13 @@ import {
   type Progress,
 } from "./lib/storage.ts";
 import {
+  flushPendingPushes,
+  onSaveStatus,
   pullCommunityProgress,
   pullProgress,
   pushCommunityProgress,
   pushProgress,
+  type SaveStatus,
 } from "./lib/sync.ts";
 import { getPuzzleById } from "./lib/puzzles.ts";
 import { getSyndicatedPuzzle } from "./lib/syndicated.ts";
@@ -62,8 +65,12 @@ const readRoute = () => {
   return p.replace(/^\/+|\/+$/g, "");
 };
 
-/** Navigate with real URLs (History API) rather than a hash fragment. */
+/** Navigate with real URLs (History API) rather than a hash fragment. Flushes
+ *  any debounced progress write first — otherwise it just sits on a timer in
+ *  the background, which is harmless (the SPA keeps running) but leaves the
+ *  save indicator, and the actual server write, lagging behind the nav. */
 const goTo = (route: string) => {
+  flushPendingPushes();
   window.history.pushState(null, "", BASE + route);
   window.dispatchEvent(new PopStateEvent("popstate"));
 };
@@ -88,9 +95,16 @@ export default function App() {
   const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [route, setRoute] = useState(readRoute);
+  const indexFetchedRef = useRef(false);
 
   useEffect(() => {
-    const onPop = () => setRoute(readRoute());
+    // Covers the browser back/forward buttons — goTo() flushes for in-app
+    // links, but the history API itself fires popstate for those too, so
+    // this only does real work for back/forward.
+    const onPop = () => {
+      flushPendingPushes();
+      setRoute(readRoute());
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -101,7 +115,23 @@ export default function App() {
     updateFavicon();
   }, []);
 
+  // Every other route below is self-contained (fetches its own puzzle
+  // directly); only the archive actually needs the full catalogue.
+  const [routeSrc, routeDate] = route.split("/");
+  const editParts = route.startsWith("edit/") ? route.slice(5).split("/") : null;
+  const needsIndex = !(
+    route === "create" ||
+    route === "account" ||
+    route === "mine" ||
+    route.startsWith("p/") ||
+    route.startsWith("draft/") ||
+    (editParts && isSource(editParts[0]) && !!editParts[1]) ||
+    (isSource(routeSrc) && !!routeDate)
+  );
+
   useEffect(() => {
+    if (!needsIndex || indexFetchedRef.current) return;
+    indexFetchedRef.current = true;
     // The catalogue changes whenever a new puzzle lands, but GitHub Pages /
     // phones cache it — so bypass the cache (a cache-bust param + no-store) to
     // make sure freshly-deployed puzzles show up right away. The puzzle files
@@ -113,7 +143,7 @@ export default function App() {
       })
       .then(setIndex)
       .catch((e) => setError(String(e)));
-  }, []);
+  }, [needsIndex]);
 
   // Builder page — self-contained, so it works even before (or without) the
   // puzzle catalogue loading.
@@ -190,33 +220,31 @@ export default function App() {
     );
   }
 
-  if (error) return <div className="error">Failed to load puzzles: {error}</div>;
-  if (!index || index.length === 0)
-    return <div className="loading">Loading…</div>;
-
-  // A valid "<source>/<date>" path shows that puzzle; anything else (including
-  // the root) shows the archive — the default landing now that there are many.
-  const [src, date] = route.split("/");
-  const valid =
-    isSource(src) && date && index.some((p) => p.source === src && p.date === date);
-
-  if (!valid) {
+  // A "<source>/<date>" path shows that puzzle directly — PuzzleView fetches
+  // it itself and reports not-found, so this doesn't wait on the catalogue.
+  if (isSource(routeSrc) && routeDate) {
     return (
-      <Archive
-        index={index}
-        onPick={(source, d) => goTo(`${source}/${d}`)}
-        onOpenAccount={() => goTo("account")}
-        onOpenPuzzle={(id) => goTo(`p/${id}`)}
+      <PuzzleView
+        key={`${routeSrc}/${routeDate}`}
+        source={routeSrc as PuzzleSource}
+        date={routeDate}
+        onOpenArchive={() => goTo("")}
       />
     );
   }
 
+  // Anything else (including the root) shows the archive — the default
+  // landing now that there are many puzzles.
+  if (error) return <div className="error">Failed to load puzzles: {error}</div>;
+  if (!index || index.length === 0)
+    return <div className="loading">Loading…</div>;
+
   return (
-    <PuzzleView
-      key={`${src}/${date}`}
-      source={src as PuzzleSource}
-      date={date}
-      onOpenArchive={() => goTo("")}
+    <Archive
+      index={index}
+      onPick={(source, d) => goTo(`${source}/${d}`)}
+      onOpenAccount={() => goTo("account")}
+      onOpenPuzzle={(id) => goTo(`p/${id}`)}
     />
   );
 }
@@ -232,6 +260,7 @@ function PuzzleView({
 }) {
   const { user } = useAuth();
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   // Pull this puzzle's remote progress into localStorage *before* mounting
   // Solver (which reads localStorage synchronously on mount) — without this,
@@ -240,10 +269,15 @@ function PuzzleView({
   // localStorage afterwards, so the other device's progress never appears.
   useEffect(() => {
     setPuzzle(null);
+    setNotFound(false);
     let cancelled = false;
     (async () => {
       const p = await fetchSyndicatedPuzzle(source, date);
       if (cancelled) return;
+      if (!p) {
+        setNotFound(true);
+        return;
+      }
       if (user) {
         const remote = await pullProgress(user.id, source, date);
         if (remote) {
@@ -260,6 +294,7 @@ function PuzzleView({
     };
   }, [source, date, user]);
 
+  if (notFound) return <div className="error">Puzzle not found.</div>;
   if (!puzzle) return <div className="loading">Loading puzzle…</div>;
   return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
 }
@@ -279,6 +314,7 @@ function CommunityPuzzleView({
   const { user } = useAuth();
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [completions, setCompletions] = useState(0);
+  const [authorId, setAuthorId] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -304,6 +340,7 @@ function CommunityPuzzleView({
       if (!cancelled) {
         setPuzzle(row.data);
         setCompletions(row.completions);
+        setAuthorId(row.author_id);
       }
     });
 
@@ -319,6 +356,7 @@ function CommunityPuzzleView({
       puzzle={puzzle}
       onOpenArchive={onOpenArchive}
       communityId={id}
+      authorId={authorId}
       completions={completions}
     />
   );
@@ -404,6 +442,7 @@ function Solver({
   puzzle,
   onOpenArchive,
   communityId,
+  authorId,
   completions,
 }: {
   puzzle: Puzzle;
@@ -411,6 +450,9 @@ function Solver({
   /** Set for a published (/p/<id>) puzzle — switches progress storage/sync
    *  to be keyed by puzzle id instead of (source, date). */
   communityId?: string;
+  /** The published puzzle's author — used to decide whether the viewer can
+   *  edit it. Unset for syndicated puzzles, which have no owner. */
+  authorId?: string | null;
   /** How many people have completed this published puzzle. */
   completions?: number;
 }) {
@@ -419,8 +461,15 @@ function Solver({
     [communityId, puzzle.source, puzzle.date],
   );
   const xw = useCrossword(puzzle, saved);
+  const { user } = useAuth();
   const profile = useProfile();
-  const canEdit = !communityId && profile !== "loading" && profile?.is_admin;
+  const isAdmin = profile !== "loading" && !!profile?.is_admin;
+  const isOwner = !!communityId && !!user && authorId === user.id;
+  // Admin edit access stays scoped to syndicated puzzles (no owner exists to
+  // check against) — a community puzzle can only be edited by its author,
+  // since the `puzzles` table's RLS update policy doesn't have an admin
+  // override.
+  const canEdit = isOwner || (isAdmin && !communityId);
   useDocumentTitle(puzzle.title);
 
   const [paused, setPausedState] = useState(false);
@@ -456,13 +505,25 @@ function Solver({
   // the overlay routes keys into its own answer entry rather than the grid.
   const modalOpen = showModal || showSettings || showReset || showAnagram || !!conflict;
 
-  // Persist progress whenever it changes — locally always, and to Supabase
-  // (debounced) when signed in.
-  const { user } = useAuth();
   // The updatedAt of the newest version of this puzzle's progress we've
   // already pushed or accounted for — anything newer we see from Supabase
   // must have come from another tab or device, not from us.
   const lastSyncedAtRef = useRef(saved?.updatedAt ?? 0);
+
+  // Save indicator: "saving" the moment an edit schedules a debounced push,
+  // "saved" once that request lands, then fades back to nothing after a
+  // couple of seconds so it doesn't linger as permanent header clutter.
+  const saveKey = communityId ? `community:${communityId}` : `${puzzle.source}:${puzzle.date}`;
+  const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
+  useEffect(() => {
+    setSaveStatus(null);
+    return onSaveStatus(saveKey, setSaveStatus);
+  }, [saveKey]);
+  useEffect(() => {
+    if (saveStatus !== "saved") return;
+    const t = setTimeout(() => setSaveStatus(null), 2500);
+    return () => clearTimeout(t);
+  }, [saveStatus]);
 
   const buildProgress = (): Progress => ({
     entries: xw.entries,
@@ -488,7 +549,18 @@ function Solver({
   // if it were a dependency here it would re-arm the debounce every second
   // too, so the write would never actually go out while the timer runs (and
   // `pending` would look permanently non-empty to the beforeunload guard).
+  const didMountRef = useRef(false);
   useEffect(() => {
+    // Skip the run this effect does on mount just by describing the current
+    // (unchanged) state — pushing then would arm `pending` for no reason,
+    // and reloading a second later would trip the beforeunload warning even
+    // though nothing was actually edited. Sign-in mid-session is still
+    // covered: reconcileAll already syncs a newly-signed-in user's local
+    // progress, so this only needs to react to genuine content changes.
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     if (!user) return;
     const progress = buildProgress();
     lastSyncedAtRef.current = progress.updatedAt!;
@@ -585,12 +657,23 @@ function Solver({
               {communityId && (
                 <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
               )}
+              {saveStatus && (
+                <span className={`save-status save-status-${saveStatus}`}>
+                  {" · "}
+                  {saveStatus === "saving" ? "Saving…" : "Saved ✓"}
+                </span>
+              )}
             </div>
           </div>
         </div>
         {canEdit && (
-          <button className="btn" onClick={() => goTo(`edit/${puzzle.source}/${puzzle.date}`)}>
-            ✎ Fix parsing
+          <button
+            className="btn"
+            onClick={() =>
+              goTo(communityId ? `draft/${communityId}` : `edit/${puzzle.source}/${puzzle.date}`)
+            }
+          >
+            ✎ Edit
           </button>
         )}
       </header>

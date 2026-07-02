@@ -63,18 +63,41 @@ export async function reconcileAll(userId: string): Promise<void> {
   }
 }
 
-const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; run: () => void }>();
+const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; run: () => PromiseLike<unknown> }>();
 const DEBOUNCE_MS = 1500;
+
+export type SaveStatus = "saving" | "saved";
+type StatusListener = (status: SaveStatus) => void;
+const statusListeners = new Map<string, Set<StatusListener>>();
+
+function notifyStatus(key: string, status: SaveStatus): void {
+  for (const listener of statusListeners.get(key) ?? []) listener(status);
+}
+
+/** Subscribe to one puzzle's save status: "saving" from the moment an edit
+ *  schedules a write until the request lands, then "saved". Keyed the same
+ *  way as `pushProgress`/`pushCommunityProgress`, so the Solver's indicator
+ *  only reacts to its own puzzle. */
+export function onSaveStatus(key: string, listener: StatusListener): () => void {
+  let set = statusListeners.get(key);
+  if (!set) {
+    set = new Set();
+    statusListeners.set(key, set);
+  }
+  set.add(listener);
+  return () => set!.delete(listener);
+}
 
 /** Schedules `run` under `key`, debounced — a second call with the same key
  *  before the delay elapses replaces the pending write rather than sending
  *  both. Exposed via `flushPendingPushes` so a backgrounded/closed tab still
  *  gets its last edit out instead of losing it to a pending timer. */
-function schedule(key: string, run: () => void): void {
+function schedule(key: string, run: () => PromiseLike<unknown>): void {
   clearTimeout(pending.get(key)?.timer);
+  notifyStatus(key, "saving");
   const timer = setTimeout(() => {
     pending.delete(key);
-    run();
+    void run().then(() => notifyStatus(key, "saved"));
   }, DEBOUNCE_MS);
   pending.set(key, { timer, run });
 }
@@ -86,7 +109,7 @@ export function flushPendingPushes(): void {
   for (const [key, { timer, run }] of pending) {
     clearTimeout(timer);
     pending.delete(key);
-    run();
+    void run().then(() => notifyStatus(key, "saved"));
   }
 }
 
@@ -116,8 +139,8 @@ export function pushProgress(
   progress: Progress,
 ): void {
   if (!supabase || !userId) return;
-  schedule(`${source}:${date}`, () => {
-    void supabase!.from("progress").upsert(
+  schedule(`${source}:${date}`, () =>
+    supabase!.from("progress").upsert(
       {
         user_id: userId,
         source,
@@ -126,8 +149,8 @@ export function pushProgress(
         client_updated_at: progress.updatedAt ?? Date.now(),
       },
       { onConflict: "user_id,source,puzzle_date" },
-    );
-  });
+    ),
+  );
 }
 
 /** Same as pushProgress, but for a published (/p/<id>) puzzle — keyed by
@@ -138,8 +161,8 @@ export function pushCommunityProgress(
   progress: Progress,
 ): void {
   if (!supabase || !userId) return;
-  schedule(`community:${puzzleId}`, () => {
-    void supabase!.from("progress").upsert(
+  schedule(`community:${puzzleId}`, () =>
+    supabase!.from("progress").upsert(
       {
         user_id: userId,
         puzzle_id: puzzleId,
@@ -147,8 +170,8 @@ export function pushCommunityProgress(
         client_updated_at: progress.updatedAt ?? Date.now(),
       },
       { onConflict: "user_id,puzzle_id" },
-    );
-  });
+    ),
+  );
 }
 
 /** One-off pull of a single community puzzle's remote progress — used when
