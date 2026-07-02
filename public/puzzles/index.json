@@ -40,6 +40,14 @@
     "author": "The Guardian"
   },
   {
+    "source": "tny-mini",
+    "date": "20260702",
+    "isoDate": "2026-07-02",
+    "weekday": "Thu",
+    "title": "New Yorker Mini",
+    "author": "Mollie Cowger"
+  },
+  {
     "source": "nyt",
     "date": "260701",
     "isoDate": "2026-07-01",
