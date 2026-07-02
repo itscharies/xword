@@ -1262,7 +1262,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-top: 2px solid var(--line);
   padding-top: 14px;
 }
-.builder-export { margin-left: auto; }
+.builder-export { margin-left: auto; display: flex; gap: 10px; }
 
 /* Puzzle-level settings (style, clue lengths) with an info affordance. */
 .builder-settings { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }

@@ -95,3 +95,47 @@ export function pushProgress(
     }, DEBOUNCE_MS),
   );
 }
+
+/** Same as pushProgress, but for a published (/p/<id>) puzzle — keyed by
+ *  `puzzle_id` instead of `source`/`puzzle_date`. */
+export function pushCommunityProgress(
+  userId: string | null,
+  puzzleId: string,
+  progress: Progress,
+): void {
+  if (!supabase || !userId) return;
+  const key = `community:${puzzleId}`;
+  clearTimeout(pending.get(key));
+  pending.set(
+    key,
+    setTimeout(() => {
+      pending.delete(key);
+      void supabase!.from("progress").upsert(
+        {
+          user_id: userId,
+          puzzle_id: puzzleId,
+          data: progress,
+          client_updated_at: progress.updatedAt ?? Date.now(),
+        },
+        { onConflict: "user_id,puzzle_id" },
+      );
+    }, DEBOUNCE_MS),
+  );
+}
+
+/** One-off pull of a single community puzzle's remote progress — used when
+ *  opening a /p/<id> puzzle, before the local copy is read, so a signed-in
+ *  user's progress from another device is in place before Solver mounts. */
+export async function pullCommunityProgress(
+  userId: string,
+  puzzleId: string,
+): Promise<Progress | null> {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("progress")
+    .select("data")
+    .eq("user_id", userId)
+    .eq("puzzle_id", puzzleId)
+    .maybeSingle();
+  return data?.data ?? null;
+}

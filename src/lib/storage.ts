@@ -76,7 +76,9 @@ export function listAllProgress(): {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       const m = k?.match(/^xword:progress:([^:]+):(.+)$/);
-      if (!m) continue;
+      // "community:<id>" progress (see loadCommunityProgress) isn't keyed by
+      // a real PuzzleSource — it has its own sync path, skip it here.
+      if (!m || m[1] === "community") continue;
       const raw = localStorage.getItem(k!);
       if (!raw) continue;
       try {
@@ -93,6 +95,30 @@ export function listAllProgress(): {
     /* localStorage unavailable */
   }
   return out;
+}
+
+// ---- community (published, /p/<id>) puzzle progress ---------------------
+// Keyed by puzzle id rather than (source, date) — these don't have a
+// syndication date, and sync against the `progress` table's `puzzle_id`
+// column instead of `source`/`puzzle_date` (see lib/sync.ts).
+
+const communityKey = (puzzleId: string) => `xword:progress:community:${puzzleId}`;
+
+export function loadCommunityProgress(puzzleId: string): Progress | null {
+  try {
+    const raw = localStorage.getItem(communityKey(puzzleId));
+    return raw ? (JSON.parse(raw) as Progress) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveCommunityProgress(puzzleId: string, progress: Progress): void {
+  try {
+    localStorage.setItem(communityKey(puzzleId), JSON.stringify(progress));
+  } catch {
+    // Storage full or unavailable — solving still works in-memory.
+  }
 }
 
 const LAST_DATE_KEY = "xword:lastDate";

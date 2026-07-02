@@ -1,10 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBuilder } from "../hooks/useBuilder.ts";
+import { useAuth } from "../hooks/useAuthContext.tsx";
+import { getProfile } from "../lib/profile.ts";
+import type { Puzzle } from "../types.ts";
 import { BuilderGrid } from "./BuilderGrid.tsx";
 import { BuilderClues } from "./BuilderClues.tsx";
 import { BuilderSuggestions } from "./BuilderSuggestions.tsx";
 import { MobileKeyboard } from "./MobileKeyboard.tsx";
 import { RebusIcon } from "./RebusIcon.tsx";
+import { Modal } from "./Modal.tsx";
+import { PublishDialog } from "./PublishDialog.tsx";
 
 /** Serialize the built puzzle to a downloaded JSON file. */
 function download(filename: string, json: string) {
@@ -19,10 +24,34 @@ function download(filename: string, json: string) {
   URL.revokeObjectURL(url);
 }
 
-export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
+/** Squares with no letter, or clues with no text — the same rough
+ *  completeness check applies whether the puzzle is being exported or
+ *  published. */
+function puzzleWarnings(puzzle: Puzzle): string[] {
+  const openCells = puzzle.grid.flat().filter((c) => !c.black);
+  const missingLetters = openCells.some((c) => !c.solution);
+  const missingClues = [...puzzle.clues.across, ...puzzle.clues.down].some(
+    (c) => !c.clue.trim(),
+  );
+  const warnings: string[] = [];
+  if (missingLetters) warnings.push("some squares have no letter");
+  if (missingClues) warnings.push("some clues are empty");
+  return warnings;
+}
+
+export function Builder({
+  onOpenArchive,
+  onOpenAccount,
+}: {
+  onOpenArchive: () => void;
+  onOpenAccount: () => void;
+}) {
   const b = useBuilder();
+  const { user } = useAuth();
   const sizeIsSquare = b.linked;
   const formRef = useRef<HTMLDivElement>(null);
+  const [showPublish, setShowPublish] = useState(false);
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
   // Physical keyboard → builder, unless a text field (clue / metadata) is
   // focused, so typing into inputs doesn't leak into the grid.
@@ -38,14 +67,7 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
 
   const onExport = () => {
     const puzzle = b.buildPuzzle();
-    const openCells = puzzle.grid.flat().filter((c) => !c.black);
-    const missingLetters = openCells.some((c) => !c.solution);
-    const missingClues = [...puzzle.clues.across, ...puzzle.clues.down].some(
-      (c) => !c.clue.trim(),
-    );
-    const warnings: string[] = [];
-    if (missingLetters) warnings.push("some squares have no letter");
-    if (missingClues) warnings.push("some clues are empty");
+    const warnings = puzzleWarnings(puzzle);
     if (warnings.length) {
       const ok = window.confirm(
         `Heads up: ${warnings.join(" and ")}. Download anyway?`,
@@ -54,6 +76,16 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
     }
     const name = `${puzzle.date || "puzzle"}.json`;
     download(name, JSON.stringify(puzzle, null, 2));
+  };
+
+  const openPublish = () => {
+    const puzzle = b.buildPuzzle();
+    const warnings = puzzleWarnings(puzzle);
+    if (warnings.length && !window.confirm(`Heads up: ${warnings.join(" and ")}. Publish anyway?`)) {
+      return;
+    }
+    if (user) getProfile(user.id).then((p) => setHasProfile(Boolean(p)));
+    setShowPublish(true);
   };
 
   return (
@@ -273,10 +305,35 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
           </div>
         </div>
 
-        <button className="btn btn-accent builder-export" onClick={onExport}>
-          ⬇ Download JSON
-        </button>
+        <div className="builder-export">
+          {user && (
+            <button className="btn" onClick={openPublish}>
+              ⇪ Publish
+            </button>
+          )}
+          <button className="btn btn-accent" onClick={onExport}>
+            ⬇ Download JSON
+          </button>
+        </div>
       </div>
+
+      {showPublish && (
+        <Modal title="Publish puzzle" onClose={() => setShowPublish(false)}>
+          {hasProfile === false ? (
+            <div className="setting-row">
+              <p>Set up a username on your Account page before publishing.</p>
+              <button className="btn" onClick={onOpenAccount}>
+                Go to Account
+              </button>
+            </div>
+          ) : (
+            <PublishDialog
+              puzzle={b.buildPuzzle()}
+              onClose={() => setShowPublish(false)}
+            />
+          )}
+        </Modal>
+      )}
 
       {/* Mobile fill-mode keyboard */}
       {b.mode === "fill" && (

@@ -6,8 +6,14 @@ import { initTheme, updateFavicon } from "./lib/theme.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
-import { loadProgress, saveProgress } from "./lib/storage.ts";
-import { pushProgress } from "./lib/sync.ts";
+import {
+  loadCommunityProgress,
+  loadProgress,
+  saveCommunityProgress,
+  saveProgress,
+} from "./lib/storage.ts";
+import { pullCommunityProgress, pushCommunityProgress, pushProgress } from "./lib/sync.ts";
+import { getPuzzleById } from "./lib/puzzles.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
@@ -82,13 +88,29 @@ export default function App() {
       .catch((e) => setError(String(e)));
   }, []);
 
-  // Secret builder page — self-contained, so it works even before (or without)
-  // the puzzle catalogue loading.
-  if (route === "create") return <Builder onOpenArchive={() => goTo("")} />;
+  // Builder page — self-contained, so it works even before (or without) the
+  // puzzle catalogue loading.
+  if (route === "create") {
+    return (
+      <Builder onOpenArchive={() => goTo("")} onOpenAccount={() => goTo("account")} />
+    );
+  }
 
   // Account page — also self-contained, so signing in doesn't depend on the
   // puzzle catalogue having loaded (and survives the OAuth redirect back).
   if (route === "account") return <AccountPage onOpenArchive={() => goTo("")} />;
+
+  // Published community puzzle — also self-contained; it isn't in the
+  // static index.json catalogue at all, it's fetched from Supabase.
+  if (route.startsWith("p/")) {
+    return (
+      <CommunityPuzzleView
+        key={route}
+        id={route.slice(2)}
+        onOpenArchive={() => goTo("")}
+      />
+    );
+  }
 
   if (error) return <div className="error">Failed to load puzzles: {error}</div>;
   if (!index || index.length === 0)
@@ -106,6 +128,8 @@ export default function App() {
         index={index}
         onPick={(source, d) => goTo(`${source}/${d}`)}
         onOpenAccount={() => goTo("account")}
+        onOpenCreate={() => goTo("create")}
+        onOpenPuzzle={(id) => goTo(`p/${id}`)}
       />
     );
   }
@@ -143,16 +167,83 @@ function PuzzleView({
   return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
 }
 
+/** A published puzzle, fetched from Supabase by id rather than the static
+ *  catalogue. Reconciles remote progress into localStorage *before*
+ *  mounting Solver, so its synchronous initial load already sees the
+ *  merged state — mirrors how PuzzleView above waits for the puzzle JSON
+ *  itself before mounting. */
+function CommunityPuzzleView({
+  id,
+  onOpenArchive,
+}: {
+  id: string;
+  onOpenArchive: () => void;
+}) {
+  const { user } = useAuth();
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+  const [completions, setCompletions] = useState(0);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    setPuzzle(null);
+    setNotFound(false);
+    let cancelled = false;
+
+    getPuzzleById(id).then(async (row) => {
+      if (cancelled) return;
+      if (!row) {
+        setNotFound(true);
+        return;
+      }
+      if (user) {
+        const remote = await pullCommunityProgress(user.id, id);
+        if (remote) {
+          const local = loadCommunityProgress(id);
+          if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+            saveCommunityProgress(id, remote);
+          }
+        }
+      }
+      if (!cancelled) {
+        setPuzzle(row.data);
+        setCompletions(row.completions);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user]);
+
+  if (notFound) return <div className="error">Puzzle not found.</div>;
+  if (!puzzle) return <div className="loading">Loading puzzle…</div>;
+  return (
+    <Solver
+      puzzle={puzzle}
+      onOpenArchive={onOpenArchive}
+      communityId={id}
+      completions={completions}
+    />
+  );
+}
+
 function Solver({
   puzzle,
   onOpenArchive,
+  communityId,
+  completions,
 }: {
   puzzle: Puzzle;
   onOpenArchive: () => void;
+  /** Set for a published (/p/<id>) puzzle — switches progress storage/sync
+   *  to be keyed by puzzle id instead of (source, date). */
+  communityId?: string;
+  /** How many people have completed this published puzzle. */
+  completions?: number;
 }) {
   const saved = useMemo(
-    () => loadProgress(puzzle.source, puzzle.date),
-    [puzzle.source, puzzle.date],
+    () => (communityId ? loadCommunityProgress(communityId) : loadProgress(puzzle.source, puzzle.date)),
+    [communityId, puzzle.source, puzzle.date],
   );
   const xw = useCrossword(puzzle, saved);
 
@@ -205,9 +296,14 @@ function Solver({
       rating: rating || undefined,
       updatedAt: Date.now(),
     };
-    saveProgress(puzzle.source, puzzle.date, progress);
-    pushProgress(user?.id ?? null, puzzle.source, puzzle.date, progress);
-  }, [puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating, user]);
+    if (communityId) {
+      saveCommunityProgress(communityId, progress);
+      pushCommunityProgress(user?.id ?? null, communityId, progress);
+    } else {
+      saveProgress(puzzle.source, puzzle.date, progress);
+      pushProgress(user?.id ?? null, puzzle.source, puzzle.date, progress);
+    }
+  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating, user]);
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {
@@ -241,6 +337,9 @@ function Solver({
           <div className="byline">
             By {puzzle.author}
             {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
+            {communityId && (
+              <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
+            )}
           </div>
         </button>
       </header>

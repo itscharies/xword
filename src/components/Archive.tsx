@@ -12,6 +12,7 @@ import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { avatarUrl } from "../lib/auth.ts";
+import { listFeed } from "../lib/puzzles.ts";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -68,16 +69,29 @@ export function Archive({
   index,
   onPick,
   onOpenAccount,
+  onOpenCreate,
+  onOpenPuzzle,
 }: {
   index: PuzzleIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenAccount: () => void;
+  onOpenCreate: () => void;
+  onOpenPuzzle: (id: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   // Re-renders (and thus re-reads every `loadProgress` call below) whenever
   // a sign-in reconcile finishes and rewrites localStorage underneath us.
   const { user } = useAuth();
+
+  const [feed, setFeed] = useState<Awaited<ReturnType<typeof listFeed>>>([]);
+  useEffect(() => {
+    if (!user) {
+      setFeed([]);
+      return;
+    }
+    listFeed(user.id).then(setFeed);
+  }, [user]);
   const [paper, setPaperState] = useState<string>(() => getFilters().paper);
   const [type, setTypeState] = useState<string>(() => getFilters().type);
 
@@ -142,6 +156,14 @@ export function Archive({
             ℹ
           </button>
           <button
+            className="btn icon-btn cog-btn"
+            onClick={onOpenCreate}
+            aria-label="Create a puzzle"
+            title="Create a puzzle"
+          >
+            +
+          </button>
+          <button
             className="btn icon-btn cog-btn account-btn"
             onClick={onOpenAccount}
             aria-label={user ? "Account" : "Sign in"}
@@ -173,6 +195,29 @@ export function Archive({
         />
         <FilterRow label="Type" options={TYPES} value={type} onChange={setType} />
       </div>
+
+      {feed.length > 0 && (
+        <section className="archive-day archive-feed">
+          <h2 className="archive-day-head">From people you follow</h2>
+          <ul className="archive-list">
+            {feed.map((p) => (
+              <li key={p.id}>
+                <button className="archive-item" onClick={() => onOpenPuzzle(p.id)}>
+                  <span className="ai-source">{p.title}</span>
+                  <span className="ai-author">
+                    By {p.author.display_name} · @{p.author.username}
+                  </span>
+                  {p.completions > 0 && (
+                    <span className="ai-pct" title="Completions">
+                      {p.completions} solved
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {days.length === 0 && (
         <div className="archive-empty">
