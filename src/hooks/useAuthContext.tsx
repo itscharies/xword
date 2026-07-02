@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user || reconciledFor.current === user.id) return;
     reconciledFor.current = user.id;
     reconcileAll(user.id)
-      .catch(() => {})
+      .catch((e) => console.error("[sync] reconcileAll threw", e))
       .then(() => setSyncVersion((v) => v + 1));
   }, [user]);
 

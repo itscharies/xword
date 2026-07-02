@@ -642,9 +642,16 @@ function Solver({
                 <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
               )}
               {saveStatus && (
-                <span className={`save-status save-status-${saveStatus}`}>
+                <span
+                  className={`save-status save-status-${saveStatus}`}
+                  title={saveStatus === "error" ? "Couldn't reach the server — check your connection." : undefined}
+                >
                   {" · "}
-                  {saveStatus === "saving" ? "Saving…" : "Saved ✓"}
+                  {saveStatus === "saving"
+                    ? "Saving…"
+                    : saveStatus === "saved"
+                      ? "Saved ✓"
+                      : "Sync failed ⚠"}
                 </span>
               )}
             </div>

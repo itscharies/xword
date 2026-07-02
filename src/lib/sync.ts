@@ -26,7 +26,10 @@ export async function reconcileAll(userId: string): Promise<void> {
     .from("progress")
     .select("source, puzzle_date, data, client_updated_at")
     .not("source", "is", null);
-  if (error) return;
+  if (error) {
+    console.error("[sync] reconcileAll: fetching remote progress failed", error);
+    return;
+  }
 
   const remoteByKey = new Map<string, RemoteRow>(
     (data ?? []).map((r) => [`${r.source}:${r.puzzle_date}`, r as RemoteRow]),
@@ -56,17 +59,19 @@ export async function reconcileAll(userId: string): Promise<void> {
   }
 
   if (toPush.length > 0) {
-    await supabase.from("progress").upsert(
+    const { error: pushError } = await supabase.from("progress").upsert(
       toPush.map((r) => ({ user_id: userId, ...r })),
       { onConflict: "user_id,source,puzzle_date" },
     );
+    if (pushError) console.error("[sync] reconcileAll: pushing local progress failed", pushError);
   }
 }
 
-const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; run: () => PromiseLike<unknown> }>();
+type PushResult = { error: { message: string } | null };
+const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; run: () => PromiseLike<PushResult> }>();
 const DEBOUNCE_MS = 1500;
 
-export type SaveStatus = "saving" | "saved";
+export type SaveStatus = "saving" | "saved" | "error";
 type StatusListener = (status: SaveStatus) => void;
 const statusListeners = new Map<string, Set<StatusListener>>();
 
@@ -75,9 +80,11 @@ function notifyStatus(key: string, status: SaveStatus): void {
 }
 
 /** Subscribe to one puzzle's save status: "saving" from the moment an edit
- *  schedules a write until the request lands, then "saved". Keyed the same
- *  way as `pushProgress`/`pushCommunityProgress`, so the Solver's indicator
- *  only reacts to its own puzzle. */
+ *  schedules a write until the request lands, then "saved" (or "error" if it
+ *  didn't — a failed request used to resolve silently, which is exactly the
+ *  kind of thing that looks like "it said saved but never showed up on my
+ *  other device"). Keyed the same way as `pushProgress`/`pushCommunityProgress`,
+ *  so the Solver's indicator only reacts to its own puzzle. */
 export function onSaveStatus(key: string, listener: StatusListener): () => void {
   let set = statusListeners.get(key);
   if (!set) {
@@ -88,16 +95,38 @@ export function onSaveStatus(key: string, listener: StatusListener): () => void 
   return () => set!.delete(listener);
 }
 
+/** Runs `run`, reporting "saved" only if it actually succeeded — both a
+ *  Postgrest-level error (returned, not thrown) and a network-level one
+ *  (thrown — e.g. offline, or the browser's keepalive-fetch byte quota
+ *  rejecting the request outright) end up as "error" instead of silently
+ *  looking identical to success. */
+function runAndReport(key: string, run: () => PromiseLike<PushResult>): void {
+  Promise.resolve(run()).then(
+    (result) => {
+      if (result?.error) {
+        console.error(`[sync] push failed for "${key}"`, result.error);
+        notifyStatus(key, "error");
+      } else {
+        notifyStatus(key, "saved");
+      }
+    },
+    (err) => {
+      console.error(`[sync] push threw for "${key}"`, err);
+      notifyStatus(key, "error");
+    },
+  );
+}
+
 /** Schedules `run` under `key`, debounced — a second call with the same key
  *  before the delay elapses replaces the pending write rather than sending
  *  both. Exposed via `flushPendingPushes` so a backgrounded/closed tab still
  *  gets its last edit out instead of losing it to a pending timer. */
-function schedule(key: string, run: () => PromiseLike<unknown>): void {
+function schedule(key: string, run: () => PromiseLike<PushResult>): void {
   clearTimeout(pending.get(key)?.timer);
   notifyStatus(key, "saving");
   const timer = setTimeout(() => {
     pending.delete(key);
-    void run().then(() => notifyStatus(key, "saved"));
+    runAndReport(key, run);
   }, DEBOUNCE_MS);
   pending.set(key, { timer, run });
 }
@@ -109,7 +138,7 @@ export function flushPendingPushes(): void {
   for (const [key, { timer, run }] of pending) {
     clearTimeout(timer);
     pending.delete(key);
-    void run().then(() => notifyStatus(key, "saved"));
+    runAndReport(key, run);
   }
 }
 
@@ -182,12 +211,16 @@ export async function pullCommunityProgress(
   puzzleId: string,
 ): Promise<Progress | null> {
   if (!supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("progress")
     .select("data")
     .eq("user_id", userId)
     .eq("puzzle_id", puzzleId)
     .maybeSingle();
+  // A failed fetch here must not look like "no remote progress exists" —
+  // that reads as this device correctly having nothing to catch up on, when
+  // really the check just never happened.
+  if (error) console.error(`[sync] pull failed for community:${puzzleId}`, error);
   return data?.data ?? null;
 }
 
@@ -203,12 +236,13 @@ export async function pullProgress(
   date: string,
 ): Promise<Progress | null> {
   if (!supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("progress")
     .select("data")
     .eq("user_id", userId)
     .eq("source", source)
     .eq("puzzle_date", date)
     .maybeSingle();
+  if (error) console.error(`[sync] pull failed for ${source}:${date}`, error);
   return data?.data ?? null;
 }

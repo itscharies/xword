@@ -219,6 +219,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+.save-status-error { color: var(--fg); font-weight: 700; cursor: help; }
 
 /* Shared plain text input look (also used by .ana-input, .builder-field
    input) — surface fill, thick border, no browser chrome. */
