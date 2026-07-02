@@ -94,16 +94,12 @@ export function Builder({
       <header className="header">
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
-          <button
-            className="title-block title-link"
-            onClick={onOpenArchive}
-            title="Back to archive"
-          >
+          <div className="title-block">
             <h1>Crossword builder</h1>
             <div className="byline">
               Lay out a grid, fill it in, export JSON · autosaved
             </div>
-          </button>
+          </div>
         </div>
         <button
           className="btn"

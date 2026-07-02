@@ -61,13 +61,9 @@ export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
       <header className="header">
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
-          <button
-            className="title-block title-link"
-            onClick={onOpenArchive}
-            title="Back to archive"
-          >
+          <div className="title-block">
             <h1>Account</h1>
-          </button>
+          </div>
         </div>
       </header>
 

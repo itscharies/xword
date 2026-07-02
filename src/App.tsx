@@ -331,11 +331,7 @@ function Solver({
       <header className="header">
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
-          <button
-            className="title-block title-link"
-            onClick={onOpenArchive}
-            title="Browse all puzzles"
-          >
+          <div className="title-block">
             <h1>{puzzle.title}</h1>
             <div className="byline">
               By {puzzle.author}
@@ -344,7 +340,7 @@ function Solver({
                 <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
               )}
             </div>
-          </button>
+          </div>
         </div>
       </header>
 
