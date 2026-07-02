@@ -7,6 +7,8 @@ import { useCrossword } from "./hooks/useCrossword.ts";
 import { useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import { loadProgress, saveProgress } from "./lib/storage.ts";
+import { pushProgress } from "./lib/sync.ts";
+import { useAuth } from "./hooks/useAuthContext.tsx";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
@@ -175,14 +177,16 @@ function Solver({
   // the overlay routes keys into its own answer entry rather than the grid.
   const modalOpen = showModal || showSettings || showReset || showAnagram;
 
-  // Persist progress whenever it changes.
+  // Persist progress whenever it changes — locally always, and to Supabase
+  // (debounced) when signed in.
+  const { user } = useAuth();
   useEffect(() => {
     const total = xw.openCells.length;
     const filled = xw.openCells.reduce(
       (n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0),
       0,
     );
-    saveProgress(puzzle.source, puzzle.date, {
+    const progress = {
       entries: xw.entries,
       revealed: [...xw.revealed],
       elapsed,
@@ -190,8 +194,11 @@ function Solver({
       filled,
       total,
       rating: rating || undefined,
-    });
-  }, [puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
+      updatedAt: Date.now(),
+    };
+    saveProgress(puzzle.source, puzzle.date, progress);
+    pushProgress(user?.id ?? null, puzzle.source, puzzle.date, progress);
+  }, [puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating, user]);
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {

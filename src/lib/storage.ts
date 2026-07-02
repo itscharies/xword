@@ -13,6 +13,9 @@ export interface Progress {
   total?: number;
   /** Self-rating 1–5, set on completion. */
   rating?: number;
+  /** Client epoch ms of the last save — the only field used to decide which
+   *  side (local vs. Supabase) wins when reconciling across devices. */
+  updatedAt?: number;
 }
 
 import type { PuzzleSource } from "./sources.ts";
@@ -59,6 +62,37 @@ export function clearProgress(source: PuzzleSource, date: string): void {
   } catch {
     /* ignore */
   }
+}
+
+/** Every syndicated puzzle's progress currently in localStorage — used to
+ *  reconcile against Supabase when a user signs in. */
+export function listAllProgress(): {
+  source: PuzzleSource;
+  date: string;
+  progress: Progress;
+}[] {
+  const out: { source: PuzzleSource; date: string; progress: Progress }[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const m = k?.match(/^xword:progress:([^:]+):(.+)$/);
+      if (!m) continue;
+      const raw = localStorage.getItem(k!);
+      if (!raw) continue;
+      try {
+        out.push({
+          source: m[1] as PuzzleSource,
+          date: m[2],
+          progress: JSON.parse(raw) as Progress,
+        });
+      } catch {
+        /* skip malformed entry */
+      }
+    }
+  } catch {
+    /* localStorage unavailable */
+  }
+  return out;
 }
 
 const LAST_DATE_KEY = "xword:lastDate";

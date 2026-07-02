@@ -44,6 +44,14 @@ export const AnagramIcon = () => (
   </svg>
 );
 
+// Account / sign-in: a simple person silhouette.
+export const UserIcon = () => (
+  <svg {...base} fill="currentColor" stroke="none">
+    <circle cx="12" cy="7.5" r="4" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </svg>
+);
+
 // Anagram (mobile key): letters arranged in a circle, echoing the helper's
 // circle view of the scrambled tiles.
 export const AnagramCircleIcon = () => {

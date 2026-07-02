@@ -7,9 +7,11 @@ import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
-import { CheckIcon } from "./icons.tsx";
+import { SignIn } from "./SignIn.tsx";
+import { CheckIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
+import { useAuth } from "../hooks/useAuthContext.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -71,6 +73,10 @@ export function Archive({
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  // Re-renders (and thus re-reads every `loadProgress` call below) whenever
+  // a sign-in reconcile finishes and rewrites localStorage underneath us.
+  const { user } = useAuth();
   const [paper, setPaperState] = useState<string>(() => getFilters().paper);
   const [type, setTypeState] = useState<string>(() => getFilters().type);
 
@@ -133,6 +139,14 @@ export function Archive({
             title="How to play"
           >
             ℹ
+          </button>
+          <button
+            className="btn icon-btn cog-btn"
+            onClick={() => setShowAccount(true)}
+            aria-label={user ? "Account" : "Sign in"}
+            title={user ? user.email : "Sign in"}
+          >
+            <UserIcon />
           </button>
           <button
             className="btn icon-btn cog-btn"
@@ -252,6 +266,12 @@ export function Archive({
       {showInfo && (
         <Modal title="How to play" onClose={() => setShowInfo(false)}>
           <HowToPlay />
+        </Modal>
+      )}
+
+      {showAccount && (
+        <Modal title="Account" onClose={() => setShowAccount(false)}>
+          <SignIn />
         </Modal>
       )}
     </div>
