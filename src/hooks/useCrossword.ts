@@ -497,6 +497,20 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     setDirection("across");
   }, [firstOpen]);
 
+  /** Overwrites the current answers with a synced copy from elsewhere (e.g.
+   *  another tab or device's newer progress) — validated the same way the
+   *  initial load is, since it can equally predate a grid resize. */
+  const loadExternal = useCallback(
+    (nextEntries: string[][], revealedKeys: string[]) => {
+      const valid =
+        nextEntries.length === height && nextEntries.every((row) => row.length === width);
+      setEntries(valid ? nextEntries : blank());
+      setRevealed(new Set(revealedKeys));
+      setWrong(new Set());
+    },
+    [height, width],
+  );
+
   /** Write `text` across the active word's cells (used by the anagram helper). */
   const fillWord = useCallback(
     (text: string) => {
@@ -627,6 +641,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     reveal,
     reset,
     fillWord,
+    loadExternal,
   };
 }
 

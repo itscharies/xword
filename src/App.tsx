@@ -11,6 +11,7 @@ import {
   loadProgress,
   saveCommunityProgress,
   saveProgress,
+  type Progress,
 } from "./lib/storage.ts";
 import {
   pullCommunityProgress,
@@ -438,33 +439,39 @@ function Solver({
   const [showAnagram, setShowAnagram] = useState(false);
   const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
   const [rating, setRating] = useState(saved?.rating ?? 0);
+  // Progress fetched from another tab/device that's newer than anything we've
+  // pushed or seen ourselves — see the sync-check effect below.
+  const [conflict, setConflict] = useState<Progress | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 820px)");
   const anagramPool = useAnagramPool(showAnagram && isMobile);
 
   // Any open dialog (including the anagram overlay) takes over keyboard input —
   // the overlay routes keys into its own answer entry rather than the grid.
-  const modalOpen = showModal || showSettings || showReset || showAnagram;
+  const modalOpen = showModal || showSettings || showReset || showAnagram || !!conflict;
 
   // Persist progress whenever it changes — locally always, and to Supabase
   // (debounced) when signed in.
   const { user } = useAuth();
+  // The updatedAt of the newest version of this puzzle's progress we've
+  // already pushed or accounted for — anything newer we see from Supabase
+  // must have come from another tab or device, not from us.
+  const lastSyncedAtRef = useRef(saved?.updatedAt ?? 0);
+
+  const buildProgress = (): Progress => ({
+    entries: xw.entries,
+    revealed: [...xw.revealed],
+    elapsed,
+    completed: xw.completed,
+    filled: xw.openCells.reduce((n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0), 0),
+    total: xw.openCells.length,
+    rating: rating || undefined,
+    updatedAt: Date.now(),
+  });
+
   useEffect(() => {
-    const total = xw.openCells.length;
-    const filled = xw.openCells.reduce(
-      (n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0),
-      0,
-    );
-    const progress = {
-      entries: xw.entries,
-      revealed: [...xw.revealed],
-      elapsed,
-      completed: xw.completed,
-      filled,
-      total,
-      rating: rating || undefined,
-      updatedAt: Date.now(),
-    };
+    const progress = buildProgress();
+    lastSyncedAtRef.current = progress.updatedAt!;
     if (communityId) {
       saveCommunityProgress(communityId, progress);
       pushCommunityProgress(user?.id ?? null, communityId, progress);
@@ -473,6 +480,62 @@ function Solver({
       pushProgress(user?.id ?? null, puzzle.source, puzzle.date, progress);
     }
   }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating, user]);
+
+  // Periodically check whether another tab or device has pushed newer
+  // progress for this puzzle — catches the case where the solver
+  // accidentally left another window open and kept solving there. Checked
+  // on an interval and whenever the tab regains focus, since that's the
+  // moment it matters most.
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      const remote = communityId
+        ? await pullCommunityProgress(user.id, communityId)
+        : await pullProgress(user.id, puzzle.source, puzzle.date);
+      if (!remote || (remote.updatedAt ?? 0) <= lastSyncedAtRef.current) return;
+      setConflict((existing) => existing ?? remote);
+    };
+    const interval = setInterval(() => void check(), 30_000);
+    const onFocus = () => {
+      if (document.visibilityState !== "hidden") void check();
+    };
+    window.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [user, communityId, puzzle.source, puzzle.date]);
+
+  // "Load latest": adopt the other tab/device's answers.
+  const acceptRemote = () => {
+    if (!conflict) return;
+    xw.loadExternal(conflict.entries, conflict.revealed);
+    setElapsed(conflict.elapsed ?? 0);
+    setRating(conflict.rating ?? 0);
+    lastSyncedAtRef.current = conflict.updatedAt ?? Date.now();
+    if (communityId) saveCommunityProgress(communityId, conflict);
+    else saveProgress(puzzle.source, puzzle.date, conflict);
+    setConflict(null);
+  };
+
+  // "Keep mine" (including dismissing the dialog any other way): push what's
+  // here now with a fresh timestamp so it wins the next comparison instead
+  // of the conflict resurfacing on the next check.
+  const keepMine = () => {
+    if (!conflict) return;
+    const mine = buildProgress();
+    lastSyncedAtRef.current = mine.updatedAt!;
+    if (communityId) {
+      saveCommunityProgress(communityId, mine);
+      pushCommunityProgress(user?.id ?? null, communityId, mine);
+    } else {
+      saveProgress(puzzle.source, puzzle.date, mine);
+      pushProgress(user?.id ?? null, puzzle.source, puzzle.date, mine);
+    }
+    setConflict(null);
+  };
 
   // Celebrate the first time the puzzle is fully correct.
   useEffect(() => {
@@ -617,6 +680,23 @@ function Solver({
 
       {showAnagram && !isMobile && (
         <AnagramHelper xw={xw} onClose={() => setShowAnagram(false)} />
+      )}
+
+      {conflict && (
+        <Modal title="Updated elsewhere" onClose={keepMine}>
+          <p>
+            This puzzle has newer progress saved from another window or device.
+            Load it, or keep what's here and overwrite that instead.
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={keepMine}>
+              Keep mine
+            </button>
+            <button className="btn btn-accent" onClick={acceptRemote}>
+              Load latest
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
