@@ -475,17 +475,26 @@ function Solver({
     updatedAt: Date.now(),
   });
 
+  // Local save ticks every second along with the timer, so a reload always
+  // resumes from close to the right elapsed time.
   useEffect(() => {
     const progress = buildProgress();
+    if (communityId) saveCommunityProgress(communityId, progress);
+    else saveProgress(puzzle.source, puzzle.date, progress);
+  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
+
+  // The Supabase push is debounced 1.5s after the *content* actually
+  // changes — deliberately excludes `elapsed`. That ticks every second, and
+  // if it were a dependency here it would re-arm the debounce every second
+  // too, so the write would never actually go out while the timer runs (and
+  // `pending` would look permanently non-empty to the beforeunload guard).
+  useEffect(() => {
+    if (!user) return;
+    const progress = buildProgress();
     lastSyncedAtRef.current = progress.updatedAt!;
-    if (communityId) {
-      saveCommunityProgress(communityId, progress);
-      pushCommunityProgress(user?.id ?? null, communityId, progress);
-    } else {
-      saveProgress(puzzle.source, puzzle.date, progress);
-      pushProgress(user?.id ?? null, puzzle.source, puzzle.date, progress);
-    }
-  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating, user]);
+    if (communityId) pushCommunityProgress(user.id, communityId, progress);
+    else pushProgress(user.id, puzzle.source, puzzle.date, progress);
+  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, xw.openCells, rating, user]);
 
   // Periodically check whether another tab or device has pushed newer
   // progress for this puzzle — catches the case where the solver
