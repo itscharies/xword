@@ -228,6 +228,19 @@ export function useBuilder() {
     [slotThrough, active, direction],
   );
 
+  // The active word as a fill pattern: each cell's letter, or "." if empty.
+  // Rebus cells (multi-letter) can't constrain a single-letter match, so treat
+  // them as unknown. Used to query the suggestion word list.
+  const activePattern = useMemo<string | null>(() => {
+    if (!activeSlot) return null;
+    return slotCells(activeSlot)
+      .map((p) => {
+        const sol = numbered[p.row][p.col].solution ?? "";
+        return sol.length === 1 ? sol : ".";
+      })
+      .join("");
+  }, [activeSlot, numbered]);
+
   const highlighted = useMemo<Set<string>>(() => {
     const set = new Set<string>();
     if (rebus || mode === "paint") return set;
@@ -457,6 +470,24 @@ export function useBuilder() {
     const { row, col } = activeRef.current;
     writeCell(row, col, "");
   }, []);
+
+  /** Write a whole word across the active slot (from the suggestion list). */
+  const fillSlot = useCallback(
+    (word: string) => {
+      const slot = slotThrough(activeRef.current, directionRef.current);
+      if (!slot) return;
+      const letters = word.toUpperCase().replace(/[^A-Z]/g, "").split("");
+      const g = gridRef.current.map((row) => row.map((c) => ({ ...c })));
+      slotCells(slot).forEach((p, i) => {
+        if (i < letters.length) {
+          g[p.row][p.col].solution = letters[i];
+          delete g[p.row][p.col].rebus;
+        }
+      });
+      setGrid(g);
+    },
+    [slotThrough],
+  );
 
   // ---- per-cell decorations -----------------------------------------------
 
@@ -689,6 +720,7 @@ export function useBuilder() {
     highlighted,
     linkedCells,
     activeSlot,
+    activePattern,
     acrossStarts,
     downStarts,
     clueText,
@@ -719,6 +751,7 @@ export function useBuilder() {
     deleteCell,
     toggleProp,
     setClue,
+    fillSlot,
     linkClue,
     unlinkClue,
     handleKeyDown,

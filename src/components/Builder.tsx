@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useBuilder } from "../hooks/useBuilder.ts";
 import { BuilderGrid } from "./BuilderGrid.tsx";
 import { BuilderClues } from "./BuilderClues.tsx";
+import { BuilderSuggestions } from "./BuilderSuggestions.tsx";
 import { MobileKeyboard } from "./MobileKeyboard.tsx";
 import { RebusIcon } from "./RebusIcon.tsx";
 
@@ -194,6 +195,7 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
       <div className="main builder-main">
         <div className="board">
           <BuilderGrid b={b} />
+          <BuilderSuggestions b={b} />
         </div>
         <BuilderClues b={b} />
       </div>

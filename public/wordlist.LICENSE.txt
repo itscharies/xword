@@ -1,0 +1,10 @@
+wordlist.txt is derived from Spread the Word(list)
+by Brooke Husic & Enrique Henestroza Anguiano.
+
+Source:  https://www.spreadthewordlist.com/
+Licence: Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+         (CC BY-NC-SA 4.0)  https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+This derived list (uppercased, score-0 and non-alphabetic entries removed) is
+distributed under the same CC BY-NC-SA 4.0 licence. The app uses it only for
+free, non-commercial word suggestions, with attribution shown in the builder.
