@@ -135,6 +135,9 @@ export interface Filters {
    *  the syndicated archive — single-select, and mutually exclusive with
    *  `papers`/`types` (it switches the whole view, not a further narrowing). */
   person: string | null;
+  /** "Complete" / "In progress" / "Not started" — multi-select, and applies
+   *  in both the normal archive and a selected person's puzzle list. */
+  progress: string[];
 }
 
 /** The archive's last-used filters, so they survive navigation. */
@@ -146,9 +149,10 @@ export function getFilters(): Filters {
       papers: Array.isArray(f.papers) ? f.papers : [],
       types: Array.isArray(f.types) ? f.types : [],
       person: f.person ?? null,
+      progress: Array.isArray(f.progress) ? f.progress : [],
     };
   } catch {
-    return { papers: [], types: [], person: null };
+    return { papers: [], types: [], person: null, progress: [] };
   }
 }
 

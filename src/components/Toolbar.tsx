@@ -7,10 +7,12 @@ function Dropdown({
   label,
   icon,
   onPick,
+  disabled,
 }: {
   label: string;
   icon: ReactNode;
   onPick: (scope: RevealScope) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -26,7 +28,12 @@ function Dropdown({
 
   return (
     <div className="tb-group" ref={ref}>
-      <button className="btn" onClick={() => setOpen((o) => !o)} aria-label={label}>
+      <button
+        className="btn"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={label}
+        disabled={disabled}
+      >
         <span className="btn-icon">{icon}</span>
         <span className="btn-label">{label}</span>
         <span className="btn-caret"><ChevronDownIcon /></span>
@@ -61,8 +68,8 @@ export function Toolbar({
 }) {
   return (
     <div className="toolbar">
-      <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} />
-      <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} />
+      <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} disabled={xw.completed} />
+      <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} disabled={xw.completed} />
       {xw.isCryptic ? (
         <button
           className="btn anagram-btn"
@@ -79,6 +86,7 @@ export function Toolbar({
           className={`btn rebus-btn ${xw.rebus ? "active" : ""}`}
           onClick={() => xw.toggleRebus()}
           aria-pressed={xw.rebus}
+          disabled={xw.completed}
           title="Rebus: type multiple letters in one square"
         >
           <RebusIcon />

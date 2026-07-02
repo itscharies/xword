@@ -9,7 +9,7 @@ import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
-import { loadProgress } from "../lib/storage.ts";
+import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { avatarUrl } from "../lib/auth.ts";
@@ -30,6 +30,14 @@ function formatDate(iso: string): string {
 function themeName(title: string): string | null {
   const m = title.match(/\b\d{4}\b\s+(.+)$/);
   return m ? m[1] : null;
+}
+
+const PROGRESS_STATUSES = ["Complete", "In progress", "Not started"] as const;
+
+function progressStatus(prog: Progress | null): (typeof PROGRESS_STATUSES)[number] {
+  if (prog?.completed) return "Complete";
+  if (prog && (prog.filled ?? 0) > 0) return "In progress";
+  return "Not started";
 }
 
 /** A labelled row of multi-select filter chips ("All" plus each option —
@@ -113,7 +121,7 @@ export function Archive({
   // stale pre-update closure value, so whichever call ran last silently won
   // and could resurrect an already-cleared filter in localStorage.
   const [filters, setFiltersState] = useState(getFilters);
-  const { papers, types, person: selectedPersonId } = filters;
+  const { papers, types, person: selectedPersonId, progress } = filters;
 
   const togglePaper = (p: string) => {
     setFiltersState((f) => {
@@ -147,6 +155,21 @@ export function Archive({
       return next;
     });
   };
+  const toggleProgress = (p: string) => {
+    setFiltersState((f) => {
+      const progress = f.progress.includes(p) ? f.progress.filter((x) => x !== p) : [...f.progress, p];
+      const next = { ...f, progress };
+      setFilters(next);
+      return next;
+    });
+  };
+  const clearProgress = () => {
+    setFiltersState((f) => {
+      const next = { ...f, progress: [] };
+      setFilters(next);
+      return next;
+    });
+  };
   // Single-select and mutually exclusive with papers/types — picking a
   // person swaps the whole view to just their puzzles; clicking the same
   // one again (or picking a paper) swaps back.
@@ -158,7 +181,7 @@ export function Archive({
     });
   };
   const clearFilters = () => {
-    const next: Filters = { papers: [], types: [], person: null };
+    const next: Filters = { papers: [], types: [], person: null, progress: [] };
     setFiltersState(next);
     setFilters(next);
   };
@@ -171,8 +194,18 @@ export function Archive({
     return [...seen.values()];
   }, [feed]);
 
+  // The progress filter applies to both the syndicated archive and a
+  // person's puzzle list — community puzzles just look their status up from
+  // a different store (keyed by puzzle id, not source/date).
+  const matchesProgress = (prog: Progress | null) =>
+    progress.length === 0 || progress.includes(progressStatus(prog));
+
+  const filteredFeed = useMemo(
+    () => feed.filter((p) => matchesProgress(loadCommunityProgress(p.id))),
+    [feed, progress],
+  );
   const personFeed = selectedPersonId
-    ? feed.filter((p) => p.author.user_id === selectedPersonId)
+    ? filteredFeed.filter((p) => p.author.user_id === selectedPersonId)
     : [];
   const selectedPerson = feedAuthors.find((a) => a.user_id === selectedPersonId);
 
@@ -184,21 +217,23 @@ export function Archive({
       const meta = SOURCES[p.source];
       if (papers.length > 0 && !papers.includes(meta.paper)) continue;
       if (types.length > 0 && !types.includes(meta.type)) continue;
+      if (!matchesProgress(loadProgress(p.source, p.date))) continue;
       const arr = byDate.get(p.isoDate);
       if (arr) arr.push(p);
       else byDate.set(p.isoDate, [p]);
     }
     return [...byDate.entries()];
-  }, [index, papers, types]);
+  }, [index, papers, types, progress]);
 
   // Render the archive a fortnight at a time and grow as the reader nears the
   // bottom — keeps the DOM small so scrolling 180+ days stays smooth.
   const PAGE = 14;
   const [shown, setShown] = useState(PAGE);
-  useEffect(() => setShown(PAGE), [papers, types]); // restart on filter change
+  useEffect(() => setShown(PAGE), [papers, types, progress]); // restart on filter change
   const visibleDays = days.slice(0, shown);
   const hasMore = shown < days.length;
-  const filterCount = papers.length + types.length + (selectedPersonId ? 1 : 0);
+  const filterCount =
+    papers.length + types.length + progress.length + (selectedPersonId ? 1 : 0);
 
   // Load the next page when a sentinel near the bottom scrolls into view.
   const io = useRef<IntersectionObserver | null>(null);
@@ -281,11 +316,11 @@ export function Archive({
         </section>
       ) : (
         <>
-          {feed.length > 0 && (
+          {filteredFeed.length > 0 && (
             <section className="archive-day archive-feed">
               <h2 className="archive-day-head">From people you follow</h2>
               <ul className="archive-list">
-                {feed.map((p) => (
+                {filteredFeed.map((p) => (
                   <li key={p.id}>
                     <button className="archive-item" onClick={() => onOpenPuzzle(p.id)}>
                       <span className="ai-source">{p.title}</span>
@@ -442,6 +477,14 @@ export function Archive({
                 onClear={clearTypes}
               />
             )}
+
+            <FilterChips
+              label="Progress"
+              options={[...PROGRESS_STATUSES]}
+              values={progress}
+              onToggle={toggleProgress}
+              onClear={clearProgress}
+            />
 
             {filterCount > 0 && (
               <button

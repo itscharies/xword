@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
@@ -124,6 +124,13 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   const revealedRef = useRef(revealed);
   const wrongRef = useRef(wrong);
   const rebusRef = useRef(rebus);
+  // Mirrors `completed` (defined further down) so the mutating actions below
+  // can check it without needing to be declared after it. Once true, the
+  // grid is locked — an accidental keystroke shouldn't be able to re-arm the
+  // autosave/push effects on a puzzle that's already done. `reset` and
+  // `loadExternal` (an explicit "load the other device's copy") bypass this
+  // on purpose; they're deliberate actions, not incidental input.
+  const completedRef = useRef(false);
 
   const setEntries = (g: string[][]) => {
     entriesRef.current = g;
@@ -386,6 +393,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
 
   const typeLetter = useCallback(
     (ch: string) => {
+      if (completedRef.current) return;
       const { row, col } = activeRef.current;
       if (!isOpen(row, col)) return;
       if (rebusRef.current) {
@@ -404,6 +412,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   );
 
   const backspace = useCallback(() => {
+    if (completedRef.current) return;
     const { row, col } = activeRef.current;
     const cur = entriesRef.current[row][col];
     // In rebus mode, peel one letter off a multi-letter cell.
@@ -429,6 +438,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   }, [clueThrough]);
 
   const deleteCell = useCallback(() => {
+    if (completedRef.current) return;
     const { row, col } = activeRef.current;
     clearAt(row, col);
   }, []);
@@ -468,6 +478,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
 
   const reveal = useCallback(
     (scope: RevealScope) => {
+      if (completedRef.current) return;
       const cells = scopeCells(scope);
       const g = entriesRef.current.map((row) => row.slice());
       const rev = new Set(revealedRef.current);
@@ -514,6 +525,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   /** Write `text` across the active word's cells (used by the anagram helper). */
   const fillWord = useCallback(
     (text: string) => {
+      if (completedRef.current) return;
       const clue = clueThrough(activeRef.current, directionRef.current);
       if (!clue) return;
       const letters = text.toUpperCase().replace(/[^A-Z]/g, "").split("");
@@ -548,6 +560,10 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       }
     return true;
   }, [entries, grid, width, height]);
+
+  useEffect(() => {
+    completedRef.current = completed;
+  }, [completed]);
 
   // ---- key handling -------------------------------------------------------
 

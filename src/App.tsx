@@ -557,9 +557,12 @@ function Solver({
   // progress for this puzzle — catches the case where the solver
   // accidentally left another window open and kept solving there. Checked
   // on an interval and whenever the tab regains focus, since that's the
-  // moment it matters most.
+  // moment it matters most. Stops once the puzzle is completed — a finished
+  // puzzle is locked (see useCrossword) and won't push anything further of
+  // its own, so there's nothing left to reconcile and no reason to keep
+  // polling.
   useEffect(() => {
-    if (!user) return;
+    if (!user || xw.completed) return;
     const check = async () => {
       const remote = communityId
         ? await pullCommunityProgress(user.id, communityId)
@@ -578,7 +581,7 @@ function Solver({
       window.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, communityId, puzzle.source, puzzle.date]);
+  }, [user, communityId, puzzle.source, puzzle.date, xw.completed]);
 
   // "Load latest": adopt the other tab/device's answers.
   const acceptRemote = () => {
