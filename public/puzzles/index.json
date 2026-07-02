@@ -1,6 +1,14 @@
 [
   {
     "source": "nyt",
+    "date": "260703",
+    "isoDate": "2026-07-03",
+    "weekday": "Fri",
+    "title": "NY Times, Fri, Jul 3, 2026",
+    "author": "Hemant Mehta"
+  },
+  {
+    "source": "nyt",
     "date": "260702",
     "isoDate": "2026-07-02",
     "weekday": "Thu",
