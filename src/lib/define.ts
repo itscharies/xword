@@ -18,11 +18,19 @@ const truncate = (s: string, n = 320) => {
   return t.length > n ? t.slice(0, n).replace(/\s+\S*$/, "") + "…" : t;
 };
 
-async function fromWikipedia(term: string): Promise<Definition | null> {
-  // One request: search for the best-matching page and return its intro extract.
+interface WikiResult extends Definition {
+  /** A disambiguation page ("X may refer to: …") — a poor blurb, so prefer a
+   *  dictionary definition when we can get one. */
+  disambiguation: boolean;
+}
+
+async function fromWikipedia(term: string): Promise<WikiResult | null> {
+  // One request: search for the best-matching page and return its intro extract
+  // plus whether it's a disambiguation page.
   const url =
     "https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*" +
-    "&generator=search&gsrlimit=1&redirects=1&prop=extracts&exintro=1&explaintext=1" +
+    "&generator=search&gsrlimit=1&redirects=1&prop=extracts|pageprops" +
+    "&ppprop=disambiguation&exintro=1&explaintext=1" +
     `&gsrsearch=${encodeURIComponent(term)}`;
   const r = await fetch(url);
   if (!r.ok) return null;
@@ -32,13 +40,18 @@ async function fromWikipedia(term: string): Promise<Definition | null> {
   const page = Object.values(pages)[0] as {
     title?: string;
     extract?: string;
+    pageprops?: { disambiguation?: string };
   };
   if (!page?.title || !page.extract) return null;
+  const disambiguation =
+    page.pageprops?.disambiguation !== undefined ||
+    /\bmay refer to\b/i.test(page.extract);
   return {
     title: page.title,
     extract: truncate(page.extract),
     url: `https://en.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, "_"))}`,
     source: "wikipedia",
+    disambiguation,
   };
 }
 
@@ -68,18 +81,28 @@ export async function define(term: string): Promise<Definition | null> {
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
 
-  let result: Definition | null = null;
+  let wiki: WikiResult | null = null;
   try {
-    result = await fromWikipedia(term);
+    wiki = await fromWikipedia(term);
   } catch {
     /* network / parse — try the next source */
   }
-  if (!result) {
+
+  let result: Definition | null = null;
+  if (wiki && !wiki.disambiguation) {
+    // A real article — use it.
+    result = wiki;
+  } else {
+    // No match or a "may refer to…" disambiguation list — a dictionary
+    // definition is cleaner; fall back to the disambiguation blurb only if the
+    // dictionary has nothing.
+    let dict: Definition | null = null;
     try {
-      result = await fromDictionary(term);
+      dict = await fromDictionary(term);
     } catch {
       /* ignore */
     }
+    result = dict ?? wiki ?? null;
   }
   cache.set(key, result);
   return result;
