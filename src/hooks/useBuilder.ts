@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Cell, Direction, Puzzle } from "../types.ts";
-import type { PuzzleSource } from "../lib/sources.ts";
 import { numberGrid, readWord, type WordStart } from "../lib/numbering.ts";
 import { splitEnumeration } from "../lib/enumeration.ts";
 import {
@@ -771,8 +770,6 @@ export function useBuilder() {
       });
     }
     return {
-      // Authored in-app, not from one of the syndicated collections.
-      source: "Other" as PuzzleSource,
       date: iso.replace(/-/g, ""),
       isoDate: iso,
       weekday,

@@ -41,8 +41,10 @@ export interface Clue {
 
 /** A fully parsed puzzle, as stored in public/puzzles/<source>/<date>.json. */
 export interface Puzzle {
-  /** Which collection this came from. */
-  source: PuzzleSource;
+  /** Which collection this came from. Absent for puzzles authored in-app
+   * and published via the Builder — those aren't part of a syndicated
+   * collection, so there's nothing to tag them with. */
+  source?: PuzzleSource;
   /** Source-native id: YYMMDD for nyt, YYYYMMDD for the Seattle Times sets. */
   date: string;
   /** ISO date, e.g. "2026-06-27". */

@@ -52,6 +52,24 @@ export const UserIcon = () => (
   </svg>
 );
 
+// Follow: a person with a plus (Feather "user-plus").
+export const UserPlusIcon = () => (
+  <svg {...base}>
+    <circle cx="9" cy="8" r="4" />
+    <path d="M2 21a7 7 0 0 1 14 0" />
+    <path d="M19 8v6M16 11h6" />
+  </svg>
+);
+
+// Unfollow: a person with a minus (Feather "user-minus").
+export const UserMinusIcon = () => (
+  <svg {...base}>
+    <circle cx="9" cy="8" r="4" />
+    <path d="M2 21a7 7 0 0 1 14 0" />
+    <path d="M16 11h6" />
+  </svg>
+);
+
 // Edit: a pencil (Feather "edit-2").
 export const EditIcon = () => (
   <svg {...base}>

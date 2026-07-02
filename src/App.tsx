@@ -441,9 +441,12 @@ function Solver({
   /** How many people have completed this published puzzle. */
   completions?: number;
 }) {
+  // Only syndicated puzzles (no communityId) hit the `source`-keyed branches
+  // below — those always carry a source, unlike community/authored puzzles.
+  const source = puzzle.source as PuzzleSource;
   const saved = useMemo(
-    () => (communityId ? loadCommunityProgress(communityId) : loadProgress(puzzle.source, puzzle.date)),
-    [communityId, puzzle.source, puzzle.date],
+    () => (communityId ? loadCommunityProgress(communityId) : loadProgress(source, puzzle.date)),
+    [communityId, source, puzzle.date],
   );
   const xw = useCrossword(puzzle, saved);
   const { user } = useAuth();
@@ -526,8 +529,8 @@ function Solver({
   useEffect(() => {
     const progress = buildProgress();
     if (communityId) saveCommunityProgress(communityId, progress);
-    else saveProgress(puzzle.source, puzzle.date, progress);
-  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
+    else saveProgress(source, puzzle.date, progress);
+  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
 
   // The Supabase push is debounced 1.5s after the *content* actually
   // changes — deliberately excludes `elapsed`. That ticks every second, and
@@ -550,8 +553,8 @@ function Solver({
     const progress = buildProgress();
     lastSyncedAtRef.current = progress.updatedAt!;
     if (communityId) pushCommunityProgress(user.id, communityId, progress);
-    else pushProgress(user.id, puzzle.source, puzzle.date, progress);
-  }, [communityId, puzzle.source, puzzle.date, xw.entries, xw.revealed, xw.completed, xw.openCells, rating, user]);
+    else pushProgress(user.id, source, puzzle.date, progress);
+  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, xw.openCells, rating, user]);
 
   // Periodically check whether another tab or device has pushed newer
   // progress for this puzzle — catches the case where the solver
@@ -566,7 +569,7 @@ function Solver({
     const check = async () => {
       const remote = communityId
         ? await pullCommunityProgress(user.id, communityId)
-        : await pullProgress(user.id, puzzle.source, puzzle.date);
+        : await pullProgress(user.id, source, puzzle.date);
       if (!remote || (remote.updatedAt ?? 0) <= lastSyncedAtRef.current) return;
       setConflict((existing) => existing ?? remote);
     };
@@ -581,7 +584,7 @@ function Solver({
       window.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, communityId, puzzle.source, puzzle.date, xw.completed]);
+  }, [user, communityId, source, puzzle.date, xw.completed]);
 
   // "Load latest": adopt the other tab/device's answers.
   const acceptRemote = () => {
@@ -591,7 +594,7 @@ function Solver({
     setRating(conflict.rating ?? 0);
     lastSyncedAtRef.current = conflict.updatedAt ?? Date.now();
     if (communityId) saveCommunityProgress(communityId, conflict);
-    else saveProgress(puzzle.source, puzzle.date, conflict);
+    else saveProgress(source, puzzle.date, conflict);
     setConflict(null);
   };
 
@@ -606,8 +609,8 @@ function Solver({
       saveCommunityProgress(communityId, mine);
       pushCommunityProgress(user?.id ?? null, communityId, mine);
     } else {
-      saveProgress(puzzle.source, puzzle.date, mine);
-      pushProgress(user?.id ?? null, puzzle.source, puzzle.date, mine);
+      saveProgress(source, puzzle.date, mine);
+      pushProgress(user?.id ?? null, source, puzzle.date, mine);
     }
     setConflict(null);
   };

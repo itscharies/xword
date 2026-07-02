@@ -278,19 +278,30 @@ button { font: inherit; cursor: pointer; color: inherit; }
    and lets it act as its own click target ("go to the puzzle") alongside
    the Edit/Delete buttons layered on top of it. */
 .account-tile { gap: 8px; cursor: pointer; }
-.account-tile-action { align-self: flex-start; }
 
-/* Edit/Delete icon buttons, in the corner slot .ai-done/.ai-pct occupy on
-   the home page's tiles, so a "My puzzles" tile keeps the same silhouette. */
+/* Edit/Delete/Follow icon buttons, in the corner slot .ai-done/.ai-pct
+   occupy on the home page's tiles, so a tile keeps the same silhouette.
+   Hidden until the tile is hovered (or focused, for keyboard/touch users)
+   so they don't visually compete with the card's own content. */
 .account-tile-actions {
   position: absolute;
   top: 0;
   right: 0;
   display: flex;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+@media (hover: none) {
+  /* No hover on touch devices, so there'd be no way to reveal these. */
+  .account-tile-actions { opacity: 1; }
+}
+.account-tile:hover .account-tile-actions,
+.account-tile:focus-within .account-tile-actions {
+  opacity: 1;
 }
 .account-tile-actions button {
-  width: 32px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -310,6 +321,46 @@ button { font: inherit; cursor: pointer; color: inherit; }
     background: var(--surface);
     color: var(--fg);
   }
+}
+
+/* A search result you already follow: intentionally plain/dashed rather than
+   the solid bordered+shadowed tile look, so it doesn't read as a duplicate
+   of that same person's row in the Following list below. */
+.already-following { display: flex; flex-direction: column; gap: 6px; }
+.already-following-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.already-following-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border: var(--bw) dashed var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.already-following-row button {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+.already-following-row svg { width: 15px; height: 15px; }
+@media (hover: hover) {
+  .already-following-row button:hover { background: var(--accent-2); color: #000; }
 }
 
 /* Header account button's icon slot doubles as an avatar frame. */

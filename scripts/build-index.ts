@@ -20,7 +20,7 @@ export async function rebuildIndex(): Promise<number> {
     for (const f of files) {
       const p: Puzzle = JSON.parse(await readFile(join(dir, f), "utf8"));
       entries.push({
-        source: p.source,
+        source,
         date: p.date,
         isoDate: p.isoDate,
         weekday: p.weekday,

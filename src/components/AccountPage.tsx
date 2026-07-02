@@ -18,7 +18,7 @@ import {
   type PublishedPuzzle,
 } from "../lib/puzzles.ts";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
-import { DeleteIcon, EditIcon, UserIcon } from "./icons.tsx";
+import { DeleteIcon, EditIcon, UserIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
@@ -279,6 +279,13 @@ function FollowingSection({ userId }: { userId: string }) {
     refresh();
   };
 
+  // Someone you've already searched up and followed shouldn't show as a
+  // second, identical-looking tile duplicating their row in the Following
+  // list below — split them into their own compact, visually distinct
+  // section instead of mixing them into the main results.
+  const newResults = results.filter((p) => !followingIds.has(p.user_id));
+  const alreadyFollowing = results.filter((p) => followingIds.has(p.user_id));
+
   return (
     <section className="account-section">
       <div className="account-section-head">
@@ -297,18 +304,46 @@ function FollowingSection({ userId }: { userId: string }) {
         </button>
       </form>
 
-      {results.length > 0 && (
+      {newResults.length > 0 && (
         <ul className="archive-list">
-          {results.map((p) => (
+          {newResults.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
               <span className="ai-source">{p.display_name}</span>
               <span className="ai-author">@{p.username}</span>
-              <button className="btn account-tile-action" onClick={() => void toggleFollow(p)}>
-                {followingIds.has(p.user_id) ? "Unfollow" : "Follow"}
-              </button>
+              <div className="account-tile-actions">
+                <button
+                  onClick={() => void toggleFollow(p)}
+                  aria-label={`Follow ${p.display_name}`}
+                  title="Follow"
+                >
+                  <UserPlusIcon />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {alreadyFollowing.length > 0 && (
+        <div className="already-following">
+          <span className="setting-label">Already following</span>
+          <ul className="already-following-list">
+            {alreadyFollowing.map((p) => (
+              <li key={p.user_id} className="already-following-row">
+                <span>
+                  {p.display_name} <span className="ai-author">@{p.username}</span>
+                </span>
+                <button
+                  onClick={() => void toggleFollow(p)}
+                  aria-label={`Unfollow ${p.display_name}`}
+                  title="Unfollow"
+                >
+                  <UserMinusIcon />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {following === null ? null : following.length === 0 ? (
@@ -321,9 +356,15 @@ function FollowingSection({ userId }: { userId: string }) {
             <li key={p.user_id} className="archive-item account-tile">
               <span className="ai-source">{p.display_name}</span>
               <span className="ai-author">@{p.username}</span>
-              <button className="btn account-tile-action" onClick={() => void toggleFollow(p)}>
-                Unfollow
-              </button>
+              <div className="account-tile-actions">
+                <button
+                  onClick={() => void toggleFollow(p)}
+                  aria-label={`Unfollow ${p.display_name}`}
+                  title="Unfollow"
+                >
+                  <UserMinusIcon />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
