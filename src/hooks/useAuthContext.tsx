@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { getSession, onAuthStateChange, signInWithGoogle, signOut } from "../lib/auth.ts";
 import { reconcileAll } from "../lib/sync.ts";
 
@@ -25,21 +25,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [syncVersion, setSyncVersion] = useState(0);
   const reconciledFor = useRef<string | null>(null);
+  const userRef = useRef<User | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    getSession().then((session) => {
+    // Supabase re-notifies with a freshly-deserialized session (a new `user`
+    // object) every time the tab regains focus, even when nothing actually
+    // changed — its visibility handler re-emits SIGNED_IN unconditionally.
+    // Skip the state update in that case so components keyed off `user`
+    // (e.g. the puzzle-loading effects) don't mistake a refocus for a
+    // sign-in and flash back to their loading state.
+    const applySession = (session: Session | null) => {
       if (cancelled) return;
-      setUser(session?.user ?? null);
-      setStatus(session?.user ? "signed-in" : "signed-out");
-    });
+      const nextUser = session?.user ?? null;
+      if (nextUser && userRef.current && nextUser.id === userRef.current.id) return;
+      userRef.current = nextUser;
+      setUser(nextUser);
+      setStatus(nextUser ? "signed-in" : "signed-out");
+    };
 
-    const unsubscribe = onAuthStateChange((session) => {
-      if (cancelled) return;
-      setUser(session?.user ?? null);
-      setStatus(session?.user ? "signed-in" : "signed-out");
-    });
+    getSession().then(applySession);
+    const unsubscribe = onAuthStateChange(applySession);
 
     return () => {
       cancelled = true;
