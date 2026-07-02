@@ -63,8 +63,48 @@ export async function reconcileAll(userId: string): Promise<void> {
   }
 }
 
-const pending = new Map<string, ReturnType<typeof setTimeout>>();
+const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; run: () => void }>();
 const DEBOUNCE_MS = 1500;
+
+/** Schedules `run` under `key`, debounced — a second call with the same key
+ *  before the delay elapses replaces the pending write rather than sending
+ *  both. Exposed via `flushPendingPushes` so a backgrounded/closed tab still
+ *  gets its last edit out instead of losing it to a pending timer. */
+function schedule(key: string, run: () => void): void {
+  clearTimeout(pending.get(key)?.timer);
+  const timer = setTimeout(() => {
+    pending.delete(key);
+    run();
+  }, DEBOUNCE_MS);
+  pending.set(key, { timer, run });
+}
+
+/** Runs every still-pending debounced push immediately. Called when the tab
+ *  is hidden or closing — a debounced setTimeout in a backgrounded tab can be
+ *  throttled or never fire at all before the user checks another device. */
+export function flushPendingPushes(): void {
+  for (const [key, { timer, run }] of pending) {
+    clearTimeout(timer);
+    pending.delete(key);
+    run();
+  }
+}
+
+if (typeof window !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushPendingPushes();
+  });
+  window.addEventListener("pagehide", flushPendingPushes);
+  // Give a save still in flight a moment to land, and warn instead of letting
+  // the tab close silently drop it — the fetch itself survives the unload
+  // (see the `keepalive` fetch in supabase.ts), but only once it's sent.
+  window.addEventListener("beforeunload", (e) => {
+    if (pending.size === 0) return;
+    flushPendingPushes();
+    e.preventDefault();
+    e.returnValue = "";
+  });
+}
 
 /** Debounced upsert of one puzzle's progress, keyed per puzzle so switching
  *  puzzles doesn't cancel a different puzzle's pending write. No-ops if
@@ -76,24 +116,18 @@ export function pushProgress(
   progress: Progress,
 ): void {
   if (!supabase || !userId) return;
-  const key = `${source}:${date}`;
-  clearTimeout(pending.get(key));
-  pending.set(
-    key,
-    setTimeout(() => {
-      pending.delete(key);
-      void supabase!.from("progress").upsert(
-        {
-          user_id: userId,
-          source,
-          puzzle_date: date,
-          data: progress,
-          client_updated_at: progress.updatedAt ?? Date.now(),
-        },
-        { onConflict: "user_id,source,puzzle_date" },
-      );
-    }, DEBOUNCE_MS),
-  );
+  schedule(`${source}:${date}`, () => {
+    void supabase!.from("progress").upsert(
+      {
+        user_id: userId,
+        source,
+        puzzle_date: date,
+        data: progress,
+        client_updated_at: progress.updatedAt ?? Date.now(),
+      },
+      { onConflict: "user_id,source,puzzle_date" },
+    );
+  });
 }
 
 /** Same as pushProgress, but for a published (/p/<id>) puzzle — keyed by
@@ -104,23 +138,17 @@ export function pushCommunityProgress(
   progress: Progress,
 ): void {
   if (!supabase || !userId) return;
-  const key = `community:${puzzleId}`;
-  clearTimeout(pending.get(key));
-  pending.set(
-    key,
-    setTimeout(() => {
-      pending.delete(key);
-      void supabase!.from("progress").upsert(
-        {
-          user_id: userId,
-          puzzle_id: puzzleId,
-          data: progress,
-          client_updated_at: progress.updatedAt ?? Date.now(),
-        },
-        { onConflict: "user_id,puzzle_id" },
-      );
-    }, DEBOUNCE_MS),
-  );
+  schedule(`community:${puzzleId}`, () => {
+    void supabase!.from("progress").upsert(
+      {
+        user_id: userId,
+        puzzle_id: puzzleId,
+        data: progress,
+        client_updated_at: progress.updatedAt ?? Date.now(),
+      },
+      { onConflict: "user_id,puzzle_id" },
+    );
+  });
 }
 
 /** One-off pull of a single community puzzle's remote progress — used when
