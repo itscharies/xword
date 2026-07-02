@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
 import type { Puzzle } from "../types.ts";
+import { CheckIcon } from "./icons.tsx";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -25,7 +26,7 @@ export function PublishDialog({
   existingId?: string | null;
 }) {
   const { user } = useAuth();
-  const [title, setTitle] = useState(puzzle.title || "Untitled puzzle");
+  const title = puzzle.title.trim() || "Untitled puzzle";
   const [visibility, setVisibility] = useState<Visibility>("public");
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +37,13 @@ export function PublishDialog({
     if (!user || publishing) return;
     setPublishing(true);
     setError(null);
-    const finalPuzzle = { ...puzzle, title: title.trim() };
+    const finalPuzzle = { ...puzzle, title };
     const { id, error } = existingId
-      ? await updatePuzzle(existingId, title.trim(), finalPuzzle, visibility).then((r) => ({
+      ? await updatePuzzle(existingId, title, finalPuzzle, visibility).then((r) => ({
           id: existingId,
           error: r.error,
         }))
-      : await publishPuzzle(user.id, title.trim(), finalPuzzle, visibility);
+      : await publishPuzzle(user.id, title, finalPuzzle, visibility);
     setPublishing(false);
     if (error) setError(error);
     else setPublishedId(id);
@@ -69,32 +70,28 @@ export function PublishDialog({
   return (
     <form className="settings" onSubmit={submit} style={{ gap: 14 }}>
       <div className="setting-row">
-        <span className="setting-label">Title</span>
-        <input
-          className="text-input"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="setting-row">
         <span className="setting-label">Who can see it</span>
-        {VISIBILITY_OPTIONS.map((opt) => (
-          <label key={opt.value} className="follow-row" style={{ cursor: "pointer" }}>
-            <span>
-              <input
-                type="radio"
-                name="visibility"
-                checked={visibility === opt.value}
-                onChange={() => setVisibility(opt.value)}
-              />{" "}
-              {opt.label}
-              <br />
-              <span className="savedata-status">{opt.hint}</span>
-            </span>
-          </label>
-        ))}
+        <div role="radiogroup" aria-label="Who can see it" className="visibility-options">
+          {VISIBILITY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={visibility === opt.value}
+              className="check-row"
+              onClick={() => setVisibility(opt.value)}
+            >
+              <span className={`checkbox ${visibility === opt.value ? "on" : ""}`}>
+                {visibility === opt.value && <CheckIcon />}
+              </span>
+              <span>
+                {opt.label}
+                <br />
+                <span className="savedata-status">{opt.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <button className="btn btn-accent" type="submit" disabled={publishing}>

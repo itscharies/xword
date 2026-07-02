@@ -7,6 +7,13 @@ import type { Profile } from "./profile.ts";
 
 export type Visibility = "public" | "mutual" | "unlisted" | "draft";
 
+export const VISIBILITY_LABEL: Record<Visibility, string> = {
+  public: "Public to followers",
+  mutual: "Mutuals only",
+  unlisted: "Unlisted",
+  draft: "Draft",
+};
+
 export interface PublishedPuzzle {
   id: string;
   author_id: string;

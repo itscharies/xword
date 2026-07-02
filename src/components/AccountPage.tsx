@@ -11,25 +11,27 @@ import {
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
-import { listMyPuzzles, type PublishedPuzzle } from "../lib/puzzles.ts";
-import { VISIBILITY_LABEL } from "./MyPuzzlesPage.tsx";
+import {
+  deletePuzzle,
+  listMyPuzzles,
+  VISIBILITY_LABEL,
+  type PublishedPuzzle,
+} from "../lib/puzzles.ts";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
 import { UserIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
  *  Google sign-in; signed in with no `profiles` row yet -> claim a
- *  username/display name; otherwise -> account summary + a "My puzzles" /
- *  "Followers & following" column pair. */
+ *  username/display name; otherwise -> account summary + a stack of
+ *  home-page-tile-styled sections (My puzzles, Followers, Following). */
 export function AccountPage({
   onOpenArchive,
-  onOpenMine,
   onOpenCreate,
   onOpenPuzzle,
   onOpenDraft,
 }: {
   onOpenArchive: () => void;
-  onOpenMine: () => void;
   onOpenCreate: () => void;
   onOpenPuzzle: (id: string) => void;
   onOpenDraft: (id: string) => void;
@@ -54,16 +56,14 @@ export function AccountPage({
             profile={profile}
             onSignOut={() => void signOut()}
           />
-          <div className="account-columns">
-            <PuzzlesPanel
-              userId={user.id}
-              onOpenMine={onOpenMine}
-              onOpenCreate={onOpenCreate}
-              onOpenPuzzle={onOpenPuzzle}
-              onOpenDraft={onOpenDraft}
-            />
-            <FollowPanel userId={user.id} />
-          </div>
+          <PuzzlesSection
+            userId={user.id}
+            onOpenCreate={onOpenCreate}
+            onOpenPuzzle={onOpenPuzzle}
+            onOpenDraft={onOpenDraft}
+          />
+          <FollowersSection userId={user.id} />
+          <FollowingSection userId={user.id} />
         </>
       );
     }
@@ -139,30 +139,33 @@ function AccountSummary({
   );
 }
 
-const PUZZLES_PREVIEW = 5;
-
-function PuzzlesPanel({
+function PuzzlesSection({
   userId,
-  onOpenMine,
   onOpenCreate,
   onOpenPuzzle,
   onOpenDraft,
 }: {
   userId: string;
-  onOpenMine: () => void;
   onOpenCreate: () => void;
   onOpenPuzzle: (id: string) => void;
   onOpenDraft: (id: string) => void;
 }) {
   const [puzzles, setPuzzles] = useState<PublishedPuzzle[] | null>(null);
-  useEffect(() => {
+  const refresh = () => {
     listMyPuzzles(userId).then(setPuzzles);
-  }, [userId]);
+  };
+  useEffect(refresh, [userId]);
+
+  const onDelete = async (p: PublishedPuzzle) => {
+    if (!window.confirm(`Delete "${p.title}"? This can't be undone.`)) return;
+    await deletePuzzle(p.id);
+    refresh();
+  };
 
   return (
-    <section className="account-column">
-      <div className="account-column-head">
-        <span className="setting-label">My puzzles</span>
+    <section className="account-section">
+      <div className="account-section-head">
+        <h2>My puzzles</h2>
         <button className="btn" onClick={onOpenCreate}>
           + New
         </button>
@@ -172,46 +175,70 @@ function PuzzlesPanel({
           You haven't published a puzzle yet — start one with "+ New" above.
         </p>
       ) : (
-        <>
-          <ul className="follow-list">
-            {puzzles.slice(0, PUZZLES_PREVIEW).map((p) => (
-              <li key={p.id} className="follow-row">
-                <button
-                  className="btn-plain-link"
-                  onClick={() =>
-                    p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id)
-                  }
-                >
-                  <span className="account-display-name">{p.title}</span>{" "}
-                  <span className="savedata-status">
-                    {VISIBILITY_LABEL[p.visibility]}
-                    {p.visibility !== "draft" &&
-                      ` · ${p.completions} ${p.completions === 1 ? "solve" : "solves"}`}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <button className="btn-plain-link account-see-all" onClick={onOpenMine}>
-            {puzzles.length > PUZZLES_PREVIEW
-              ? `See all ${puzzles.length} →`
-              : "Manage my puzzles →"}
-          </button>
-        </>
+        <ul className="archive-list">
+          {puzzles.map((p) => (
+            <li key={p.id} className="archive-item account-tile">
+              <button
+                className="btn-plain-link"
+                onClick={() => (p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id))}
+              >
+                <span className="ai-source">{p.title}</span>
+                <span className="ai-author">
+                  {VISIBILITY_LABEL[p.visibility]}
+                  {p.visibility !== "draft" &&
+                    ` · ${p.completions} ${p.completions === 1 ? "solve" : "solves"}`}
+                </span>
+              </button>
+              <button
+                className="account-tile-delete"
+                onClick={() => void onDelete(p)}
+                aria-label={`Delete "${p.title}"`}
+                title="Delete"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
 }
 
-function FollowPanel({ userId }: { userId: string }) {
+function FollowersSection({ userId }: { userId: string }) {
+  const [followers, setFollowers] = useState<Profile[] | null>(null);
+  useEffect(() => {
+    listFollowers(userId).then(setFollowers);
+  }, [userId]);
+
+  return (
+    <section className="account-section">
+      <div className="account-section-head">
+        <h2>Followers{followers && followers.length > 0 ? ` (${followers.length})` : ""}</h2>
+      </div>
+      {followers === null ? null : followers.length === 0 ? (
+        <p className="account-empty">No one's following you yet.</p>
+      ) : (
+        <ul className="archive-list">
+          {followers.map((p) => (
+            <li key={p.user_id} className="archive-item account-tile">
+              <span className="ai-source">{p.display_name}</span>
+              <span className="ai-author">@{p.username}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function FollowingSection({ userId }: { userId: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [following, setFollowing] = useState<Profile[] | null>(null);
-  const [followers, setFollowers] = useState<Profile[] | null>(null);
 
   const refresh = () => {
     listFollowing(userId).then(setFollowing);
-    listFollowers(userId).then(setFollowers);
   };
   useEffect(refresh, [userId]);
 
@@ -229,27 +256,15 @@ function FollowPanel({ userId }: { userId: string }) {
   };
 
   return (
-    <section className="account-column">
-      <span className="setting-label">Followers</span>
-      {followers === null ? null : followers.length === 0 ? (
-        <p className="account-empty">No one's following you yet.</p>
-      ) : (
-        <ul className="follow-list">
-          {followers.map((p) => (
-            <li key={p.user_id} className="follow-row">
-              <span>
-                {p.display_name} <span className="savedata-status">@{p.username}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+    <section className="account-section">
+      <div className="account-section-head">
+        <h2>Following{following && following.length > 0 ? ` (${following.length})` : ""}</h2>
+      </div>
 
-      <span className="setting-label">Following</span>
       <form className="savedata-actions" onSubmit={search}>
         <input
           className="text-input"
-          placeholder="username"
+          placeholder="Find someone by username"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -257,32 +272,32 @@ function FollowPanel({ userId }: { userId: string }) {
           Search
         </button>
       </form>
+
       {results.length > 0 && (
-        <ul className="follow-list">
+        <ul className="archive-list">
           {results.map((p) => (
-            <li key={p.user_id} className="follow-row">
-              <span>
-                {p.display_name} <span className="savedata-status">@{p.username}</span>
-              </span>
-              <button className="btn" onClick={() => void toggleFollow(p)}>
+            <li key={p.user_id} className="archive-item account-tile">
+              <span className="ai-source">{p.display_name}</span>
+              <span className="ai-author">@{p.username}</span>
+              <button className="btn account-tile-action" onClick={() => void toggleFollow(p)}>
                 {followingIds.has(p.user_id) ? "Unfollow" : "Follow"}
               </button>
             </li>
           ))}
         </ul>
       )}
+
       {following === null ? null : following.length === 0 ? (
         <p className="account-empty">
           You're not following anyone yet — search a username above to find friends.
         </p>
       ) : (
-        <ul className="follow-list">
+        <ul className="archive-list">
           {following.map((p) => (
-            <li key={p.user_id} className="follow-row">
-              <span>
-                {p.display_name} <span className="savedata-status">@{p.username}</span>
-              </span>
-              <button className="btn" onClick={() => void toggleFollow(p)}>
+            <li key={p.user_id} className="archive-item account-tile">
+              <span className="ai-source">{p.display_name}</span>
+              <span className="ai-author">@{p.username}</span>
+              <button className="btn account-tile-action" onClick={() => void toggleFollow(p)}>
                 Unfollow
               </button>
             </li>

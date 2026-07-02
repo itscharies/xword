@@ -38,7 +38,6 @@ import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
-import { MyPuzzlesPage } from "./components/MyPuzzlesPage.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
@@ -122,7 +121,6 @@ export default function App() {
   const needsIndex = !(
     route === "create" ||
     route === "account" ||
-    route === "mine" ||
     route.startsWith("p/") ||
     route.startsWith("draft/") ||
     (editParts && isSource(editParts[0]) && !!editParts[1]) ||
@@ -158,20 +156,6 @@ export default function App() {
   if (route === "account") {
     return (
       <AccountPage
-        onOpenArchive={() => goTo("")}
-        onOpenMine={() => goTo("mine")}
-        onOpenCreate={() => goTo("create")}
-        onOpenPuzzle={(id) => goTo(`p/${id}`)}
-        onOpenDraft={(id) => goTo(`draft/${id}`)}
-      />
-    );
-  }
-
-  // The signed-in user's own published puzzles + the entry point into the
-  // Builder — replaces the old header "+" button.
-  if (route === "mine") {
-    return (
-      <MyPuzzlesPage
         onOpenArchive={() => goTo("")}
         onOpenCreate={() => goTo("create")}
         onOpenPuzzle={(id) => goTo(`p/${id}`)}
