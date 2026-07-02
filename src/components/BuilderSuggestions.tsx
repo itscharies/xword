@@ -3,7 +3,9 @@ import type { Builder } from "../hooks/useBuilder.ts";
 import { suggest, type Suggestion } from "../lib/wordlist.ts";
 import { define, googleUrl, type Definition } from "../lib/define.ts";
 
-const LINGER_MS = 2000;
+const LINGER_MS = 250;
+// Gap between the chip and the popover.
+const GAP = 10;
 
 /** Fill suggestions for the active slot: words from the list that match the
  *  current letter pattern (crossing letters included), ranked by score.
@@ -68,7 +70,7 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
         setHover({
           word,
           x,
-          y: below ? rect.bottom + 4 : rect.top - 4,
+          y: below ? rect.bottom + GAP : rect.top - GAP,
           above: !below,
         }),
       LINGER_MS,
