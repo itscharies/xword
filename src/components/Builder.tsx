@@ -10,6 +10,7 @@ import { MobileKeyboard } from "./MobileKeyboard.tsx";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { Modal } from "./Modal.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
+import { Logo } from "./Logo.tsx";
 
 /** Serialize the built puzzle to a downloaded JSON file. */
 function download(filename: string, json: string) {
@@ -91,16 +92,19 @@ export function Builder({
   return (
     <div className="app builder">
       <header className="header">
-        <button
-          className="title-block title-link"
-          onClick={onOpenArchive}
-          title="Back to archive"
-        >
-          <h1>Crossword builder</h1>
-          <div className="byline">
-            Lay out a grid, fill it in, export JSON · autosaved
-          </div>
-        </button>
+        <div className="header-left">
+          <Logo onClick={onOpenArchive} />
+          <button
+            className="title-block title-link"
+            onClick={onOpenArchive}
+            title="Back to archive"
+          >
+            <h1>Crossword builder</h1>
+            <div className="byline">
+              Lay out a grid, fill it in, export JSON · autosaved
+            </div>
+          </button>
+        </div>
         <button
           className="btn"
           onClick={() => {

@@ -26,6 +26,7 @@ import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
+import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 
@@ -328,20 +329,23 @@ function Solver({
   return (
     <div className="app">
       <header className="header">
-        <button
-          className="title-block title-link"
-          onClick={onOpenArchive}
-          title="Browse all puzzles"
-        >
-          <h1>{puzzle.title}</h1>
-          <div className="byline">
-            By {puzzle.author}
-            {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
-            {communityId && (
-              <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
-            )}
-          </div>
-        </button>
+        <div className="header-left">
+          <Logo onClick={onOpenArchive} />
+          <button
+            className="title-block title-link"
+            onClick={onOpenArchive}
+            title="Browse all puzzles"
+          >
+            <h1>{puzzle.title}</h1>
+            <div className="byline">
+              By {puzzle.author}
+              {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
+              {communityId && (
+                <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
+              )}
+            </div>
+          </button>
+        </div>
       </header>
 
       <div className="actionbar">

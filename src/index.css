@@ -141,6 +141,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   flex-wrap: wrap;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .timer-group { display: flex; align-items: center; gap: 8px; }
 
 .timer {
@@ -1011,6 +1018,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
     color: #000;
   }
 }
+
+.logo-icon { width: 24px; height: 24px; border-radius: 4px; display: block; }
 
 /* ---- archive page ------------------------------------------------------- */
 

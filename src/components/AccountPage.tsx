@@ -11,6 +11,7 @@ import {
   type Profile,
 } from "../lib/profile.ts";
 import { UserIcon } from "./icons.tsx";
+import { Logo } from "./Logo.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
  *  Google sign-in; signed in with no `profiles` row yet -> claim a
@@ -58,13 +59,16 @@ export function AccountPage({ onOpenArchive }: { onOpenArchive: () => void }) {
   return (
     <div className="app account-page">
       <header className="header">
-        <button
-          className="title-block title-link"
-          onClick={onOpenArchive}
-          title="Back to archive"
-        >
-          <h1>Account</h1>
-        </button>
+        <div className="header-left">
+          <Logo onClick={onOpenArchive} />
+          <button
+            className="title-block title-link"
+            onClick={onOpenArchive}
+            title="Back to archive"
+          >
+            <h1>Account</h1>
+          </button>
+        </div>
       </header>
 
       <div className="account-body">{body}</div>
