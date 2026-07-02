@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Builder } from "../hooks/useBuilder.ts";
 import { suggest, type Suggestion } from "../lib/wordlist.ts";
 import { define, googleUrl, type Definition } from "../lib/define.ts";
@@ -42,9 +42,12 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
   const [hover, setHover] = useState<{
     word: string;
     x: number;
-    y: number;
-    above: boolean;
+    chipTop: number;
+    chipBottom: number;
   } | null>(null);
+  // Resolved placement, measured against the popover's real height after render.
+  const [pos, setPos] = useState<{ top: number; above: boolean } | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const [def, setDef] = useState<{ loading: boolean; data: Definition | null }>({
     loading: false,
     data: null,
@@ -61,20 +64,13 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
     window.clearTimeout(closeTimer.current);
     window.clearTimeout(lingerTimer.current);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    // Keep the popover on-screen: clamp to the right edge and flip above the
-    // chip when there isn't room below.
+    // Clamp to the right edge; vertical placement is resolved after render once
+    // the popover's real height is known (see the layout effect below).
     const x = Math.min(rect.left, window.innerWidth - 272);
-    const below = rect.bottom + 180 <= window.innerHeight;
-    lingerTimer.current = window.setTimeout(
-      () =>
-        setHover({
-          word,
-          x,
-          y: below ? rect.bottom + GAP : rect.top - GAP,
-          above: !below,
-        }),
-      LINGER_MS,
-    );
+    lingerTimer.current = window.setTimeout(() => {
+      setPos(null);
+      setHover({ word, x, chipTop: rect.top, chipBottom: rect.bottom });
+    }, LINGER_MS);
   };
   const onChipLeave = () => {
     window.clearTimeout(lingerTimer.current);
@@ -93,6 +89,24 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
       live = false;
     };
   }, [hover?.word]);
+
+  // Resolve above/below from the popover's real height so it never spills past
+  // the window. Runs before paint (and again when the content resizes).
+  useLayoutEffect(() => {
+    if (!hover || !popRef.current) return;
+    const h = popRef.current.offsetHeight;
+    const vh = window.innerHeight;
+    const fitsBelow = hover.chipBottom + GAP + h <= vh;
+    const above =
+      !fitsBelow &&
+      (hover.chipTop - GAP - h >= 0 || hover.chipTop > vh - hover.chipBottom);
+    const top = above
+      ? Math.max(hover.chipTop - GAP, h + 4) // translateY(-100%): visual top ≥ 4
+      : Math.min(hover.chipBottom + GAP, vh - h - 4);
+    setPos((p) =>
+      p && p.top === top && p.above === above ? p : { top, above },
+    );
+  }, [hover, def.loading, def.data]);
 
   useEffect(
     () => () => {
@@ -131,7 +145,6 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
                 onClick={() => b.fillSlot(s.word)}
                 onPointerEnter={(e) => onChipEnter(s.word, e)}
                 onPointerLeave={onChipLeave}
-                title={`Score ${s.score}`}
               >
                 <span className="sug-word">{s.word}</span>
               </button>
@@ -153,8 +166,9 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
 
       {hover && (
         <div
-          className={`def-popover ${hover.above ? "above" : ""}`}
-          style={{ left: hover.x, top: hover.y }}
+          ref={popRef}
+          className={`def-popover ${pos?.above ? "above" : ""}`}
+          style={{ left: hover.x, top: pos ? pos.top : hover.chipBottom + GAP }}
           onPointerEnter={() => window.clearTimeout(closeTimer.current)}
           onPointerLeave={scheduleClose}
         >
