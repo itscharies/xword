@@ -497,12 +497,14 @@ export function useBuilder() {
 
   const typeLetter = useCallback(
     (ch: string) => {
-      // Multi-select: set every selected cell to the letter (no advance).
+      // Multi-select: apply to every selected cell (no advance). In rebus mode
+      // the letter accumulates onto each cell; otherwise it replaces.
       if (selectedRef.current.size > 0) {
-        const letter = ch.toUpperCase();
+        const c2 = ch.toUpperCase();
         mutate(selectedCells(), (cell) => {
-          cell.solution = letter;
-          delete cell.rebus;
+          const next = rebusRef.current ? (cell.solution ?? "") + c2 : c2;
+          cell.solution = next;
+          cell.rebus = next.length > 1 ? true : undefined;
         });
         return;
       }
@@ -519,7 +521,7 @@ export function useBuilder() {
     [isOpen, advanceInWord],
   );
 
-  // Clear the entries of every selected cell (used by Backspace/Delete).
+  // Clear the entries of every selected cell (used by Delete).
   const clearSelectedEntries = () => {
     mutate(selectedCells(), (cell) => {
       delete cell.solution;
@@ -529,7 +531,23 @@ export function useBuilder() {
 
   const backspace = useCallback(() => {
     if (selectedRef.current.size > 0) {
-      clearSelectedEntries();
+      // In rebus mode peel one letter off each multi-letter cell; otherwise
+      // (or once down to a single letter) clear the selected cells.
+      if (rebusRef.current) {
+        mutate(selectedCells(), (cell) => {
+          const cur = cell.solution ?? "";
+          if (cur.length > 1) {
+            const next = cur.slice(0, -1);
+            cell.solution = next;
+            cell.rebus = next.length > 1 ? true : undefined;
+          } else {
+            delete cell.solution;
+            delete cell.rebus;
+          }
+        });
+      } else {
+        clearSelectedEntries();
+      }
       return;
     }
     const { row, col } = activeRef.current;

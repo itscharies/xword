@@ -60,15 +60,21 @@ export function BuilderGrid({ b }: { b: Builder }) {
     const Z = q(z.r, z.c);
     if (!A || !Z) return null;
     const cr = el.getBoundingClientRect();
+    // Absolute children are positioned from the padding box, i.e. inside the
+    // grid's border — offset the origin by the border width or the rectangle
+    // sits shifted by a few px and overshoots on the far edges.
+    const cs = getComputedStyle(el);
+    const originX = cr.left + (parseFloat(cs.borderLeftWidth) || 0);
+    const originY = cr.top + (parseFloat(cs.borderTopWidth) || 0);
     const ar = A.getBoundingClientRect();
     const zr = Z.getBoundingClientRect();
-    const left = Math.min(ar.left, zr.left) - cr.left;
-    const top = Math.min(ar.top, zr.top) - cr.top;
+    const left = Math.min(ar.left, zr.left) - originX;
+    const top = Math.min(ar.top, zr.top) - originY;
     return {
       left,
       top,
-      width: Math.max(ar.right, zr.right) - cr.left - left,
-      height: Math.max(ar.bottom, zr.bottom) - cr.top - top,
+      width: Math.max(ar.right, zr.right) - originX - left,
+      height: Math.max(ar.bottom, zr.bottom) - originY - top,
     };
   };
 
