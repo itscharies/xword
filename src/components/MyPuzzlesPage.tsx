@@ -4,7 +4,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { deletePuzzle, listMyPuzzles, type PublishedPuzzle } from "../lib/puzzles.ts";
 import { Logo } from "./Logo.tsx";
 
-const VISIBILITY_LABEL: Record<PublishedPuzzle["visibility"], string> = {
+export const VISIBILITY_LABEL: Record<PublishedPuzzle["visibility"], string> = {
   public: "Public to followers",
   mutual: "Mutuals only",
   unlisted: "Unlisted",

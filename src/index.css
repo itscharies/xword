@@ -134,6 +134,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
+/* Account/My-puzzles pages use this same h1 as an actual page heading, not a
+   puzzle byline — bigger and full-contrast so it reads as one. */
+.account-page .title-block h1 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--fg);
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -244,7 +252,23 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-bottom: 1px solid var(--line);
 }
 
-.account-body { display: flex; flex-direction: column; gap: 18px; max-width: 480px; }
+.account-body { display: flex; flex-direction: column; gap: 18px; max-width: 760px; }
+
+/* "My puzzles" / "Followers & following" side by side; stacks on narrow
+   screens where there's no room for two columns. */
+.account-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 820px) {
+  .account-columns { grid-template-columns: 1fr; }
+}
+.account-column { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.account-column-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.account-empty { color: var(--muted); font-size: 13px; margin: 0; }
+.account-see-all { font-size: 13px; font-weight: 700; align-self: flex-start; }
 
 /* A follow-row entry that's clickable but shouldn't look like a boxed
    button — used for "My puzzles" list items. */
@@ -1061,13 +1085,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   filter: drop-shadow(var(--sh) var(--sh) 0 var(--shadow-col));
 }
 
-/* Smaller version of the wordmark above, for the persistent home link on
-   pages other than the archive (which has the full-size one). Declared
-   after .brand so these overrides actually win the cascade. */
-.logo-wordmark {
-  font-size: 22px;
-  -webkit-text-stroke: 3px var(--line);
-  filter: drop-shadow(2px 2px 0 var(--shadow-col));
+/* The persistent home link's wordmark matches the home page's size exactly —
+   only on narrow screens does it drop a bit, since those headers also carry
+   a page heading or puzzle title beside it. */
+@media (max-width: 480px) {
+  .logo-wordmark {
+    font-size: clamp(22px, 7vw, 30px);
+    -webkit-text-stroke: 4px var(--line);
+    filter: drop-shadow(3px 3px 0 var(--shadow-col));
+  }
 }
 
 /* Source filter chips — one row per dimension (Paper, Type). */

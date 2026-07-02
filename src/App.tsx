@@ -127,7 +127,13 @@ export default function App() {
   // puzzle catalogue having loaded (and survives the OAuth redirect back).
   if (route === "account") {
     return (
-      <AccountPage onOpenArchive={() => goTo("")} onOpenMine={() => goTo("mine")} />
+      <AccountPage
+        onOpenArchive={() => goTo("")}
+        onOpenMine={() => goTo("mine")}
+        onOpenCreate={() => goTo("create")}
+        onOpenPuzzle={(id) => goTo(`p/${id}`)}
+        onOpenDraft={(id) => goTo(`draft/${id}`)}
+      />
     );
   }
 

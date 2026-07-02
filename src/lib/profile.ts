@@ -94,3 +94,20 @@ export async function listFollowing(userId: string): Promise<Profile[]> {
     .in("user_id", ids);
   return data ?? [];
 }
+
+/** Same as listFollowing, in reverse — profiles of everyone who follows the
+ *  given user. */
+export async function listFollowers(userId: string): Promise<Profile[]> {
+  if (!supabase) return [];
+  const { data: edges } = await supabase
+    .from("follows")
+    .select("follower_id")
+    .eq("followee_id", userId);
+  const ids = (edges ?? []).map((e) => e.follower_id);
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("profiles")
+    .select("user_id, username, display_name")
+    .in("user_id", ids);
+  return data ?? [];
+}
