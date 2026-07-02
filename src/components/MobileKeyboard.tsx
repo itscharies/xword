@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
-import { AnagramCircleIcon } from "./icons.tsx";
+import { AnagramCircleIcon, BackspaceIcon } from "./icons.tsx";
 
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 
@@ -87,7 +87,7 @@ export function MobileKeyboard({
               onPointerDown={down("backspace")}
               onClick={backspace}
             >
-              ⌫
+              <BackspaceIcon />
             </button>
           )}
         </div>

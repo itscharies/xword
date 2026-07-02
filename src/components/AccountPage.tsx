@@ -18,7 +18,7 @@ import {
   type PublishedPuzzle,
 } from "../lib/puzzles.ts";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
-import { UserIcon } from "./icons.tsx";
+import { DeleteIcon, EditIcon, UserIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
@@ -176,11 +176,21 @@ function PuzzlesSection({
         </p>
       ) : (
         <ul className="archive-list">
-          {puzzles.map((p) => (
-            <li key={p.id} className="archive-item account-tile">
-              <button
-                className="btn-plain-link"
-                onClick={() => (p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id))}
+          {puzzles.map((p) => {
+            const open = () => (p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id));
+            return (
+              <li
+                key={p.id}
+                className="archive-item account-tile"
+                role="button"
+                tabIndex={0}
+                onClick={open}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    open();
+                  }
+                }}
               >
                 <span className="ai-source">{p.title}</span>
                 <span className="ai-author">
@@ -188,17 +198,31 @@ function PuzzlesSection({
                   {p.visibility !== "draft" &&
                     ` · ${p.completions} ${p.completions === 1 ? "solve" : "solves"}`}
                 </span>
-              </button>
-              <button
-                className="account-tile-delete"
-                onClick={() => void onDelete(p)}
-                aria-label={`Delete "${p.title}"`}
-                title="Delete"
-              >
-                ✕
-              </button>
-            </li>
-          ))}
+                <div className="account-tile-actions">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDraft(p.id);
+                    }}
+                    aria-label={`Edit "${p.title}"`}
+                    title="Edit"
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void onDelete(p);
+                    }}
+                    aria-label={`Delete "${p.title}"`}
+                    title="Delete"
+                  >
+                    <DeleteIcon />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

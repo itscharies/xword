@@ -126,21 +126,29 @@ export function setAutoAdvance(on: boolean): void {
 const FILTER_KEY = "xword:filters";
 
 export interface Filters {
-  /** "all", a paper name from lib/sources.ts's PAPERS, or `person:<user_id>`
-   *  to narrow to one followed person's puzzles instead of the syndicated
-   *  archive. */
-  source: string;
-  type: string;
+  /** Paper names from lib/sources.ts's PAPERS to include — multi-select;
+   *  empty means no filter (every paper shows). */
+  papers: string[];
+  /** Same idea for lib/sources.ts's TYPES (Crossword/Mini/Cryptic). */
+  types: string[];
+  /** A followed person's user id, to narrow to just their puzzles instead of
+   *  the syndicated archive — single-select, and mutually exclusive with
+   *  `papers`/`types` (it switches the whole view, not a further narrowing). */
+  person: string | null;
 }
 
-/** The archive's last-used Source/Type filters, so they survive navigation. */
+/** The archive's last-used filters, so they survive navigation. */
 export function getFilters(): Filters {
   try {
     const raw = localStorage.getItem(FILTER_KEY);
-    const f = raw ? (JSON.parse(raw) as Partial<Filters> & { paper?: string }) : {};
-    return { source: f.source ?? f.paper ?? "all", type: f.type ?? "all" };
+    const f = raw ? (JSON.parse(raw) as Partial<Filters>) : {};
+    return {
+      papers: Array.isArray(f.papers) ? f.papers : [],
+      types: Array.isArray(f.types) ? f.types : [],
+      person: f.person ?? null,
+    };
   } catch {
-    return { source: "all", type: "all" };
+    return { papers: [], types: [], person: null };
   }
 }
 

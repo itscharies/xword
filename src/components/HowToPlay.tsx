@@ -42,7 +42,7 @@ export function HowToPlay() {
       <section>
         <h3>Good to know</h3>
         <ul>
-          <li>The timer pauses with ❚❚ and resumes when you touch the grid.</li>
+          <li>The timer pauses with the pause button and resumes when you touch the grid.</li>
           <li>
             A few squares are rebus squares (more than one letter) — turn on the
             rebus key to type several letters into one square.
@@ -53,7 +53,7 @@ export function HowToPlay() {
             or grid to untangle the wordplay.
           </li>
           <li>
-            In <b>Settings</b> (⚙) choose light/dark, an accent colour, and
+            In <b>Settings</b> (the gear icon) choose light/dark, an accent colour, and
             whether finishing a word jumps to the next clue.
           </li>
           <li>Filter the archive by paper or type, and rate puzzles you finish.</li>

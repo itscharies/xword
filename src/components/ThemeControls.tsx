@@ -10,7 +10,7 @@ import {
   type AccentId,
   type Mode,
 } from "../lib/theme.ts";
-import { CheckIcon } from "./icons.tsx";
+import { CheckIcon, MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
 
 /** Body of the settings modal: theme mode + accent colour pickers. */
 export function ThemeControls() {
@@ -42,21 +42,21 @@ export function ThemeControls() {
             onClick={() => choose("light")}
             aria-pressed={mode === "light"}
           >
-            ☾ Light
+            <SunIcon /> Light
           </button>
           <button
             className={`seg-btn ${mode === "dark" ? "active" : ""}`}
             onClick={() => choose("dark")}
             aria-pressed={mode === "dark"}
           >
-            ☀ Dark
+            <MoonIcon /> Dark
           </button>
           <button
             className={`seg-btn ${mode === "system" ? "active" : ""}`}
             onClick={() => choose("system")}
             aria-pressed={mode === "system"}
           >
-            ◐ System
+            <SystemIcon /> System
           </button>
         </div>
       </div>

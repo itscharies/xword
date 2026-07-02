@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { exportSaveData, importSaveData } from "../lib/saveData.ts";
+import { DownloadIcon, UploadIcon } from "./icons.tsx";
 
 /** Settings row: back up / restore all localStorage save data (progress,
  *  theme, filters, builder draft) to and from a JSON file. */
@@ -31,10 +32,10 @@ export function SaveDataControls() {
       <span className="setting-label">Save data</span>
       <div className="savedata-actions">
         <button className="btn" onClick={exportSaveData}>
-          ⬇ Export
+          <DownloadIcon /> Export
         </button>
         <button className="btn" onClick={() => fileRef.current?.click()}>
-          ⬆ Import
+          <UploadIcon /> Import
         </button>
         <input
           ref={fileRef}

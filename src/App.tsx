@@ -41,6 +41,7 @@ import { AccountPage } from "./components/AccountPage.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
+import { EditIcon, PauseIcon, PlayIcon, SettingsIcon } from "./components/icons.tsx";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
 
@@ -380,7 +381,7 @@ function DraftPuzzleView({
     <Builder
       onOpenArchive={onOpenArchive}
       onOpenAccount={onOpenAccount}
-      draftPuzzle={{ id: row.id, puzzle: row.data }}
+      draftPuzzle={{ id: row.id, puzzle: row.data, visibility: row.visibility }}
     />
   );
 }
@@ -664,7 +665,7 @@ function Solver({
               goTo(communityId ? `draft/${communityId}` : `edit/${puzzle.source}/${puzzle.date}`)
             }
           >
-            ✎ Edit
+            <EditIcon /> Edit
           </button>
         )}
       </header>
@@ -683,7 +684,7 @@ function Solver({
               aria-label={paused ? "Resume timer" : "Pause timer"}
               title={paused ? "Resume" : "Pause"}
             >
-              {paused ? "▶" : "❚❚"}
+              {paused ? <PlayIcon /> : <PauseIcon />}
             </button>
             <div className={`timer ${paused ? "paused" : ""}`}>
               {formatTime(elapsed)}
@@ -695,7 +696,7 @@ function Solver({
             aria-label="Settings"
             title="Settings"
           >
-            ⚙
+            <SettingsIcon />
           </button>
         </div>
       </div>

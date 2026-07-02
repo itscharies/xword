@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
-import { getFilters, setFilters } from "../lib/theme.ts";
+import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
-import { CheckIcon, UserIcon } from "./icons.tsx";
+import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
 import { loadProgress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
@@ -32,36 +32,44 @@ function themeName(title: string): string | null {
   return m ? m[1] : null;
 }
 
-const PERSON_PREFIX = "person:";
-
-/** A labelled row of "All + each option" filter chips, used inside the
- *  filters modal. */
+/** A labelled row of multi-select filter chips ("All" plus each option —
+ *  any number of options can be on at once), used inside the filters modal. */
 function FilterChips({
   label,
   options,
-  value,
-  onChange,
+  values,
+  onToggle,
+  onClear,
 }: {
   label: string;
   options: string[];
-  value: string;
-  onChange: (v: string) => void;
+  values: string[];
+  onToggle: (v: string) => void;
+  onClear: () => void;
 }) {
   // Nothing to filter on if there's only one option.
   if (options.length < 2) return null;
   return (
     <div className="setting-row">
       <span className="setting-label">{label}</span>
-      <div className="filter-chip-group" role="radiogroup" aria-label={label}>
-        {["all", ...options].map((opt) => (
+      <div className="filter-chip-group" role="group" aria-label={label}>
+        <button
+          className={`filter-chip ${values.length === 0 ? "on" : ""}`}
+          onClick={onClear}
+          role="checkbox"
+          aria-checked={values.length === 0}
+        >
+          All
+        </button>
+        {options.map((opt) => (
           <button
             key={opt}
-            className={`filter-chip ${value === opt ? "on" : ""}`}
-            onClick={() => onChange(opt)}
-            role="radio"
-            aria-checked={value === opt}
+            className={`filter-chip ${values.includes(opt) ? "on" : ""}`}
+            onClick={() => onToggle(opt)}
+            role="checkbox"
+            aria-checked={values.includes(opt)}
           >
-            {opt === "all" ? "All" : opt}
+            {opt}
           </button>
         ))}
       </div>
@@ -98,35 +106,62 @@ export function Archive({
     }
     listFeed(user.id).then(setFeed);
   }, [user]);
-  const [source, setSourceState] = useState<string>(() => getFilters().source);
-  const [type, setTypeState] = useState<string>(() => getFilters().type);
+  // Kept as one state object (rather than separate useState calls per field)
+  // so every update — including "toggle one item in an array" — reads and
+  // persists from the same up-to-date snapshot. Doing that as independent
+  // setPapers/setTypes calls bit us before: each persisted using the other's
+  // stale pre-update closure value, so whichever call ran last silently won
+  // and could resurrect an already-cleared filter in localStorage.
+  const [filters, setFiltersState] = useState(getFilters);
+  const { papers, types, person: selectedPersonId } = filters;
 
-  // Persist the filters so navigating into a puzzle and back keeps them.
-  const setSource = (s: string) => {
-    setSourceState(s);
-    setFilters({ source: s, type });
+  const togglePaper = (p: string) => {
+    setFiltersState((f) => {
+      const papers = f.papers.includes(p) ? f.papers.filter((x) => x !== p) : [...f.papers, p];
+      // Picking a paper exits "one person's puzzles" mode back into the
+      // normal archive — the two views don't compose.
+      const next = { ...f, papers, person: null };
+      setFilters(next);
+      return next;
+    });
   };
-  const setType = (t: string) => {
-    setTypeState(t);
-    setFilters({ source, type: t });
+  const toggleType = (t: string) => {
+    setFiltersState((f) => {
+      const types = f.types.includes(t) ? f.types.filter((x) => x !== t) : [...f.types, t];
+      const next = { ...f, types };
+      setFilters(next);
+      return next;
+    });
   };
-  // Clearing both at once as two separate setSource/setType calls would have
-  // each persist using the other's stale (pre-clear) closure value — whoever
-  // ran last would win and silently resurrect the just-cleared filter in
-  // localStorage. Reset both in one write instead.
+  const clearPapers = () => {
+    setFiltersState((f) => {
+      const next = { ...f, papers: [] };
+      setFilters(next);
+      return next;
+    });
+  };
+  const clearTypes = () => {
+    setFiltersState((f) => {
+      const next = { ...f, types: [] };
+      setFilters(next);
+      return next;
+    });
+  };
+  // Single-select and mutually exclusive with papers/types — picking a
+  // person swaps the whole view to just their puzzles; clicking the same
+  // one again (or picking a paper) swaps back.
+  const selectPerson = (userId: string) => {
+    setFiltersState((f) => {
+      const next = { ...f, person: f.person === userId ? null : userId };
+      setFilters(next);
+      return next;
+    });
+  };
   const clearFilters = () => {
-    setSourceState("all");
-    setTypeState("all");
-    setFilters({ source: "all", type: "all" });
+    const next: Filters = { papers: [], types: [], person: null };
+    setFiltersState(next);
+    setFilters(next);
   };
-
-  // "Source" is one filter covering both the syndicated papers and, for a
-  // specific followed person, their published puzzles instead — mutually
-  // exclusive, so it's a single persisted value rather than two.
-  const selectedPersonId = source.startsWith(PERSON_PREFIX)
-    ? source.slice(PERSON_PREFIX.length)
-    : null;
-  const paper = selectedPersonId ? "all" : source;
 
   // Only people who actually have a visible puzzle right now are worth
   // offering as a filter — de-duped in feed order (newest puzzle first).
@@ -147,23 +182,23 @@ export function Archive({
     const byDate = new Map<string, PuzzleIndexEntry[]>();
     for (const p of index) {
       const meta = SOURCES[p.source];
-      if (paper !== "all" && meta.paper !== paper) continue;
-      if (type !== "all" && meta.type !== type) continue;
+      if (papers.length > 0 && !papers.includes(meta.paper)) continue;
+      if (types.length > 0 && !types.includes(meta.type)) continue;
       const arr = byDate.get(p.isoDate);
       if (arr) arr.push(p);
       else byDate.set(p.isoDate, [p]);
     }
     return [...byDate.entries()];
-  }, [index, paper, type]);
+  }, [index, papers, types]);
 
   // Render the archive a fortnight at a time and grow as the reader nears the
   // bottom — keeps the DOM small so scrolling 180+ days stays smooth.
   const PAGE = 14;
   const [shown, setShown] = useState(PAGE);
-  useEffect(() => setShown(PAGE), [paper, type]); // restart on filter change
+  useEffect(() => setShown(PAGE), [papers, types]); // restart on filter change
   const visibleDays = days.slice(0, shown);
   const hasMore = shown < days.length;
-  const filterCount = (source !== "all" ? 1 : 0) + (type !== "all" ? 1 : 0);
+  const filterCount = papers.length + types.length + (selectedPersonId ? 1 : 0);
 
   // Load the next page when a sentinel near the bottom scrolls into view.
   const io = useRef<IntersectionObserver | null>(null);
@@ -190,7 +225,7 @@ export function Archive({
             aria-label="How to play"
             title="How to play"
           >
-            ℹ
+            <InfoIcon />
           </button>
           <button
             className="btn icon-btn cog-btn account-btn"
@@ -210,14 +245,14 @@ export function Archive({
             aria-label="Settings"
             title="Settings"
           >
-            ⚙
+            <SettingsIcon />
           </button>
         </div>
       </header>
 
       <div className="archive-filters-bar">
         <button className="btn filters-btn" onClick={() => setShowFilters(true)}>
-          ▤ Filters{filterCount > 0 ? ` (${filterCount})` : ""}
+          <FilterIcon /> Filters{filterCount > 0 ? ` (${filterCount})` : ""}
         </button>
       </div>
 
@@ -375,21 +410,21 @@ export function Archive({
             <FilterChips
               label="Papers"
               options={PAPERS}
-              value={source}
-              onChange={setSource}
+              values={papers}
+              onToggle={togglePaper}
+              onClear={clearPapers}
             />
 
             {feedAuthors.length > 0 && (
               <div className="setting-row">
                 <span className="setting-label">People you follow</span>
-                <div className="filter-chip-group" role="radiogroup" aria-label="People you follow">
+                <div className="filter-chip-group" aria-label="People you follow">
                   {feedAuthors.map((a) => (
                     <button
                       key={a.user_id}
-                      className={`filter-chip ${source === `${PERSON_PREFIX}${a.user_id}` ? "on" : ""}`}
-                      onClick={() => setSource(`${PERSON_PREFIX}${a.user_id}`)}
-                      role="radio"
-                      aria-checked={source === `${PERSON_PREFIX}${a.user_id}`}
+                      className={`filter-chip ${selectedPersonId === a.user_id ? "on" : ""}`}
+                      onClick={() => selectPerson(a.user_id)}
+                      aria-pressed={selectedPersonId === a.user_id}
                     >
                       {a.display_name}
                     </button>
@@ -399,7 +434,13 @@ export function Archive({
             )}
 
             {!selectedPersonId && (
-              <FilterChips label="Type" options={TYPES} value={type} onChange={setType} />
+              <FilterChips
+                label="Type"
+                options={TYPES}
+                values={types}
+                onToggle={toggleType}
+                onClear={clearTypes}
+              />
             )}
 
             {filterCount > 0 && (

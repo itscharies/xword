@@ -18,12 +18,16 @@ export function PublishDialog({
   puzzle,
   onClose,
   existingId,
+  republish,
 }: {
   puzzle: Puzzle;
   onClose: () => void;
   /** Set when publishing a puzzle already saved as a draft — updates that
    *  row in place instead of inserting a duplicate. */
   existingId?: string | null;
+  /** Set when this is already a published (non-draft) puzzle being
+   *  re-saved, not a first publish — only changes the wording. */
+  republish?: boolean;
 }) {
   const { user } = useAuth();
   const title = puzzle.title.trim() || "Untitled puzzle";
@@ -53,7 +57,7 @@ export function PublishDialog({
     const url = `${window.location.origin}${BASE}p/${publishedId}`;
     return (
       <div className="setting-row">
-        <p>Published! Share this link:</p>
+        <p>{republish ? "Saved! Share this link:" : "Published! Share this link:"}</p>
         <div className="savedata-actions">
           <input className="text-input" readOnly value={url} onFocus={(e) => e.target.select()} />
           <button className="btn" onClick={() => navigator.clipboard.writeText(url)}>
@@ -95,7 +99,7 @@ export function PublishDialog({
       </div>
 
       <button className="btn btn-accent" type="submit" disabled={publishing}>
-        {publishing ? "Publishing…" : "Publish"}
+        {publishing ? "Saving…" : republish ? "Save changes" : "Publish"}
       </button>
       {error && <span className="savedata-status">{error}</span>}
     </form>

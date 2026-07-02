@@ -3,7 +3,7 @@ import { useBuilder } from "../hooks/useBuilder.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { getProfile } from "../lib/profile.ts";
-import { publishPuzzle, updatePuzzle } from "../lib/puzzles.ts";
+import { publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
 import { saveSyndicatedPuzzle } from "../lib/syndicated.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
@@ -15,6 +15,20 @@ import { RebusIcon } from "./RebusIcon.tsx";
 import { Modal } from "./Modal.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
 import { Logo } from "./Logo.tsx";
+import {
+  BarBottomIcon,
+  BarRightIcon,
+  CheckIcon,
+  CircleIcon,
+  EditIcon,
+  LockIcon,
+  SaveIcon,
+  ShadeIcon,
+  SquareIcon,
+  SymmetryIcon,
+  UnlockIcon,
+  UploadIcon,
+} from "./icons.tsx";
 
 /** Squares with no letter, or clues with no text — the same rough
  *  completeness check applies whether the puzzle is being exported or
@@ -44,7 +58,7 @@ export function Builder({
   editing?: { source: PuzzleSource; date: string; puzzle: Puzzle };
   /** Set when continuing a puzzle already saved as a draft — see App.tsx's
    *  DraftPuzzleView. Mutually exclusive with `editing`. */
-  draftPuzzle?: { id: string; puzzle: Puzzle };
+  draftPuzzle?: { id: string; puzzle: Puzzle; visibility: Visibility };
 }) {
   const b = useBuilder();
   const { user } = useAuth();
@@ -59,6 +73,11 @@ export function Builder({
   const [draftSaving, setDraftSaving] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
+  // Reopening something already published/unlisted/etc. via the Solver's
+  // "Edit" button, not a fresh or still-unpublished draft — "Save draft"
+  // doesn't apply (it would just be a confusing way to unpublish it), and
+  // the publish action is really a re-save rather than a first publish.
+  const isEditingPublished = draftPuzzle ? draftPuzzle.visibility !== "draft" : false;
 
   useDocumentTitle(
     editing ? `Fixing: ${editing.puzzle.title}` : "Crossword builder",
@@ -177,7 +196,7 @@ export function Builder({
             }
             aria-pressed={sizeIsSquare}
           >
-            {sizeIsSquare ? "🔒" : "🔓"}
+            {sizeIsSquare ? <LockIcon /> : <UnlockIcon />}
           </button>
           {!sizeIsSquare && (
             <label className="builder-field">
@@ -199,13 +218,13 @@ export function Builder({
             className={`seg-btn ${b.mode === "paint" ? "active" : ""}`}
             onClick={() => b.setMode("paint")}
           >
-            ⬛ Paint
+            <SquareIcon /> Paint
           </button>
           <button
             className={`seg-btn ${b.mode === "fill" ? "active" : ""}`}
             onClick={() => b.setMode("fill")}
           >
-            ✎ Fill
+            <EditIcon /> Fill
           </button>
         </div>
 
@@ -216,7 +235,7 @@ export function Builder({
           aria-pressed={b.symmetry}
           title="Mirror black squares (180° rotational symmetry)"
         >
-          ⤢ Symmetry
+          <SymmetryIcon /> Symmetry
         </button>
         <button
           className={`btn rebus-btn ${b.rebus ? "active" : ""}`}
@@ -237,7 +256,7 @@ export function Builder({
             aria-pressed={b.activeProps.circled}
             title="Circle"
           >
-            ○ Circle
+            <CircleIcon /> Circle
           </button>
           <button
             className={`btn ${b.activeProps.shaded ? "active" : ""}`}
@@ -245,7 +264,7 @@ export function Builder({
             aria-pressed={b.activeProps.shaded}
             title="Shading"
           >
-            ▦ Shade
+            <ShadeIcon /> Shade
           </button>
           <button
             className={`btn ${b.activeProps.barRight ? "active" : ""}`}
@@ -253,7 +272,7 @@ export function Builder({
             aria-pressed={b.activeProps.barRight}
             title="Bar on the right edge"
           >
-            ▕ Bar→
+            <BarRightIcon /> Bar→
           </button>
           <button
             className={`btn ${b.activeProps.barBottom ? "active" : ""}`}
@@ -261,7 +280,7 @@ export function Builder({
             aria-pressed={b.activeProps.barBottom}
             title="Bar on the bottom edge"
           >
-            ▁ Bar↓
+            <BarBottomIcon /> Bar↓
           </button>
         </div>
       </div>
@@ -350,18 +369,20 @@ export function Builder({
               {saved && <span className="savedata-status">Fix saved.</span>}
               {saveError && <span className="savedata-status">{saveError}</span>}
               <button className="btn btn-accent" onClick={() => void saveFix()} disabled={saving}>
-                {saving ? "Saving…" : "✓ Save fix"}
+                {saving ? "Saving…" : (<><CheckIcon /> Save fix</>)}
               </button>
             </>
           ) : user ? (
             <>
               {draftSaved && <span className="savedata-status">Draft saved.</span>}
               {draftError && <span className="savedata-status">{draftError}</span>}
-              <button className="btn" onClick={() => void saveDraft()} disabled={draftSaving}>
-                {draftSaving ? "Saving…" : "💾 Save draft"}
-              </button>
+              {!isEditingPublished && (
+                <button className="btn" onClick={() => void saveDraft()} disabled={draftSaving}>
+                  {draftSaving ? "Saving…" : (<><SaveIcon /> Save draft</>)}
+                </button>
+              )}
               <button className="btn btn-accent" onClick={openPublish}>
-                ⇪ Publish
+                {isEditingPublished ? "Save changes" : (<><UploadIcon /> Publish</>)}
               </button>
             </>
           ) : (
@@ -373,7 +394,10 @@ export function Builder({
       </div>
 
       {showPublish && (
-        <Modal title="Publish puzzle" onClose={() => setShowPublish(false)}>
+        <Modal
+          title={isEditingPublished ? "Save changes" : "Publish puzzle"}
+          onClose={() => setShowPublish(false)}
+        >
           {hasProfile === false ? (
             <div className="setting-row">
               <p>Set up a username on your Account page before publishing.</p>
@@ -386,6 +410,7 @@ export function Builder({
               puzzle={b.buildPuzzle()}
               onClose={() => setShowPublish(false)}
               existingId={draftId}
+              republish={isEditingPublished}
             />
           )}
         </Modal>

@@ -153,7 +153,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -212,6 +212,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-top: 2px solid var(--line);
 }
 .savedata-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* A text input sharing the row with a button (share link + Copy, username
+   search + Search) stretches to fill the space instead of sitting at its
+   default intrinsic width. */
+.savedata-actions .text-input { flex: 1; min-width: 120px; }
 .savedata-status { font-size: 12px; color: var(--muted); }
 
 .save-status-saving { animation: save-status-pulse 1.1s ease-in-out infinite; }
@@ -256,7 +260,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: space-between;
   gap: 10px;
   margin: 0;
-  padding-bottom: 5px;
+  padding-bottom: 14px;
   border-bottom: var(--bw) solid var(--line);
 }
 .account-section-head h2 {
@@ -270,17 +274,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .account-empty { color: var(--muted); font-size: 13px; margin: 0; }
 
 /* Puzzle/profile tiles reuse .archive-item's box look; this modifier just
-   loosens the gap a little for the extra action button some of them carry. */
-.account-tile { gap: 8px; }
+   loosens the gap a little for the extra action button some of them carry,
+   and lets it act as its own click target ("go to the puzzle") alongside
+   the Edit/Delete buttons layered on top of it. */
+.account-tile { gap: 8px; cursor: pointer; }
 .account-tile-action { align-self: flex-start; }
 
-/* Corner delete button — same slot .ai-done/.ai-pct occupy on the home page's
-   tiles, so a "My puzzles" tile keeps the same silhouette. */
-.account-tile-delete {
+/* Edit/Delete icon buttons, in the corner slot .ai-done/.ai-pct occupy on
+   the home page's tiles, so a "My puzzles" tile keeps the same silhouette. */
+.account-tile-actions {
   position: absolute;
   top: 0;
   right: 0;
-  width: 28px;
+  display: flex;
+}
+.account-tile-actions button {
+  width: 32px;
   height: 28px;
   display: inline-flex;
   align-items: center;
@@ -290,25 +299,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-bottom: var(--bw) solid var(--line);
   background: var(--surface);
   color: var(--fg);
-  font-size: 13px;
   cursor: pointer;
 }
+.account-tile-actions svg { width: 15px; height: 15px; }
 @media (hover: hover) {
-  .account-tile-delete:hover { background: var(--accent-2); color: #000; }
-}
-
-/* A tile entry that's clickable but shouldn't look like a boxed button —
-   used for "My puzzles" tiles' title/subtitle area. */
-.btn-plain-link {
-  display: block;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-  color: inherit;
-  width: 100%;
-  min-width: 0;
+  .account-tile-actions button:hover { background: var(--accent-2); color: #000; }
+  /* Hovering an action button shouldn't also flip the whole card's
+     hover-invert background — the two hover states should stay independent. */
+  li.archive-item.account-tile:has(.account-tile-actions button:hover) {
+    background: var(--surface);
+    color: var(--fg);
+  }
 }
 
 /* Header account button's icon slot doubles as an avatar frame. */
@@ -319,7 +320,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   object-fit: cover;
 }
 
-.account-summary { display: flex; align-items: center; gap: 12px; }
+.account-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  padding: 14px 16px;
+}
 .account-avatar {
   width: 48px;
   height: 48px;

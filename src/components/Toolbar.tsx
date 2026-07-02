@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Crossword, RevealScope } from "../hooks/useCrossword.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
-import { AnagramIcon, CheckIcon, EyeIcon, ResetIcon } from "./icons.tsx";
+import { AnagramIcon, CheckIcon, ChevronDownIcon, EyeIcon, ResetIcon } from "./icons.tsx";
 
 function Dropdown({
   label,
@@ -29,7 +29,7 @@ function Dropdown({
       <button className="btn" onClick={() => setOpen((o) => !o)} aria-label={label}>
         <span className="btn-icon">{icon}</span>
         <span className="btn-label">{label}</span>
-        <span className="btn-caret">▾</span>
+        <span className="btn-caret"><ChevronDownIcon /></span>
       </button>
       {open && (
         <div className="menu">
