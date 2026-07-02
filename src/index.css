@@ -1228,11 +1228,34 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .builder-info:hover,
 .builder-info:focus-visible { background: var(--surface-2); color: var(--fg); }
 
-/* Void cells render blank (page colour) in the solver. In the builder, give
-   them a faint dashed outline so they stay visible and clickable while editing. */
-.builder-grid .cell.void {
-  outline: 1px dashed color-mix(in srgb, var(--muted) 55%, transparent);
-  outline-offset: -3px;
+/* Builder grid: anchor the marquee overlay; crosshair cursor while painting. */
+.builder-grid { position: relative; }
+.builder-grid.paint-mode,
+.builder-grid.paint-mode .cell { cursor: crosshair; }
+
+/* Multi-selected cells (shift-click / marquee) — an accent tint over the cell. */
+.builder-grid .cell.selected {
+  background: linear-gradient(
+      rgba(var(--accent-rgb), 0.34),
+      rgba(var(--accent-rgb), 0.34)
+    ),
+    var(--cell-bg);
+}
+.builder-grid .cell.selected.shaded {
+  background: linear-gradient(
+      rgba(var(--accent-rgb), 0.34),
+      rgba(var(--accent-rgb), 0.34)
+    ),
+    var(--shaded);
+}
+
+/* Marquee selection rectangle: translucent accent fill, stronger accent border. */
+.builder-marquee {
+  position: absolute;
+  pointer-events: none;
+  z-index: 6;
+  border: 2px solid color-mix(in srgb, var(--accent) 66%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 33%, transparent);
 }
 
 /* Clue editor: each row carries a text input + an answer skeleton. */

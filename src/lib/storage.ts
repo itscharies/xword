@@ -92,7 +92,6 @@ export interface BuilderDraft {
   symmetry: boolean;
   cryptic: boolean;
   autoEnumerate: boolean;
-  brush: "block" | "void";
   grid: Cell[][];
   clueText: [string, string][];
   /** Cross-references: source slot key -> target slot keys, as Map entries. */

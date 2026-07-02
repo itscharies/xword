@@ -138,24 +138,6 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
           </button>
         </div>
 
-        {/* Brush: solid block vs void (outside the puzzle) — paint mode only. */}
-        {b.mode === "paint" && (
-          <div className="seg" title="What clicking paints: a solid block or a void cell (outside the puzzle, for non-rectangular grids)">
-            <button
-              className={`seg-btn ${b.brush === "block" ? "active" : ""}`}
-              onClick={() => b.setBrush("block")}
-            >
-              ⬛ Block
-            </button>
-            <button
-              className={`seg-btn ${b.brush === "void" ? "active" : ""}`}
-              onClick={() => b.setBrush("void")}
-            >
-              ▢ Void
-            </button>
-          </div>
-        )}
-
         {/* Symmetry + rebus */}
         <button
           className={`btn ${b.symmetry ? "active" : ""}`}
@@ -175,18 +157,39 @@ export function Builder({ onOpenArchive }: { onOpenArchive: () => void }) {
           <RebusIcon />
         </button>
 
-        {/* Per-cell decorations */}
+        {/* Per-cell decorations — toggles reflecting the active cell's state.
+            Apply to the whole multi-selection when one is active. */}
         <div className="builder-group builder-decor">
-          <button className="btn" onClick={() => b.toggleProp("circled")} title="Toggle circle">
+          <button
+            className={`btn ${b.activeProps.circled ? "active" : ""}`}
+            onClick={() => b.toggleProp("circled")}
+            aria-pressed={b.activeProps.circled}
+            title="Circle"
+          >
             ○ Circle
           </button>
-          <button className="btn" onClick={() => b.toggleProp("shaded")} title="Toggle shading">
+          <button
+            className={`btn ${b.activeProps.shaded ? "active" : ""}`}
+            onClick={() => b.toggleProp("shaded")}
+            aria-pressed={b.activeProps.shaded}
+            title="Shading"
+          >
             ▦ Shade
           </button>
-          <button className="btn" onClick={() => b.toggleProp("barRight")} title="Toggle right bar">
+          <button
+            className={`btn ${b.activeProps.barRight ? "active" : ""}`}
+            onClick={() => b.toggleProp("barRight")}
+            aria-pressed={b.activeProps.barRight}
+            title="Bar on the right edge"
+          >
             ▕ Bar→
           </button>
-          <button className="btn" onClick={() => b.toggleProp("barBottom")} title="Toggle bottom bar">
+          <button
+            className={`btn ${b.activeProps.barBottom ? "active" : ""}`}
+            onClick={() => b.toggleProp("barBottom")}
+            aria-pressed={b.activeProps.barBottom}
+            title="Bar on the bottom edge"
+          >
             ▁ Bar↓
           </button>
         </div>

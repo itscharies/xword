@@ -91,9 +91,6 @@ export function useBuilder() {
   const [height, setHeightState] = useState(draft?.height ?? DEFAULT_SIZE);
   const [linked, setLinked] = useState(draft?.linked ?? true);
   const [symmetry, setSymmetry] = useState(draft?.symmetry ?? true);
-  // Paint brush: a solid "block" or a "void" cell (outside the puzzle, rendered
-  // blank — for non-rectangular grids). Both are non-open; only the look differs.
-  const [brush, setBrushState] = useState<"block" | "void">(draft?.brush ?? "block");
   // Cryptic puzzles offer the anagram helper and carry clue enumerations.
   const [cryptic, setCryptic] = useState(draft?.cryptic ?? false);
   // Set a "(3,4)" length enumeration on each clue on export (cryptic style).
@@ -106,6 +103,9 @@ export function useBuilder() {
   const [direction, setDirectionState] = useState<Direction>(draft?.direction ?? "across");
   const [mode, setModeState] = useState<BuilderMode>(draft?.mode ?? "paint");
   const [rebus, setRebusState] = useState(false);
+  // Multi-select cells (shift-click / marquee). Group typing & delete apply to
+  // every cell in here; empty means normal single-cell editing. Not persisted.
+  const [selected, setSelectedState] = useState<Set<string>>(() => new Set());
   const [clueText, setClueText] = useState<Map<string, string>>(
     () => new Map(draft?.clueText ?? []),
   );
@@ -127,7 +127,7 @@ export function useBuilder() {
   const modeRef = useRef(mode);
   const rebusRef = useRef(rebus);
   const symmetryRef = useRef(symmetry);
-  const brushRef = useRef(brush);
+  const selectedRef = useRef(selected);
 
   const setGrid = (g: Cell[][]) => {
     gridRef.current = g;
@@ -150,10 +150,13 @@ export function useBuilder() {
     setRebusState(v);
   };
   const toggleRebus = useCallback(() => setRebus(!rebusRef.current), []);
-  const setBrush = useCallback((b: "block" | "void") => {
-    brushRef.current = b;
-    setBrushState(b);
-  }, []);
+  const setSelected = (s: Set<string>) => {
+    selectedRef.current = s;
+    setSelectedState(s);
+  };
+  const clearSelection = () => {
+    if (selectedRef.current.size) setSelected(new Set());
+  };
   const toggleSymmetry = useCallback(() => {
     symmetryRef.current = !symmetryRef.current;
     setSymmetry(symmetryRef.current);
@@ -241,6 +244,17 @@ export function useBuilder() {
       .join("");
   }, [activeSlot, numbered]);
 
+  // Decoration flags of the active cell — drives the toggle buttons' on state.
+  const activeProps = useMemo(() => {
+    const cell = numbered[active.row]?.[active.col];
+    return {
+      circled: !!cell?.circled,
+      shaded: !!cell?.shaded,
+      barRight: !!cell?.barRight,
+      barBottom: !!cell?.barBottom,
+    };
+  }, [numbered, active]);
+
   const highlighted = useMemo<Set<string>>(() => {
     const set = new Set<string>();
     if (rebus || mode === "paint") return set;
@@ -324,9 +338,6 @@ export function useBuilder() {
     mutate(targets, (cell) => {
       if (black) {
         cell.black = true;
-        // A void cell is also "black" (closed); the flag just renders it blank.
-        if (brushRef.current === "void") cell.void = true;
-        else delete cell.void;
         delete cell.solution;
         delete cell.rebus;
         delete cell.circled;
@@ -335,7 +346,6 @@ export function useBuilder() {
         delete cell.barBottom;
       } else {
         delete cell.black;
-        delete cell.void;
       }
     });
   }, []);
@@ -348,12 +358,25 @@ export function useBuilder() {
   // ---- navigation (fill mode) ---------------------------------------------
 
   const selectCell = useCallback(
-    (r: number, c: number) => {
+    (r: number, c: number, additive = false) => {
       if (modeRef.current === "paint") {
         setActive({ row: r, col: c });
         return;
       }
       if (!isOpen(r, c)) return;
+      // Shift-click builds a multi-selection, seeded with the current cell.
+      if (additive) {
+        const next = new Set(selectedRef.current);
+        if (next.size === 0)
+          next.add(keyOf(activeRef.current.row, activeRef.current.col));
+        const k = keyOf(r, c);
+        if (next.has(k) && next.size > 1) next.delete(k);
+        else next.add(k);
+        setSelected(next);
+        setActive({ row: r, col: c });
+        return;
+      }
+      clearSelection();
       const cur = activeRef.current;
       if (cur.row === r && cur.col === c) {
         const here = lookup.get(keyOf(r, c));
@@ -369,7 +392,40 @@ export function useBuilder() {
     [isOpen, lookup],
   );
 
+  /** Replace or extend (shift) the multi-selection with a block of cells (from
+   *  a marquee drag). Only open cells are included. */
+  const selectCells = useCallback(
+    (cells: Pos[], additive: boolean) => {
+      const open = cells.filter((p) => isOpen(p.row, p.col));
+      if (open.length <= 1 && !additive) {
+        // A tiny drag over one cell behaves like a plain click.
+        if (open.length === 1) selectCell(open[0].row, open[0].col);
+        return;
+      }
+      const next = additive ? new Set(selectedRef.current) : new Set<string>();
+      for (const p of open) next.add(keyOf(p.row, p.col));
+      setSelected(next);
+      if (open.length) setActive(open[0]);
+    },
+    [isOpen, selectCell],
+  );
+
+  /** Escape from a multi-selection: collapse to its first cell (reading order). */
+  const collapseSelection = useCallback(() => {
+    const sel = selectedRef.current;
+    if (!sel.size) return;
+    let first: Pos | null = null;
+    for (const key of sel) {
+      const [r, c] = key.split(",").map(Number);
+      if (!first || r < first.row || (r === first.row && c < first.col))
+        first = { row: r, col: c };
+    }
+    setSelected(new Set());
+    if (first) setActive(first);
+  }, []);
+
   const toggleDirection = useCallback(() => {
+    clearSelection();
     const { row, col } = activeRef.current;
     const here = lookup.get(keyOf(row, col));
     if (here?.across && here?.down)
@@ -377,6 +433,7 @@ export function useBuilder() {
   }, [lookup]);
 
   const selectSlot = useCallback((s: WordStart) => {
+    clearSelection();
     setRebus(false);
     setMode("fill");
     setDirection(s.direction);
@@ -384,6 +441,7 @@ export function useBuilder() {
   }, []);
 
   const step = useCallback((dr: number, dc: number) => {
+    clearSelection();
     let r = activeRef.current.row + dr;
     let c = activeRef.current.col + dc;
     const h = gridRef.current.length;
@@ -401,6 +459,7 @@ export function useBuilder() {
 
   const moveToClue = useCallback(
     (delta: number) => {
+      clearSelection();
       const cur = slotThrough(activeRef.current, directionRef.current);
       const n = orderedStarts.length;
       if (!n) return;
@@ -429,8 +488,24 @@ export function useBuilder() {
 
   // ---- typing -------------------------------------------------------------
 
+  // Cells of the current multi-selection as positions.
+  const selectedCells = () =>
+    [...selectedRef.current].map((k) => {
+      const [r, c] = k.split(",").map(Number);
+      return { row: r, col: c };
+    });
+
   const typeLetter = useCallback(
     (ch: string) => {
+      // Multi-select: set every selected cell to the letter (no advance).
+      if (selectedRef.current.size > 0) {
+        const letter = ch.toUpperCase();
+        mutate(selectedCells(), (cell) => {
+          cell.solution = letter;
+          delete cell.rebus;
+        });
+        return;
+      }
       const { row, col } = activeRef.current;
       if (!isOpen(row, col)) return;
       if (rebusRef.current) {
@@ -444,7 +519,19 @@ export function useBuilder() {
     [isOpen, advanceInWord],
   );
 
+  // Clear the entries of every selected cell (used by Backspace/Delete).
+  const clearSelectedEntries = () => {
+    mutate(selectedCells(), (cell) => {
+      delete cell.solution;
+      delete cell.rebus;
+    });
+  };
+
   const backspace = useCallback(() => {
+    if (selectedRef.current.size > 0) {
+      clearSelectedEntries();
+      return;
+    }
     const { row, col } = activeRef.current;
     const cur = gridRef.current[row][col].solution ?? "";
     if (rebusRef.current && cur.length > 1) {
@@ -467,6 +554,10 @@ export function useBuilder() {
   }, [slotThrough]);
 
   const deleteCell = useCallback(() => {
+    if (selectedRef.current.size > 0) {
+      clearSelectedEntries();
+      return;
+    }
     const { row, col } = activeRef.current;
     writeCell(row, col, "");
   }, []);
@@ -493,11 +584,18 @@ export function useBuilder() {
 
   const toggleProp = useCallback(
     (prop: "circled" | "shaded" | "barRight" | "barBottom") => {
-      const { row, col } = activeRef.current;
-      if (!isOpen(row, col)) return;
-      mutate([{ row, col }], (cell) => {
-        if (cell[prop]) delete cell[prop];
-        else cell[prop] = true;
+      // Target the whole selection if there is one, else the active cell.
+      const targets = (
+        selectedRef.current.size > 0
+          ? selectedCells()
+          : [activeRef.current]
+      ).filter((p) => isOpen(p.row, p.col));
+      if (!targets.length) return;
+      // Toggle as a group: turn on unless every target already has it.
+      const anyOff = targets.some((p) => !gridRef.current[p.row][p.col][prop]);
+      mutate(targets, (cell) => {
+        if (anyOff) cell[prop] = true;
+        else delete cell[prop];
       });
     },
     [isOpen],
@@ -553,6 +651,13 @@ export function useBuilder() {
     (e: KeyboardEvent) => {
       const k = e.key;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (k === "Escape") {
+        if (selectedRef.current.size) {
+          e.preventDefault();
+          collapseSelection();
+        }
+        return;
+      }
       if (k === "ArrowLeft") {
         e.preventDefault();
         if (directionRef.current !== "across" && modeRef.current === "fill")
@@ -596,7 +701,7 @@ export function useBuilder() {
         typeLetter(k);
       }
     },
-    [step, paintCell, backspace, deleteCell, moveToClue, toggleDirection, typeLetter],
+    [step, paintCell, backspace, deleteCell, moveToClue, toggleDirection, typeLetter, collapseSelection],
   );
 
   // ---- export -------------------------------------------------------------
@@ -670,7 +775,6 @@ export function useBuilder() {
       symmetry,
       cryptic,
       autoEnumerate,
-      brush,
       grid,
       clueText: [...clueText],
       links: [...links],
@@ -683,7 +787,7 @@ export function useBuilder() {
       date,
     });
   }, [
-    width, height, linked, symmetry, cryptic, autoEnumerate, brush, grid, clueText,
+    width, height, linked, symmetry, cryptic, autoEnumerate, grid, clueText,
     links, active, direction, mode, title, author, editor, date,
   ]);
 
@@ -701,8 +805,6 @@ export function useBuilder() {
     symmetry,
     cryptic,
     autoEnumerate,
-    brush,
-    setBrush,
     setSize,
     setWidth,
     setHeight,
@@ -719,8 +821,10 @@ export function useBuilder() {
     rebus,
     highlighted,
     linkedCells,
+    selected,
     activeSlot,
     activePattern,
+    activeProps,
     acrossStarts,
     downStarts,
     clueText,
@@ -741,6 +845,8 @@ export function useBuilder() {
     // actions
     setMode,
     selectCell,
+    selectCells,
+    collapseSelection,
     paintCell,
     setBlack,
     selectSlot,
