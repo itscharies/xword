@@ -1019,8 +1019,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   }
 }
 
-.logo-icon { width: 24px; height: 24px; border-radius: 4px; display: block; }
-
 /* ---- archive page ------------------------------------------------------- */
 
 .archive-heading { margin: 0; font-size: 24px; font-weight: 800; }
@@ -1047,6 +1045,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* drop-shadow (not text-shadow) so the shadow is cast from the outlined
      shape — text-shadow ignores the stroke. */
   filter: drop-shadow(var(--sh) var(--sh) 0 var(--shadow-col));
+}
+
+/* Smaller version of the wordmark above, for the persistent home link on
+   pages other than the archive (which has the full-size one). Declared
+   after .brand so these overrides actually win the cascade. */
+.logo-wordmark {
+  font-size: 22px;
+  -webkit-text-stroke: 3px var(--line);
+  filter: drop-shadow(2px 2px 0 var(--shadow-col));
 }
 
 /* Source filter chips — one row per dimension (Paper, Type). */
