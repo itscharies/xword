@@ -3,9 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # The daily fetch can't trigger the push event above (it commits with
-  # GITHUB_TOKEN), so it dispatches this workflow itself — but only when it
-  # actually adds a new puzzle, so hourly no-op fetches never redeploy.
+  # Manual/on-demand redeploys. The daily puzzle fetch no longer needs this —
+  # it writes straight to Supabase, so new puzzles show up without a deploy.
   workflow_dispatch: {}
 
 # Allow the workflow to publish to Pages via OIDC.
@@ -23,8 +22,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Always build the latest main — when dispatched by the fetch, the tip
-      # already includes its just-pushed commit.
       - uses: actions/checkout@v4
         with:
           ref: main

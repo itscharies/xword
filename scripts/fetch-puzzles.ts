@@ -3,17 +3,12 @@
 // archive only ever grows even after the source list rotates old dates out.
 //
 // Run: npm run fetch
-import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { parsePuzzle } from "./parse.ts";
-import { rebuildIndex, PUZZLE_DIR } from "./build-index.ts";
+import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 
 const BASE =
   "https://nytsyn.pzzl.com/nytsyn-crossword-mh/nytsyncrossword?date=";
 const LIST_URL = `${BASE}list&get=archivecurrent`;
-
-const NYT_DIR = join(PUZZLE_DIR, "nyt");
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -59,7 +54,7 @@ function recentDates(n: number): string[] {
 const BACKFILL_DAYS = Number(process.argv[2]) || 35;
 
 async function main(): Promise<void> {
-  await mkdir(NYT_DIR, { recursive: true });
+  const have = await existingDates("nyt");
 
   const listed = parseList(await fetchText(LIST_URL));
   console.log(`List endpoint returned ${listed.length} dates.`);
@@ -71,15 +66,14 @@ async function main(): Promise<void> {
 
   let added = 0;
   for (const date of dates) {
-    const file = join(NYT_DIR, `${date}.json`);
-    if (existsSync(file)) {
+    if (have.has(date)) {
       console.log(`  ${date} — already have it, skipping`);
       continue;
     }
     try {
       const raw = await fetchText(`${BASE}${date}`);
       const puzzle = parsePuzzle(raw, date);
-      await writeFile(file, JSON.stringify(puzzle), "utf8");
+      await saveSyndicatedPuzzle("nyt", puzzle);
       console.log(`  ${date} — fetched "${puzzle.title}"`);
       added++;
     } catch (err) {
@@ -89,8 +83,7 @@ async function main(): Promise<void> {
     await sleep(400); // be polite to the source
   }
 
-  const total = await rebuildIndex();
-  console.log(`Done. ${added} new puzzle(s) added. Index has ${total}.`);
+  console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
 main().catch((err) => {

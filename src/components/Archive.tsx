@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { PuzzleIndexEntry } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
 import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
@@ -13,7 +12,7 @@ import { loadCommunityProgress, loadProgress, type Progress } from "../lib/stora
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { avatarUrl } from "../lib/auth.ts";
-import { listFeed } from "../lib/puzzles.ts";
+import { listArchivePage, type ArchiveFeedItem } from "../lib/puzzles.ts";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -85,15 +84,16 @@ function FilterChips({
   );
 }
 
-/** The puzzle archive: a section per date, each holding that day's puzzles
- * across sources, with independent Paper and Size filters. */
+/** The puzzle archive: one merged, backend-paginated feed of syndicated and
+ *  community puzzles, grouped into a section per date, with Paper/Type/
+ *  Progress filters and a show/hide toggle for puzzles from people you
+ *  follow — they sort ahead of syndicated puzzles on a shared day rather
+ *  than living in a separate section. */
 export function Archive({
-  index,
   onPick,
   onOpenAccount,
   onOpenPuzzle,
 }: {
-  index: PuzzleIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenAccount: () => void;
   onOpenPuzzle: (id: string) => void;
@@ -101,19 +101,9 @@ export function Archive({
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  // Re-renders (and thus re-reads every `loadProgress` call below) whenever
-  // a sign-in reconcile finishes and rewrites localStorage underneath us.
   const { user } = useAuth();
   useDocumentTitle("");
 
-  const [feed, setFeed] = useState<Awaited<ReturnType<typeof listFeed>>>([]);
-  useEffect(() => {
-    if (!user) {
-      setFeed([]);
-      return;
-    }
-    listFeed(user.id).then(setFeed);
-  }, [user]);
   // Kept as one state object (rather than separate useState calls per field)
   // so every update — including "toggle one item in an array" — reads and
   // persists from the same up-to-date snapshot. Doing that as independent
@@ -121,14 +111,12 @@ export function Archive({
   // stale pre-update closure value, so whichever call ran last silently won
   // and could resurrect an already-cleared filter in localStorage.
   const [filters, setFiltersState] = useState(getFilters);
-  const { papers, types, person: selectedPersonId, progress } = filters;
+  const { papers, types, showFollowing, progress } = filters;
 
   const togglePaper = (p: string) => {
     setFiltersState((f) => {
       const papers = f.papers.includes(p) ? f.papers.filter((x) => x !== p) : [...f.papers, p];
-      // Picking a paper exits "one person's puzzles" mode back into the
-      // normal archive — the two views don't compose.
-      const next = { ...f, papers, person: null };
+      const next = { ...f, papers };
       setFilters(next);
       return next;
     });
@@ -170,84 +158,107 @@ export function Archive({
       return next;
     });
   };
-  // Single-select and mutually exclusive with papers/types — picking a
-  // person swaps the whole view to just their puzzles; clicking the same
-  // one again (or picking a paper) swaps back.
-  const selectPerson = (userId: string) => {
+  const setShowFollowingFilter = (v: boolean) => {
     setFiltersState((f) => {
-      const next = { ...f, person: f.person === userId ? null : userId };
+      const next = { ...f, showFollowing: v };
       setFilters(next);
       return next;
     });
   };
   const clearFilters = () => {
-    const next: Filters = { papers: [], types: [], person: null, progress: [] };
+    const next: Filters = { papers: [], types: [], showFollowing: true, progress: [] };
     setFiltersState(next);
     setFilters(next);
   };
 
-  // Only people who actually have a visible puzzle right now are worth
-  // offering as a filter — de-duped in feed order (newest puzzle first).
-  const feedAuthors = useMemo(() => {
-    const seen = new Map<string, (typeof feed)[number]["author"]>();
-    for (const p of feed) if (!seen.has(p.author.user_id)) seen.set(p.author.user_id, p.author);
-    return [...seen.values()];
-  }, [feed]);
+  const [items, setItems] = useState<ArchiveFeedItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // The progress filter applies to both the syndicated archive and a
-  // person's puzzle list — community puzzles just look their status up from
-  // a different store (keyed by puzzle id, not source/date).
+  // (Re)load from the top whenever sign-in state or the "people you follow"
+  // toggle changes — both affect which rows the backend even returns, so a
+  // client-side re-filter of already-loaded pages isn't enough.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    listArchivePage({ includeFollowing: showFollowing }).then(({ items: page, nextCursor }) => {
+      if (cancelled) return;
+      setItems(page);
+      setCursor(nextCursor);
+      setHasMore(nextCursor !== null);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showFollowing, user]);
+
+  const loadingMoreRef = useRef(false);
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMore || cursor === null) return;
+    loadingMoreRef.current = true;
+    listArchivePage({ cursor, includeFollowing: showFollowing }).then(({ items: page, nextCursor }) => {
+      setItems((prev) => [...prev, ...page]);
+      setCursor(nextCursor);
+      setHasMore(nextCursor !== null);
+      loadingMoreRef.current = false;
+    });
+  }, [cursor, hasMore, showFollowing]);
+
+  // The progress filter applies to every item, community or syndicated —
+  // they just look their status up from a different store (keyed by puzzle
+  // id for community, source/date for syndicated).
   const matchesProgress = (prog: Progress | null) =>
     progress.length === 0 || progress.includes(progressStatus(prog));
 
-  const filteredFeed = useMemo(
-    () => feed.filter((p) => matchesProgress(loadCommunityProgress(p.id))),
-    [feed, progress],
-  );
-  const personFeed = selectedPersonId
-    ? filteredFeed.filter((p) => p.author.user_id === selectedPersonId)
-    : [];
-  const selectedPerson = feedAuthors.find((a) => a.user_id === selectedPersonId);
+  // Papers/Type describe syndicated sources and don't apply to community
+  // puzzles — once either is active, community puzzles (which match neither)
+  // drop out of the filtered view along with every non-matching source.
+  const filteredItems = useMemo(() => {
+    return items.filter((it) => {
+      if (it.kind === "syndicated") {
+        const meta = SOURCES[it.source!];
+        if (papers.length > 0 && !papers.includes(meta.paper)) return false;
+        if (types.length > 0 && !types.includes(meta.type)) return false;
+        return matchesProgress(loadProgress(it.source!, it.puzzleDate!));
+      }
+      if (papers.length > 0 || types.length > 0) return false;
+      return matchesProgress(loadCommunityProgress(it.id));
+    });
+  }, [items, papers, types, progress]);
 
-  // Group by date (index is pre-sorted newest-first, then by source order, so
-  // insertion order into the Map is already what we want to render).
+  // Group by date — items arrive from the server already sorted newest-day
+  // first, community-before-syndicated within a day, so insertion order into
+  // the Map is already what we want to render.
   const days = useMemo(() => {
-    const byDate = new Map<string, PuzzleIndexEntry[]>();
-    for (const p of index) {
-      const meta = SOURCES[p.source];
-      if (papers.length > 0 && !papers.includes(meta.paper)) continue;
-      if (types.length > 0 && !types.includes(meta.type)) continue;
-      if (!matchesProgress(loadProgress(p.source, p.date))) continue;
-      const arr = byDate.get(p.isoDate);
-      if (arr) arr.push(p);
-      else byDate.set(p.isoDate, [p]);
+    const byDate = new Map<string, ArchiveFeedItem[]>();
+    for (const it of filteredItems) {
+      const arr = byDate.get(it.isoDate);
+      if (arr) arr.push(it);
+      else byDate.set(it.isoDate, [it]);
     }
     return [...byDate.entries()];
-  }, [index, papers, types, progress]);
-
-  // Render the archive a fortnight at a time and grow as the reader nears the
-  // bottom — keeps the DOM small so scrolling 180+ days stays smooth.
-  const PAGE = 14;
-  const [shown, setShown] = useState(PAGE);
-  useEffect(() => setShown(PAGE), [papers, types, progress]); // restart on filter change
-  const visibleDays = days.slice(0, shown);
-  const hasMore = shown < days.length;
-  const filterCount =
-    papers.length + types.length + progress.length + (selectedPersonId ? 1 : 0);
+  }, [filteredItems]);
 
   // Load the next page when a sentinel near the bottom scrolls into view.
   const io = useRef<IntersectionObserver | null>(null);
-  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
-    io.current?.disconnect();
-    if (!node) return;
-    io.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) setShown((n) => n + PAGE);
-      },
-      { rootMargin: "1200px" },
-    );
-    io.current.observe(node);
-  }, []);
+  const sentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      io.current?.disconnect();
+      if (!node) return;
+      io.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) loadMore();
+        },
+        { rootMargin: "1200px" },
+      );
+      io.current.observe(node);
+    },
+    [loadMore],
+  );
+
+  const filterCount = papers.length + types.length + progress.length + (showFollowing ? 0 : 1);
 
   return (
     <div className="app archive">
@@ -291,130 +302,54 @@ export function Archive({
         </button>
       </div>
 
-      {selectedPersonId ? (
-        <section className="archive-day archive-feed">
-          <h2 className="archive-day-head">
-            {selectedPerson ? `Puzzles by ${selectedPerson.display_name}` : "Puzzles"}
-          </h2>
-          <ul className="archive-list">
-            {personFeed.map((p) => (
-              <li key={p.id}>
-                <button className="archive-item" onClick={() => onOpenPuzzle(p.id)}>
-                  <span className="ai-source">{p.title}</span>
-                  <span className="ai-author">
-                    By {p.author.display_name} · @{p.author.username}
-                  </span>
-                  {p.completions > 0 && (
-                    <span className="ai-pct" title="Completions">
-                      {p.completions} solved
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {loading ? (
+        <div className="loading">Loading…</div>
       ) : (
         <>
-          {filteredFeed.length > 0 && (
-            <section className="archive-day archive-feed">
-              <h2 className="archive-day-head">From people you follow</h2>
-              <ul className="archive-list">
-                {filteredFeed.map((p) => (
-                  <li key={p.id}>
-                    <button className="archive-item" onClick={() => onOpenPuzzle(p.id)}>
-                      <span className="ai-source">{p.title}</span>
-                      <span className="ai-author">
-                        By {p.author.display_name} · @{p.author.username}
-                      </span>
-                      {p.completions > 0 && (
-                        <span className="ai-pct" title="Completions">
-                          {p.completions} solved
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           {days.length === 0 && (
             <div className="archive-empty">
               <p>No puzzles match these filters.</p>
-              <button
-                className="btn"
-                onClick={clearFilters}
-              >
+              <button className="btn" onClick={clearFilters}>
                 Clear filters
               </button>
             </div>
           )}
 
-          {visibleDays.map(([iso, items]) => (
+          {days.map(([iso, dayItems]) => (
             <section className="archive-day" key={iso}>
               <h2 className="archive-day-head">{formatDate(iso)}</h2>
               <ul className="archive-list">
-                {items.map((p) => {
-                  // NYT bakes the theme into a long title; the AmuseLabs sets use
-                  // the theme as the title outright (date-only titles were already
-                  // replaced with the source label at parse time, so a title that
-                  // still differs from the label is a real theme — e.g. midi).
-                  const mainLabel = SOURCES[p.source].label;
-                  const theme =
-                    p.source === "nyt"
-                      ? themeName(p.title)
-                      : p.title !== SOURCES[p.source].label
-                        ? p.title
-                        : null;
-                  const prog = loadProgress(p.source, p.date);
-                  const done = prog?.completed ?? false;
-                  const rating = prog?.rating ?? 0;
-                  // Cap at 99% while unsolved: a fully-filled grid with a wrong
-                  // letter is 100% filled but not "done", and showing 100% would
-                  // look solved. 100%/the tick is reserved for a correct solve.
-                  const pct =
-                    !done && prog?.total
-                      ? Math.min(
-                          99,
-                          Math.round((100 * (prog.filled ?? 0)) / prog.total),
-                        )
-                      : 0;
-                  return (
-                    <li key={`${p.source}/${p.date}`}>
-                      <button
-                        className={`archive-item ${done ? "done" : ""}`}
-                        onClick={() => onPick(p.source, p.date)}
-                      >
-                        <span className="ai-source">{mainLabel}</span>
-                        {theme && <span className="ai-theme">{theme}</span>}
-                        <span className="ai-author">By {p.author}</span>
-                        {rating > 0 && <StarRating value={rating} />}
-                        {done ? (
-                          <span className="ai-done" title="Solved" aria-label="Solved">
-                            <CheckIcon />
+                {dayItems.map((it) =>
+                  it.kind === "community" ? (
+                    <li key={it.id}>
+                      <button className="archive-item" onClick={() => onOpenPuzzle(it.id)}>
+                        <span className="ai-source">{it.title}</span>
+                        <span className="ai-author">
+                          By {it.authorProfile?.display_name} · @{it.authorProfile?.username}
+                        </span>
+                        {it.completions > 0 && (
+                          <span className="ai-pct" title="Completions">
+                            {it.completions} solved
                           </span>
-                        ) : pct > 0 ? (
-                          <span className="ai-pct" title={`${pct}% filled`}>
-                            {pct}%
-                          </span>
-                        ) : null}
+                        )}
                       </button>
                     </li>
-                  );
-                })}
+                  ) : (
+                    <SyndicatedItem key={it.id} item={it} onPick={onPick} />
+                  ),
+                )}
               </ul>
             </section>
           ))}
         </>
       )}
 
-      {!selectedPersonId && hasMore && (
+      {!loading && hasMore && (
         <div className="archive-more">
           {/* Auto-loads as it nears view (real browsers); the button is a
               reliable fallback / manual control. */}
           <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
-          <button className="btn" onClick={() => setShown((n) => n + PAGE)}>
+          <button className="btn" onClick={loadMore}>
             Show more
           </button>
         </div>
@@ -445,33 +380,23 @@ export function Archive({
               onClear={clearPapers}
             />
 
-            {feedAuthors.length > 0 && (
+            {user && (
               <div className="setting-row">
                 <span className="setting-label">People you follow</span>
-                <div className="filter-chip-group" aria-label="People you follow">
-                  {feedAuthors.map((a) => (
-                    <button
-                      key={a.user_id}
-                      className={`filter-chip ${selectedPersonId === a.user_id ? "on" : ""}`}
-                      onClick={() => selectPerson(a.user_id)}
-                      aria-pressed={selectedPersonId === a.user_id}
-                    >
-                      {a.display_name}
-                    </button>
-                  ))}
+                <div className="filter-chip-group" role="group" aria-label="People you follow">
+                  <button
+                    className={`filter-chip ${showFollowing ? "on" : ""}`}
+                    onClick={() => setShowFollowingFilter(!showFollowing)}
+                    role="checkbox"
+                    aria-checked={showFollowing}
+                  >
+                    Show their puzzles in my feed
+                  </button>
                 </div>
               </div>
             )}
 
-            {!selectedPersonId && (
-              <FilterChips
-                label="Type"
-                options={TYPES}
-                values={types}
-                onToggle={toggleType}
-                onClear={clearTypes}
-              />
-            )}
+            <FilterChips label="Type" options={TYPES} values={types} onToggle={toggleType} onClear={clearTypes} />
 
             <FilterChips
               label="Progress"
@@ -482,10 +407,7 @@ export function Archive({
             />
 
             {filterCount > 0 && (
-              <button
-                className="btn"
-                onClick={clearFilters}
-              >
+              <button className="btn" onClick={clearFilters}>
                 Clear filters
               </button>
             )}
@@ -493,5 +415,51 @@ export function Archive({
         </Modal>
       )}
     </div>
+  );
+}
+
+/** One syndicated puzzle row — its own component only so the per-item
+ *  progress lookup below doesn't get lost among the community-item JSX. */
+function SyndicatedItem({
+  item,
+  onPick,
+}: {
+  item: ArchiveFeedItem;
+  onPick: (source: PuzzleSource, date: string) => void;
+}) {
+  const source = item.source!;
+  const date = item.puzzleDate!;
+  // NYT bakes the theme into a long title; the AmuseLabs sets use the theme
+  // as the title outright (date-only titles were already replaced with the
+  // source label at parse time, so a title that still differs from the
+  // label is a real theme — e.g. midi).
+  const mainLabel = SOURCES[source].label;
+  const theme =
+    source === "nyt" ? themeName(item.title) : item.title !== SOURCES[source].label ? item.title : null;
+  const prog = loadProgress(source, date);
+  const done = prog?.completed ?? false;
+  const rating = prog?.rating ?? 0;
+  // Cap at 99% while unsolved: a fully-filled grid with a wrong letter is
+  // 100% filled but not "done", and showing 100% would look solved. 100%/the
+  // tick is reserved for a correct solve.
+  const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+  return (
+    <li>
+      <button className={`archive-item ${done ? "done" : ""}`} onClick={() => onPick(source, date)}>
+        <span className="ai-source">{mainLabel}</span>
+        {theme && <span className="ai-theme">{theme}</span>}
+        <span className="ai-author">By {item.author}</span>
+        {rating > 0 && <StarRating value={rating} />}
+        {done ? (
+          <span className="ai-done" title="Solved" aria-label="Solved">
+            <CheckIcon />
+          </span>
+        ) : pct > 0 ? (
+          <span className="ai-pct" title={`${pct}% filled`}>
+            {pct}%
+          </span>
+        ) : null}
+      </button>
+    </li>
   );
 }

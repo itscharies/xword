@@ -1688,3 +1688,28 @@ button { font: inherit; cursor: pointer; color: inherit; }
     border-top: 2px solid var(--line);
   }
 }
+
+/* Dev-only widget (npm run dev:mock) for flipping the mock backend's
+   "signed in as" state — see MockAuthSwitcher.tsx. */
+.mock-auth-switcher {
+  position: fixed;
+  left: 10px;
+  bottom: 10px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  box-shadow: 3px 3px 0 var(--shadow-col);
+  font-size: 12px;
+}
+
+.mock-auth-switcher select {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 2px 4px;
+}

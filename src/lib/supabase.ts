@@ -2,12 +2,17 @@
 // talks to Supabase must check `supabaseEnabled` and no-op if it's false, so
 // a build without these env vars still works as pure-localStorage.
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createMockSupabase } from "./mockSupabase.ts";
+
+// `npm run dev:mock` — an in-memory stand-in for local testing of signed-in/
+// signed-out UI without a real Supabase project. See mockSupabase.ts.
+const mockMode = import.meta.env.VITE_MOCK_BACKEND === "1";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const supabaseEnabled = Boolean(url && publishableKey);
+export const supabaseEnabled = mockMode || Boolean(url && publishableKey);
 
 // `keepalive` lets a progress-save request already in flight finish even
 // after the tab starts unloading, instead of the browser cancelling it
@@ -27,8 +32,10 @@ if (typeof document !== "undefined") {
   });
 }
 
-export const supabase = supabaseEnabled
-  ? createClient(url, publishableKey, {
-      global: { fetch: (input, init) => fetch(input, { ...init, keepalive: leaving }) },
-    })
-  : null;
+export const supabase: SupabaseClient | null = mockMode
+  ? (createMockSupabase() as unknown as SupabaseClient)
+  : supabaseEnabled
+    ? createClient(url, publishableKey, {
+        global: { fetch: (input, init) => fetch(input, { ...init, keepalive: leaving }) },
+      })
+    : null;

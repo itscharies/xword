@@ -4,6 +4,7 @@
 import { supabase } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { Profile } from "./profile.ts";
+import type { PuzzleSource } from "./sources.ts";
 
 export type Visibility = "public" | "mutual" | "unlisted" | "draft";
 
@@ -47,31 +48,111 @@ export async function getPuzzleById(id: string): Promise<PublishedPuzzle | null>
   return data ?? null;
 }
 
-/** Puzzles from people `userId` follows — public-from-followed or
- *  mutual-from-mutual (RLS already restricts to exactly that set), newest
- *  first, excluding the viewer's own puzzles. */
-export async function listFeed(
-  userId: string,
-): Promise<(PublishedPuzzle & { author: Profile })[]> {
-  if (!supabase) return [];
-  const { data } = await supabase
-    .from("puzzles")
-    .select("id, author_id, title, data, visibility, completions, created_at")
-    .neq("author_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(30);
-  if (!data || data.length === 0) return [];
+/** One item in the merged, paginated home feed — either a syndicated
+ *  puzzle or a community/authored one, normalized to a common shape so the
+ *  archive can render + sort them together instead of as separate lists. */
+export interface ArchiveFeedItem {
+  kind: "community" | "syndicated";
+  /** Community: the puzzle's uuid. Syndicated: "<source>:<puzzle_date>". */
+  id: string;
+  isoDate: string;
+  title: string;
+  /** Syndicated only. */
+  source: PuzzleSource | null;
+  puzzleDate: string | null;
+  weekday: string | null;
+  /** Syndicated only — plain byline text (no user account behind it). */
+  author: string | null;
+  /** Community only — hydrated from `profiles` after the feed query. */
+  authorProfile: Profile | null;
+  completions: number;
+}
 
-  const authorIds = [...new Set(data.map((p) => p.author_id))];
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("user_id, username, display_name")
-    .in("user_id", authorIds);
+interface RawFeedRow {
+  kind: number;
+  item_id: string;
+  iso_date: string;
+  title: string;
+  source: string | null;
+  weekday: string | null;
+  author: string | null;
+  author_id: string | null;
+  completions: number | null;
+  neg_date: number;
+  tie: number;
+}
+
+/** The four scalar keyset-pagination params `list_archive_feed` needs to
+ *  resume after a given row — see the SQL function for why they're a tuple
+ *  rather than a single opaque offset. */
+interface ArchiveCursor {
+  negDate: number;
+  kind: number;
+  tie: number;
+  itemId: string;
+}
+
+function encodeCursor(row: RawFeedRow): string {
+  const c: ArchiveCursor = { negDate: row.neg_date, kind: row.kind, tie: row.tie, itemId: row.item_id };
+  return btoa(JSON.stringify(c));
+}
+
+function decodeCursor(cursor: string): ArchiveCursor {
+  return JSON.parse(atob(cursor));
+}
+
+/** One page of the merged home feed (syndicated + community puzzles),
+ *  newest first, with same-day community puzzles sorted ahead of syndicated
+ *  ones. `includeFollowing = false` drops community puzzles from the feed
+ *  entirely rather than just hiding them client-side, so pages stay full —
+ *  see `list_archive_feed`'s migration comment for why that matters. */
+export async function listArchivePage(opts: {
+  cursor?: string | null;
+  pageSize?: number;
+  includeFollowing?: boolean;
+} = {}): Promise<{ items: ArchiveFeedItem[]; nextCursor: string | null }> {
+  if (!supabase) return { items: [], nextCursor: null };
+  const { cursor = null, pageSize = 24, includeFollowing = true } = opts;
+  const c = cursor ? decodeCursor(cursor) : null;
+
+  const { data, error } = await supabase.rpc("list_archive_feed", {
+    p_include_following: includeFollowing,
+    p_cursor_neg_date: c?.negDate ?? null,
+    p_cursor_kind: c?.kind ?? null,
+    p_cursor_tie: c?.tie ?? null,
+    p_cursor_id: c?.itemId ?? null,
+    p_page_size: pageSize,
+  });
+  if (error) {
+    console.error("[archive] listArchivePage failed", error);
+    return { items: [], nextCursor: null };
+  }
+  const rows = (data ?? []) as RawFeedRow[];
+
+  const authorIds = [...new Set(rows.map((r) => r.author_id).filter((id): id is string => !!id))];
+  const { data: profiles } =
+    authorIds.length > 0
+      ? await supabase.from("profiles").select("user_id, username, display_name").in("user_id", authorIds)
+      : { data: [] as Profile[] };
   const byId = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
-  return data
-    .filter((p) => byId.has(p.author_id))
-    .map((p) => ({ ...p, author: byId.get(p.author_id)! }) as PublishedPuzzle & { author: Profile });
+  const items: ArchiveFeedItem[] = rows.map((r) => ({
+    kind: r.kind === 0 ? "community" : "syndicated",
+    id: r.item_id,
+    isoDate: r.iso_date,
+    title: r.title,
+    source: (r.source as PuzzleSource) ?? null,
+    puzzleDate: r.kind === 1 ? r.item_id.split(":")[1] : null,
+    weekday: r.weekday,
+    author: r.author,
+    authorProfile: r.author_id ? (byId.get(r.author_id) ?? null) : null,
+    completions: r.completions ?? 0,
+  }));
+
+  const last = rows[rows.length - 1];
+  const nextCursor = rows.length === pageSize && last ? encodeCursor(last) : null;
+
+  return { items, nextCursor };
 }
 
 /** Puzzles the given user has published themselves, newest first —

@@ -7,11 +7,8 @@
 //   st-midi   serial  midi-crossword-<N>  (anchored, labelled by publishTime)
 //
 // Run: npm run fetch:amuse [days]   (default 21 days back)
-import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { parseAmuse, extractRawc, decodeRawc } from "./parse-amuse.ts";
-import { rebuildIndex, PUZZLE_DIR } from "./build-index.ts";
+import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
 const HOST = "https://seattletimes.amuselabs.com/puzzleme/crossword";
@@ -56,18 +53,16 @@ async function fetchDated(
   set: string,
   idFor: (ymd: string) => string,
 ): Promise<number> {
-  const dir = join(PUZZLE_DIR, source);
-  await mkdir(dir, { recursive: true });
+  const have = await existingDates(source);
   let added = 0;
   for (const ymd of recentYmd(DAYS)) {
-    const file = join(dir, `${ymd}.json`);
-    if (existsSync(file)) continue;
+    if (have.has(ymd)) continue;
     try {
       const html = await fetchText(url(set, idFor(ymd)));
       const rawc = extractRawc(html);
       if (!rawc) continue; // not published yet
       const puzzle = parseAmuse(rawc, source, ymd);
-      await writeFile(file, JSON.stringify(puzzle), "utf8");
+      await saveSyndicatedPuzzle(source, puzzle);
       console.log(`  ${source} ${ymd} — "${puzzle.title}"`);
       added++;
     } catch (err) {
@@ -107,8 +102,7 @@ async function findMidiHead(): Promise<number | null> {
 }
 
 async function fetchMidi(): Promise<number> {
-  const dir = join(PUZZLE_DIR, "st-midi");
-  await mkdir(dir, { recursive: true });
+  const have = await existingDates("st-midi");
   const head = await findMidiHead();
   if (head == null) {
     console.error("  st-midi — could not locate current puzzle id");
@@ -123,10 +117,9 @@ async function fetchMidi(): Promise<number> {
       const pub = decodeRawc(rawc).publishTime;
       if (!pub) continue;
       const ymd = ymdFromDate(new Date(pub));
-      const file = join(dir, `${ymd}.json`);
-      if (existsSync(file)) continue;
+      if (have.has(ymd)) continue;
       const puzzle = parseAmuse(rawc, "st-midi", ymd);
-      await writeFile(file, JSON.stringify(puzzle), "utf8");
+      await saveSyndicatedPuzzle("st-midi", puzzle);
       console.log(`  st-midi ${ymd} (#${id}) — "${puzzle.title}"`);
       added++;
     } catch (err) {
@@ -151,8 +144,7 @@ async function main(): Promise<void> {
   );
   added += await fetchMidi();
 
-  const total = await rebuildIndex();
-  console.log(`Done. ${added} new puzzle(s) added. Index has ${total}.`);
+  console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
 main().catch((err) => {

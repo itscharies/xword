@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Puzzle, PuzzleIndexEntry } from "./types.ts";
+import type { Puzzle } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
@@ -41,7 +41,10 @@ import { AccountPage } from "./components/AccountPage.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
+import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
 import { EditIcon, PauseIcon, PlayIcon, SettingsIcon } from "./components/icons.tsx";
+
+const MOCK_MODE = import.meta.env.VITE_MOCK_BACKEND === "1";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
 
@@ -75,27 +78,37 @@ const goTo = (route: string) => {
   window.dispatchEvent(new PopStateEvent("popstate"));
 };
 
-/** A syndicated puzzle, preferring the database copy over the static file if
- *  one exists — checked in parallel so the common (not-yet-in-the-database)
- *  case pays no extra latency. */
+/** A syndicated puzzle — the `syndicated_puzzles` table is the canonical
+ *  store (see lib/syndicated.ts); there's no static-file fallback to check
+ *  any more now that every puzzle has been backfilled into it. */
 async function fetchSyndicatedPuzzle(
   source: PuzzleSource,
   date: string,
 ): Promise<Puzzle | null> {
-  const [fromDb, base] = await Promise.all([
-    getSyndicatedPuzzle(source, date),
-    fetch(`${BASE}puzzles/${source}/${date}.json`)
-      .then((r) => r.json() as Promise<Puzzle>)
-      .catch(() => null),
-  ]);
-  return fromDb ?? base;
+  return getSyndicatedPuzzle(source, date);
+}
+
+/** Local (browser) "today" as an ISO date string, matching Puzzle.isoDate's
+ *  format. */
+function isFutureIso(iso: string): boolean {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return iso > today;
 }
 
 export default function App() {
-  const [index, setIndex] = useState<PuzzleIndexEntry[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <AppRoutes />
+      {/* Only mounted for `npm run dev:mock` — flips the mock backend's
+          "signed in as" state. See MockAuthSwitcher.tsx. */}
+      {MOCK_MODE && <MockAuthSwitcher />}
+    </>
+  );
+}
+
+function AppRoutes() {
   const [route, setRoute] = useState(readRoute);
-  const indexFetchedRef = useRef(false);
 
   useEffect(() => {
     // Covers the browser back/forward buttons — goTo() flushes for in-app
@@ -115,34 +128,7 @@ export default function App() {
     updateFavicon();
   }, []);
 
-  // Every other route below is self-contained (fetches its own puzzle
-  // directly); only the archive actually needs the full catalogue.
   const [routeSrc, routeDate] = route.split("/");
-  const editParts = route.startsWith("edit/") ? route.slice(5).split("/") : null;
-  const needsIndex = !(
-    route === "create" ||
-    route === "account" ||
-    route.startsWith("p/") ||
-    route.startsWith("draft/") ||
-    (editParts && isSource(editParts[0]) && !!editParts[1]) ||
-    (isSource(routeSrc) && !!routeDate)
-  );
-
-  useEffect(() => {
-    if (!needsIndex || indexFetchedRef.current) return;
-    indexFetchedRef.current = true;
-    // The catalogue changes whenever a new puzzle lands, but GitHub Pages /
-    // phones cache it — so bypass the cache (a cache-bust param + no-store) to
-    // make sure freshly-deployed puzzles show up right away. The puzzle files
-    // themselves are immutable, so they stay cached.
-    fetch(`${BASE}puzzles/index.json?t=${Date.now()}`, { cache: "no-store" })
-      .then((r) => {
-        if (!r.ok) throw new Error(`index.json ${r.status}`);
-        return r.json() as Promise<PuzzleIndexEntry[]>;
-      })
-      .then(setIndex)
-      .catch((e) => setError(String(e)));
-  }, [needsIndex]);
 
   // Builder page — self-contained, so it works even before (or without) the
   // puzzle catalogue loading.
@@ -219,14 +205,10 @@ export default function App() {
   }
 
   // Anything else (including the root) shows the archive — the default
-  // landing now that there are many puzzles.
-  if (error) return <div className="error">Failed to load puzzles: {error}</div>;
-  if (!index || index.length === 0)
-    return <div className="loading">Loading…</div>;
-
+  // landing now that there are many puzzles. It fetches its own first page
+  // (see listArchivePage), so nothing here needs to wait on a catalogue.
   return (
     <Archive
-      index={index}
       onPick={(source, d) => goTo(`${source}/${d}`)}
       onOpenAccount={() => goTo("account")}
       onOpenPuzzle={(id) => goTo(`p/${id}`)}
@@ -259,7 +241,12 @@ function PuzzleView({
     (async () => {
       const p = await fetchSyndicatedPuzzle(source, date);
       if (cancelled) return;
-      if (!p) {
+      // The backend's merged feed already excludes puzzles fetched ahead of
+      // their real publish date; this closes the same gap for someone
+      // guessing the direct /<source>/<date> URL. Deliberately not applied
+      // in EditPuzzleView below — an admin fixing a bad parse needs to
+      // reach it before publish day too.
+      if (!p || isFutureIso(p.isoDate)) {
         setNotFound(true);
         return;
       }

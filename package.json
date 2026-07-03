@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_MOCK_BACKEND=1 vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "migrate:puzzles": "tsx scripts/migrate-puzzles-to-supabase.ts",
     "fetch": "tsx scripts/fetch-all.ts",
     "fetch:nyt": "tsx scripts/fetch-puzzles.ts",
     "fetch:amuse": "tsx scripts/fetch-amuse.ts",

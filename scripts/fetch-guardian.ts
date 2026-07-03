@@ -5,11 +5,8 @@
 // or fall past the date window.
 //
 // Run: npm run fetch:guardian [days]   (default 14 days back)
-import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { parseGuardian } from "./parse-guardian.ts";
-import { rebuildIndex, PUZZLE_DIR } from "./build-index.ts";
+import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
 const SITE = "https://www.theguardian.com/crosswords";
@@ -66,8 +63,7 @@ async function fetchType(
   slug: string,
   cutoff: string,
 ): Promise<number> {
-  const dir = join(PUZZLE_DIR, source);
-  await mkdir(dir, { recursive: true });
+  const have = await existingDates(source);
   const head = await headNumber(slug);
   if (head == null) {
     console.error(`  ${source} — no puzzles found on series page`);
@@ -84,9 +80,8 @@ async function fetchType(
       continue;
     }
     if (puzzle.date < cutoff) break; // walked past the window
-    const file = join(dir, `${puzzle.date}.json`);
-    if (existsSync(file)) break; // already have this and (assumed) older ones
-    await writeFile(file, JSON.stringify(puzzle), "utf8");
+    if (have.has(puzzle.date)) break; // already have this and (assumed) older ones
+    await saveSyndicatedPuzzle(source, puzzle);
     console.log(`  ${source} ${puzzle.date} (#${n}) — ${puzzle.width}x${puzzle.height}`);
     added++;
     await sleep(300);
@@ -100,8 +95,7 @@ async function main(): Promise<void> {
   for (const { source, slug } of TYPES) {
     added += await fetchType(source, slug, cutoff);
   }
-  const total = await rebuildIndex();
-  console.log(`Done. ${added} new puzzle(s) added. Index has ${total}.`);
+  console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
 main().catch((err) => {

@@ -131,12 +131,13 @@ export interface Filters {
   papers: string[];
   /** Same idea for lib/sources.ts's TYPES (Crossword/Mini/Cryptic). */
   types: string[];
-  /** A followed person's user id, to narrow to just their puzzles instead of
-   *  the syndicated archive — single-select, and mutually exclusive with
-   *  `papers`/`types` (it switches the whole view, not a further narrowing). */
-  person: string | null;
-  /** "Complete" / "In progress" / "Not started" — multi-select, and applies
-   *  in both the normal archive and a selected person's puzzle list. */
+  /** Whether puzzles from people you follow appear in the merged feed at
+   *  all — a plain show/hide toggle, not a narrowing to one person's
+   *  puzzles (that mode doesn't exist any more; the feed is always one
+   *  list). Defaults to on, matching the feed's previous always-shown
+   *  behavior. */
+  showFollowing: boolean;
+  /** "Complete" / "In progress" / "Not started" — multi-select. */
   progress: string[];
 }
 
@@ -148,11 +149,11 @@ export function getFilters(): Filters {
     return {
       papers: Array.isArray(f.papers) ? f.papers : [],
       types: Array.isArray(f.types) ? f.types : [],
-      person: f.person ?? null,
+      showFollowing: f.showFollowing ?? true,
       progress: Array.isArray(f.progress) ? f.progress : [],
     };
   } catch {
-    return { papers: [], types: [], person: null, progress: [] };
+    return { papers: [], types: [], showFollowing: true, progress: [] };
   }
 }
 

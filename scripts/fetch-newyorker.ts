@@ -3,11 +3,8 @@
 // from the Condé puzzles API as a markdown payload. No auth required.
 //
 // Run: npm run fetch:newyorker [days]   (default 21 days back)
-import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { parseNewYorker } from "./parse-newyorker.ts";
-import { rebuildIndex, PUZZLE_DIR } from "./build-index.ts";
+import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
 const PAGE_BASE = "https://www.newyorker.com/puzzles-and-games-dept";
@@ -57,11 +54,9 @@ const DAYS = Number(process.argv[2]) || 21;
 async function main(): Promise<void> {
   let added = 0;
   for (const { source, slug } of KINDS) {
-    const dir = join(PUZZLE_DIR, source);
-    await mkdir(dir, { recursive: true });
+    const have = await existingDates(source);
     for (const { ymd, path } of recentDays(DAYS)) {
-      const file = join(dir, `${ymd}.json`);
-      if (existsSync(file)) continue;
+      if (have.has(ymd)) continue;
       try {
         const page = await fetchPage(`${PAGE_BASE}/${slug}/${path}`);
         if (!page) continue; // no page = no puzzle of this kind that day
@@ -70,7 +65,7 @@ async function main(): Promise<void> {
         const game = JSON.parse(await fetchText(`${API}/${id}`));
         if (!game?.data) continue;
         const puzzle = parseNewYorker(game.data, source, ymd);
-        await writeFile(file, JSON.stringify(puzzle), "utf8");
+        await saveSyndicatedPuzzle(source, puzzle);
         console.log(`  ${source} ${ymd} — ${puzzle.width}x${puzzle.height} by ${puzzle.author}`);
         added++;
       } catch (err) {
@@ -80,8 +75,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const total = await rebuildIndex();
-  console.log(`Done. ${added} new puzzle(s) added. Index has ${total}.`);
+  console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
 main().catch((err) => {

@@ -2,15 +2,11 @@ name: Fetch daily puzzle
 
 on:
   schedule:
-    # Run once an hour, at 5 past, so each source has a little time to publish
-    # before we poll. A run with nothing new makes no commit (git-diff guard
-    # below) and so never deploys; only a new puzzle triggers a build.
+    # Run once an hour, at 5 past, so each source has a little time to
+    # publish before we poll. Each fetcher writes straight to Supabase, so a
+    # new puzzle is live the moment it's saved — no commit or redeploy needed.
     - cron: "5 * * * *" # hourly, 5 min past the hour
   workflow_dispatch: {}
-
-permissions:
-  contents: write
-  actions: write
 
 concurrency:
   group: fetch-daily
@@ -31,26 +27,6 @@ jobs:
 
       - name: Fetch new puzzles
         run: npm run fetch
-
-      - name: Commit new puzzles
-        id: commit
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/puzzles
-          if git diff --cached --quiet; then
-            echo "No new puzzles."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            git commit -m "Add puzzles ($(date -u +%Y-%m-%d))"
-            git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      # Only redeploy when we actually committed a puzzle — a bot push with
-      # GITHUB_TOKEN can't trigger deploy's `push` event, so dispatch it here.
-      - name: Trigger deploy
-        if: steps.commit.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy.yml --ref main
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

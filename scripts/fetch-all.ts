@@ -1,13 +1,13 @@
 // Run every source fetcher in turn. Each runs in its own process, so a crash
-// (network error, bad payload, upstream change) in one can't stop the others.
-// Always rebuilds the unified index at the end and exits 0, so the daily cron
-// still commits whatever was fetched even if a source failed.
+// (network error, bad payload, upstream change) in one can't stop the
+// others. Each writes straight to Supabase as it goes (see puzzleStore.ts),
+// so a new puzzle is live the moment its fetcher saves it — nothing here
+// needs to commit or trigger a deploy.
 //
 // Run: npm run fetch
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { rebuildIndex } from "./build-index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const tsx = join(here, "..", "node_modules", ".bin", "tsx");
@@ -30,9 +30,8 @@ for (const f of FETCHERS) {
   }
 }
 
-const total = await rebuildIndex();
 console.log(
   `\nDone. ${FETCHERS.length - failed.length}/${FETCHERS.length} fetchers ok` +
     (failed.length ? ` (failed: ${failed.join(", ")})` : "") +
-    `. Index has ${total}.`,
+    `.`,
 );
