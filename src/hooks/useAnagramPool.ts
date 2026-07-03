@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { shuffleTiles } from "../lib/anagram.ts";
 
 export interface AnagramTile {
   /** Stable identity so a tile keeps its DOM node across reorders/repeats. */
   id: number;
   ch: string;
+  /** Locked tiles (double-tap/click to toggle) stay put on shuffle and can't
+   * be dragged to a new slot. */
+  locked?: boolean;
 }
 
 export interface AnagramPool {
@@ -15,6 +19,7 @@ export interface AnagramPool {
   shuffle: () => void;
   /** Replace the tile order wholesale (drag-to-reorder). */
   reorder: (tiles: AnagramTile[]) => void;
+  toggleLock: (id: number) => void;
 }
 
 /**
@@ -39,20 +44,15 @@ export function useAnagramPool(open: boolean): AnagramPool {
 
   const backspace = useCallback(() => setTiles((t) => t.slice(0, -1)), []);
 
-  const shuffle = useCallback(
-    () =>
-      setTiles((t) => {
-        const a = [...t];
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
-        }
-        return a;
-      }),
-    [],
-  );
+  const shuffle = useCallback(() => setTiles(shuffleTiles), []);
 
   const reorder = useCallback((next: AnagramTile[]) => setTiles(next), []);
 
-  return { tiles, view, setView, add, backspace, shuffle, reorder };
+  const toggleLock = useCallback(
+    (id: number) =>
+      setTiles((t) => t.map((tile) => (tile.id === id ? { ...tile, locked: !tile.locked } : tile))),
+    [],
+  );
+
+  return { tiles, view, setView, add, backspace, shuffle, reorder, toggleLock };
 }

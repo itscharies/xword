@@ -956,6 +956,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ana-tiles.ana-circle { height: 230px; }
 .ana-tiles.ana-grid { flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 56px; }
 .ana-tile {
+  position: relative;
   width: 42px;
   height: 50px;
   display: flex;
@@ -967,6 +968,28 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: var(--bw) solid var(--line);
   box-shadow: 3px 3px 0 var(--shadow-col);
 }
+/* Locked (click, or double-tap on touch, to toggle): pinned in place through
+   shuffles and drags — the accent border/shadow and badge mark it as such. */
+.ana-tile.ana-locked {
+  cursor: pointer;
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+.ana-lock-badge {
+  position: absolute;
+  bottom: -7px;
+  right: -7px;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #000;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+.ana-lock-badge svg { width: 9px; height: 9px; stroke-width: 3.5; }
 .ana-tiles.ana-circle .ana-tile { position: absolute; top: 50%; left: 50%; }
 .ana-empty {
   position: absolute;
@@ -1165,6 +1188,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* drop-shadow (not text-shadow) so the shadow is cast from the outlined
      shape — text-shadow ignores the stroke. */
   filter: drop-shadow(var(--sh) var(--sh) 0 var(--shadow-col));
+}
+
+/* Fullscreen mode (desktop only — the toggle is hidden below the 820px
+   breakpoint, see .desktop-only). With the browser chrome gone there's more
+   room to work with, so let the app shell and the grid grow into it; the
+   clue columns (.main's 1fr track) follow along automatically. Gated to
+   desktop widths so it can't outrank the mobile .grid rule if the window is
+   narrowed while still fullscreen. */
+@media (min-width: 821px) {
+  [data-fullscreen="true"] .app { max-width: 1600px; }
+  [data-fullscreen="true"] .grid { width: min(85vw, 82vh, 900px); }
 }
 
 /* The persistent home link's wordmark matches the home page's size exactly —

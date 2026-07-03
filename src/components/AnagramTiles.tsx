@@ -6,6 +6,11 @@ import {
   type PointerEvent,
 } from "react";
 import type { AnagramTile } from "../hooks/useAnagramPool.ts";
+import { LockIcon } from "./icons.tsx";
+
+// How long a second tap on the same tile counts as a "double tap" (touch
+// only — a mouse click toggles the lock right away).
+const DOUBLE_TAP_MS = 350;
 
 /** The scrambled-letter tiles, laid out in a circle or grid and draggable to
  * reorder (works with both touch and mouse). Shared by the mobile overlay and
@@ -19,16 +24,22 @@ import type { AnagramTile } from "../hooks/useAnagramPool.ts";
  * Swaps are cumulative: the grabbed tile carries its current position, so
  * sweeping it over several letters swaps it with each in turn (it ends up where
  * you drop it, having traded places with everything it crossed) rather than
- * always exchanging with the tile in its original slot. */
+ * always exchanging with the tile in its original slot.
+ *
+ * Clicking (mouse) or double-tapping (touch) a tile locks it: it's skipped by
+ * shuffle and can't be dragged or swapped into, so you can pin the letters
+ * you're sure of and keep working the rest. */
 export function AnagramTiles({
   tiles,
   view,
   onReorder,
+  onToggleLock,
   emptyText,
 }: {
   tiles: AnagramTile[];
   view: "circle" | "grid";
   onReorder: (tiles: AnagramTile[]) => void;
+  onToggleLock: (id: number) => void;
   emptyText: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -110,6 +121,14 @@ export function AnagramTiles({
   const curIndexRef = useRef(0);
   const slotsRef = useRef<{ x: number; y: number }[]>([]);
 
+  // Whether the current pointer session actually swapped anything — a plain
+  // tap (down/up with no move in between) leaves this false, which is how a
+  // click/double-tap is told apart from a drag for lock-toggling purposes.
+  const movedRef = useRef(false);
+  // Last tap's tile + time, for touch double-tap detection (mouse toggles on
+  // a single click instead — see onTileUp).
+  const lastTapRef = useRef<{ id: number; time: number } | null>(null);
+
   const relPos = (e: PointerEvent) => {
     const r = ref.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -121,6 +140,13 @@ export function AnagramTiles({
     } catch {
       // no active pointer (e.g. synthetic events) — capture is best-effort
     }
+    movedRef.current = false;
+    // Locked tiles can't be picked up — skip the drag setup entirely so
+    // onMovePointer (which bails on a null drag ref) leaves them in place.
+    // The pointerdown/up still runs through to onTileUp below, so tapping a
+    // locked tile still unlocks it.
+    const tile = tiles.find((t) => t.id === id);
+    if (tile?.locked) return;
     orderRef.current = tiles;
     curIndexRef.current = tiles.findIndex((t) => t.id === id);
     slotsRef.current = [
@@ -173,7 +199,9 @@ export function AnagramTiles({
       });
     }
 
-    if (target !== cur && target >= 0 && target < n) {
+    // Locked tiles hold their slot — skip the swap if the pointer's over one,
+    // rather than bumping it out of place.
+    if (target !== cur && target >= 0 && target < n && !order[target]?.locked) {
       // Swap the grabbed tile (at its current index) with the tile in the slot
       // under the pointer, then remember its new index so the next swap builds
       // on this one.
@@ -181,12 +209,33 @@ export function AnagramTiles({
       [next[cur], next[target]] = [next[target], next[cur]];
       orderRef.current = next;
       curIndexRef.current = target;
+      movedRef.current = true;
       onReorder(next);
     }
     setDrag({ id: d.id, x: p.x, y: p.y });
   };
 
   const onUp = () => setDrag(null);
+
+  // Fires on the tile that was originally grabbed (pointer capture keeps
+  // routing events there even as tiles swap around under it). A tap that
+  // didn't turn into a drag toggles the lock — immediately for a mouse
+  // click, or on the second tap within DOUBLE_TAP_MS for touch, so a single
+  // tap while reaching for a drag doesn't lock something by accident.
+  const onTileUp = (id: number) => (e: PointerEvent) => {
+    if (movedRef.current) return;
+    if (e.pointerType === "mouse") {
+      onToggleLock(id);
+      return;
+    }
+    const last = lastTapRef.current;
+    if (last && last.id === id && Date.now() - last.time < DOUBLE_TAP_MS) {
+      onToggleLock(id);
+      lastTapRef.current = null;
+    } else {
+      lastTapRef.current = { id, time: Date.now() };
+    }
+  };
 
   const radius = Math.min(95, 30 + tiles.length * 8);
 
@@ -221,11 +270,18 @@ export function AnagramTiles({
               data-i={i}
               data-id={tile.id}
               data-dragging={isDrag ? "true" : "false"}
-              className={`ana-tile ${isDrag ? "ana-ghost" : ""}`}
+              className={`ana-tile ${isDrag ? "ana-ghost" : ""} ${tile.locked ? "ana-locked" : ""}`}
               style={slotStyle(i)}
               onPointerDown={onDown(tile.id)}
+              onPointerUp={onTileUp(tile.id)}
+              title={tile.locked ? "Locked — click to unlock" : "Click, or double-tap, to lock in place"}
             >
               {tile.ch}
+              {tile.locked && (
+                <span className="ana-lock-badge" aria-hidden>
+                  <LockIcon />
+                </span>
+              )}
             </span>
           );
         })

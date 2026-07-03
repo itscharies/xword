@@ -4,6 +4,7 @@ import type { AnagramTile } from "../hooks/useAnagramPool.ts";
 import { Modal } from "./Modal.tsx";
 import { AnagramTiles } from "./AnagramTiles.tsx";
 import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
+import { shuffleTiles } from "../lib/anagram.ts";
 
 /** Letters currently entered across the active word's cells. */
 function wordLetters(xw: Crossword): string {
@@ -50,15 +51,9 @@ export function AnagramHelper({
     setPool(up);
     setTiles(toTiles(up));
   };
-  const shuffle = () =>
-    setTiles((t) => {
-      const a = [...t];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    });
+  const shuffle = () => setTiles(shuffleTiles);
+  const toggleLock = (id: number) =>
+    setTiles((t) => t.map((tile) => (tile.id === id ? { ...tile, locked: !tile.locked } : tile)));
   const fill = () => {
     if (!answer.trim()) return;
     xw.fillWord(answer);
@@ -93,6 +88,7 @@ export function AnagramHelper({
           tiles={tiles}
           view={view}
           onReorder={setTiles}
+          onToggleLock={toggleLock}
           emptyText="Add some letters above."
         />
 

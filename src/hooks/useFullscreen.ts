@@ -7,7 +7,14 @@ export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(() => !!document.fullscreenElement);
 
   useEffect(() => {
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    // Mirrors the [data-theme]/[data-accent] pattern (see lib/theme.ts) so
+    // CSS can grow the layout to fill the extra room fullscreen frees up.
+    const onChange = () => {
+      const full = !!document.fullscreenElement;
+      setIsFullscreen(full);
+      if (full) document.documentElement.dataset.fullscreen = "true";
+      else delete document.documentElement.dataset.fullscreen;
+    };
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);

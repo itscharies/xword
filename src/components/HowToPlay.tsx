@@ -50,7 +50,9 @@ export function HowToPlay() {
           <li>
             On cryptic crosswords that key becomes an <b>anagram helper</b> — a
             scratchpad where you type in letters and shuffle them around a circle
-            or grid to untangle the wordplay.
+            or grid to untangle the wordplay. Click a letter (or double-tap it on
+            a phone) to <b>lock</b> it in place — locked letters sit out the next
+            shuffle and can't be dragged.
           </li>
           <li>
             In <b>Settings</b> (the gear icon) choose light/dark, an accent colour, and
