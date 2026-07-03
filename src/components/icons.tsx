@@ -125,6 +125,24 @@ export const PauseIcon = () => (
   </svg>
 );
 
+export const FullscreenIcon = () => (
+  <svg {...base}>
+    <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+    <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+    <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
+    <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+);
+
+export const FullscreenExitIcon = () => (
+  <svg {...base}>
+    <path d="M9 3v3a2 2 0 0 1-2 2H4" />
+    <path d="M15 3v3a2 2 0 0 0 2 2h3" />
+    <path d="M15 21v-3a2 2 0 0 1 2-2h3" />
+    <path d="M9 21v-3a2 2 0 0 0-2-2H4" />
+  </svg>
+);
+
 // Lock / unlock (Feather "lock" / "unlock") — the Builder's square-grid toggle.
 export const LockIcon = () => (
   <svg {...base}>

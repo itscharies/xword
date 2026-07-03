@@ -12,3 +12,10 @@ export function formatClue(html: string): string {
     return m.startsWith("</") ? `</${t}>` : `<${t}>`; // keep tag, drop attributes
   });
 }
+
+/** Word-length enumeration for a clue — the source's own comma-separated
+ * breakdown (e.g. "4,5") when it provides one, otherwise the total answer
+ * length, so every clue shows a count even for sources that don't enumerate. */
+export function clueEnumeration(clue: { len: number; enumeration?: string }): string {
+  return clue.enumeration ?? String(clue.len);
+}

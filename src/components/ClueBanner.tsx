@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import type { Crossword } from "../hooks/useCrossword.ts";
-import { formatClue } from "../lib/clueFormat.ts";
+import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
 
 // Drag distance (px) that maps to one grid cell of cursor movement.
 const PX_PER_CELL = 16;
@@ -94,7 +94,7 @@ export function ClueBanner({ xw }: { xw: Crossword }) {
               {clue.direction === "across" ? "A" : "D"}
             </b>
             <span dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }} />
-            {clue.enumeration && <span className="enum"> ({clue.enumeration})</span>}
+            <span className="enum"> ({clueEnumeration(clue)})</span>
           </>
         ) : (
           <span>Select a cell to begin</span>

@@ -27,6 +27,7 @@ import { getSyndicatedPuzzle } from "./lib/syndicated.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
+import { useFullscreen } from "./hooks/useFullscreen.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
@@ -42,7 +43,14 @@ import { Logo } from "./components/Logo.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
-import { EditIcon, PauseIcon, PlayIcon, SettingsIcon } from "./components/icons.tsx";
+import {
+  EditIcon,
+  FullscreenExitIcon,
+  FullscreenIcon,
+  PauseIcon,
+  PlayIcon,
+  SettingsIcon,
+} from "./components/icons.tsx";
 
 const MOCK_MODE = import.meta.env.VITE_MOCK_BACKEND === "1";
 
@@ -474,6 +482,7 @@ function Solver({
   const [conflict, setConflict] = useState<Progress | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 820px)");
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const anagramPool = useAnagramPool(showAnagram && isMobile);
 
   // Any open dialog (including the anagram overlay) takes over keyboard input —
@@ -632,7 +641,7 @@ function Solver({
             <div className="byline">
               By {puzzle.author}
               {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
-              {communityId && (
+              {communityId && isOwner && (
                 <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
               )}
               {saveStatus && (
@@ -663,62 +672,75 @@ function Solver({
         )}
       </header>
 
-      <div className="actionbar">
-        <Toolbar
-          xw={xw}
-          onRequestReset={() => setShowReset(true)}
-          onAnagram={() => setShowAnagram(true)}
-        />
-        <div className="actionbar-controls">
-          <div className="timer-group">
-            <button
-              className="btn icon-btn"
-              onClick={() => setPaused(!paused)}
-              aria-label={paused ? "Resume timer" : "Pause timer"}
-              title={paused ? "Resume" : "Pause"}
-            >
-              {paused ? <PlayIcon /> : <PauseIcon />}
-            </button>
-            <div className={`timer ${paused ? "paused" : ""}`}>
-              {formatTime(elapsed)}
+      {/* display: contents outside [data-grid-fit="fixed"] — a transparent
+          grouping node so the header can still scroll away above it there,
+          leaving just the actionbar's icon row visible; see index.css. */}
+      <div className="solve-body">
+        <div className="actionbar">
+          <Toolbar
+            xw={xw}
+            onRequestReset={() => setShowReset(true)}
+            onAnagram={() => setShowAnagram(true)}
+          />
+          <div className="actionbar-controls">
+            <div className="timer-group">
+              <button
+                className="btn icon-btn"
+                onClick={() => setPaused(!paused)}
+                aria-label={paused ? "Resume timer" : "Pause timer"}
+                title={paused ? "Resume" : "Pause"}
+              >
+                {paused ? <PlayIcon /> : <PauseIcon />}
+              </button>
+              <div className={`timer ${paused ? "paused" : ""}`}>
+                {formatTime(elapsed)}
+              </div>
             </div>
+            <button
+              className="btn icon-btn desktop-only"
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            </button>
+            <button
+              className="btn cog-btn"
+              onClick={() => setShowSettings(true)}
+              aria-label="Settings"
+              title="Settings"
+            >
+              <SettingsIcon />
+            </button>
           </div>
-          <button
-            className="btn cog-btn"
-            onClick={() => setShowSettings(true)}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <SettingsIcon />
-          </button>
         </div>
-      </div>
 
-      <div
-        className={`main ${showAnagram && isMobile ? "ana-open" : ""}`}
-        onPointerDown={resume}
-      >
-        <div className="board">
-          {/* Banner above the grid on desktop; hidden on mobile (shown in the
-              sticky bottom bar instead). */}
-          <div className="banner-desktop">
-            <ClueBanner xw={xw} />
+        <div
+          className={`main ${showAnagram && isMobile ? "ana-open" : ""}`}
+          onPointerDown={resume}
+        >
+          <div className="board">
+            {/* Banner above the grid on desktop; hidden on mobile (shown in the
+                sticky bottom bar instead). */}
+            <div className="banner-desktop">
+              <ClueBanner xw={xw} />
+            </div>
+            <Grid puzzle={puzzle} xw={xw} />
           </div>
-          <Grid puzzle={puzzle} xw={xw} />
+          <ClueList puzzle={puzzle} xw={xw} />
+          {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
         </div>
-        <ClueList puzzle={puzzle} xw={xw} />
-        {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
-      </div>
 
-      {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
-          while the rest of the page scrolls. */}
-      <div className="mobile-bar" onPointerDown={resume}>
-        <ClueBanner xw={xw} />
-        <MobileKeyboard
-          xw={xw}
-          onAnagram={() => setShowAnagram((v) => !v)}
-          anagramPool={showAnagram && isMobile ? anagramPool : null}
-        />
+        {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
+            while the rest of the page scrolls. */}
+        <div className="mobile-bar" onPointerDown={resume}>
+          <ClueBanner xw={xw} />
+          <MobileKeyboard
+            xw={xw}
+            onAnagram={() => setShowAnagram((v) => !v)}
+            anagramPool={showAnagram && isMobile ? anagramPool : null}
+          />
+        </div>
       </div>
 
       {showModal && (

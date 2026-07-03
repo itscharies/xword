@@ -3,7 +3,7 @@ import type { Crossword } from "../hooks/useCrossword.ts";
 import type { AnagramTile } from "../hooks/useAnagramPool.ts";
 import { Modal } from "./Modal.tsx";
 import { AnagramTiles } from "./AnagramTiles.tsx";
-import { formatClue } from "../lib/clueFormat.ts";
+import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
 
 /** Letters currently entered across the active word's cells. */
 function wordLetters(xw: Crossword): string {
@@ -73,9 +73,7 @@ export function AnagramHelper({
           dangerouslySetInnerHTML={{
             __html: `<b>${clue.number}${
               clue.direction === "across" ? "A" : "D"
-            }</b> ${formatClue(clue.clue)}${
-              clue.enumeration ? ` (${clue.enumeration})` : ""
-            }`,
+            }</b> ${formatClue(clue.clue)} (${clueEnumeration(clue)})`,
           }}
         />
 

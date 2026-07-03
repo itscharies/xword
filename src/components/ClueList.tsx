@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
-import { formatClue } from "../lib/clueFormat.ts";
+import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
 
 function Column({
   title,
@@ -22,12 +22,17 @@ function Column({
       ? xw.clueAt(xw.active.row, xw.active.col, direction)?.number ?? null
       : null;
 
+  // The clue this column should scroll to: its own active clue, or — when
+  // the active clue is in the other direction — the crossing one, so both
+  // columns track the current word instead of only the typing direction.
+  const currentNumber = activeNumber ?? crossNumber;
+
   const listRef = useRef<HTMLOListElement>(null);
   const activeRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: "nearest" });
-  }, [activeNumber]);
+  }, [currentNumber]);
 
   const isDone = (clue: Clue) => {
     for (let i = 0; i < clue.len; i++) {
@@ -49,7 +54,7 @@ function Column({
           return (
             <li
               key={clue.number}
-              ref={active ? activeRef : undefined}
+              ref={clue.number === currentNumber ? activeRef : undefined}
               className={[
                 active ? "active" : "",
                 crossing ? "crossing" : "",
@@ -63,9 +68,7 @@ function Column({
               <span className="cn">{clue.number}</span>
               <span className="ct">
                 <span dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }} />
-                {clue.enumeration && (
-                  <span className="enum"> ({clue.enumeration})</span>
-                )}
+                <span className="enum"> ({clueEnumeration(clue)})</span>
               </span>
             </li>
           );

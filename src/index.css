@@ -7,6 +7,9 @@
 :root {
   --sh: 5px; /* offset for the hard shadows */
   --bw: 3px; /* border width */
+  /* Cell side length in [data-grid-fit="fixed"] mode (see the mobile grid
+     rules below) — big enough to stay tappable on a 15x15 grid. */
+  --min-cell: 42px;
   font-family: "SN Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
 }
@@ -561,6 +564,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* The banner-above-grid wrapper (desktop) and the anchored bottom bar (mobile)
    each show only at their breakpoint. */
 .mobile-bar { display: none; }
+
+/* A transparent grouping node around the actionbar/main/mobile-bar — normally
+   invisible to layout (its children act as if they were direct .app
+   children, same as before it existed), so it changes nothing outside
+   [data-grid-fit="fixed"] mode. See that rule below for what it becomes. */
+.solve-body { display: contents; }
 
 .grid {
   display: grid;
@@ -1609,6 +1618,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* The desktop banner is replaced by the one in the mobile bar. */
   .banner-desktop { display: none; }
   .keyboard { display: flex; }
+  /* Fullscreen doesn't make sense inside a mobile browser chrome. Matches
+     .btn's specificity (0,2,0) so it wins over .btn.icon-btn's display. */
+  .btn.desktop-only { display: none; }
 
   /* Title + author show in the header (they scroll away above the sticky
      action bar); actions collapse to icons. */
@@ -1670,6 +1682,71 @@ button { font: inherit; cursor: pointer; color: inherit; }
     padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
     border-top: 2px solid var(--line);
+  }
+
+  /* [data-grid-fit="fixed"]: cells stay a legible fixed size instead of
+     shrinking to the screen width. .solve-body (actionbar + main +
+     mobile-bar) becomes a real, one-viewport-tall, position: sticky box
+     instead of its normal no-op display: contents — the page can still
+     scroll by the header's height (same as "fit width" — scroll up and only
+     the actionbar icon row stays visible), but once .solve-body itself hits
+     the top of the viewport it's stuck there, so .board (the one flexible
+     row in between) is capped rather than free to grow, and is the only
+     part that then scrolls internally. That capped height also means a
+     taller mobile-bar (a long clue wrapping to two lines) squeezes .board
+     automatically, with no extra JS.
+     100svh, not 100dvh: dvh tracks the browser chrome shrinking/growing as
+     you scroll, so a sticky element sized with it is fighting the exact
+     scroll gesture that's supposed to reveal it — the browser resizes the
+     viewport mid-scroll and this box's edges (and .board's capped height)
+     shift with it, reading as the grid/keyboard getting clipped right at the
+     top/bottom edge. svh is the small, worst-case viewport (chrome fully
+     expanded) and never changes during scroll, so nothing shifts underfoot. */
+  [data-grid-fit="fixed"] .solve-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    min-height: 0;
+  }
+  [data-grid-fit="fixed"] .main {
+    display: flex;
+    /* Without this it defaults to row: .board's flex: 1 1 auto would then
+       size its *width* (the main axis), while its height falls back to the
+       base .main rule's align-items: start — i.e. sized to fit its content
+       instead of being capped, so there's never any vertical overflow for
+       .board to scroll. Column makes height the main axis instead. */
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  [data-grid-fit="fixed"] .board {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: flex-start;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Bleed past .app's 14px side padding, like .actionbar/.mobile-bar do,
+       then restore that as padding instead — otherwise .board is boxed into
+       a strip 28px narrower than the screen, and scrolling stops 14px short
+       of each true edge. Padding-right also gives .grid's box-shadow (falls
+       outside its border box, offset bottom-right by --sh) room, instead of
+       overflow: auto clipping it flush at the grid's edge. */
+    width: calc(100% + 28px);
+    margin: 0 -14px;
+    padding: 0 calc(14px + var(--sh)) var(--sh) 14px;
+  }
+  [data-grid-fit="fixed"] .grid {
+    /* Never smaller than --min-cell per square, but a small grid (a mini,
+       say 5x5) that would fit the screen at a bigger size just grows to
+       fill it instead of sitting tiny in the middle — aspect-ratio (kept
+       from the base rule) derives height from whichever width wins. */
+    width: max(calc(var(--cols) * var(--min-cell)), 100%);
+    flex: none;
+    margin: 0 auto;
   }
 }
 

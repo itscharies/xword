@@ -123,6 +123,30 @@ export function setAutoAdvance(on: boolean): void {
   }
 }
 
+const GRID_FIT_KEY = "xword:gridFit";
+
+/** "width" (default) shrinks the grid to fit the screen, like today. "fixed"
+ *  keeps cells at a legible minimum size and scrolls the grid area instead —
+ *  see the `[data-grid-fit="fixed"]` rules in index.css. */
+export type GridFit = "width" | "fixed";
+
+export function getGridFit(): GridFit {
+  try {
+    return localStorage.getItem(GRID_FIT_KEY) === "fixed" ? "fixed" : "width";
+  } catch {
+    return "width";
+  }
+}
+
+export function setGridFit(fit: GridFit): void {
+  root().dataset.gridFit = fit;
+  try {
+    localStorage.setItem(GRID_FIT_KEY, fit);
+  } catch {
+    /* ignore */
+  }
+}
+
 const FILTER_KEY = "xword:filters";
 
 export interface Filters {

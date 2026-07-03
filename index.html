@@ -80,10 +80,12 @@
       try {
         var t = localStorage.getItem("xword:theme");
         var a = localStorage.getItem("xword:accent");
+        var gf = localStorage.getItem("xword:gridFit");
         if (t === "system")
           t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         if (t) document.documentElement.dataset.theme = t;
         if (a) document.documentElement.dataset.accent = a;
+        if (gf) document.documentElement.dataset.gridFit = gf;
       } catch (e) {}
     </script>
   </head>

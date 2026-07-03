@@ -3,11 +3,14 @@ import {
   ACCENTS,
   getAccent,
   getAutoAdvance,
+  getGridFit,
   getMode,
   setAccent,
   setAutoAdvance,
+  setGridFit,
   setMode,
   type AccentId,
+  type GridFit,
   type Mode,
 } from "../lib/theme.ts";
 import { MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
@@ -18,6 +21,7 @@ export function ThemeControls() {
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
   const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
+  const [gridFit, setGridFitState] = useState<GridFit>(getGridFit);
 
   const choose = (m: Mode) => {
     setMode(m);
@@ -30,6 +34,10 @@ export function ThemeControls() {
   const changeAdvance = (next: boolean) => {
     setAutoAdvance(next);
     setAdvanceState(next);
+  };
+  const chooseGridFit = (fit: GridFit) => {
+    setGridFit(fit);
+    setGridFitState(fit);
   };
 
   return (
@@ -86,6 +94,26 @@ export function ThemeControls() {
           onChange={changeAdvance}
           label="Skip to the next clue when a word is finished"
         />
+      </div>
+
+      <div className="setting-row">
+        <span className="setting-label">Grid (phone)</span>
+        <div className="seg">
+          <button
+            className={`seg-btn ${gridFit === "width" ? "active" : ""}`}
+            onClick={() => chooseGridFit("width")}
+            aria-pressed={gridFit === "width"}
+          >
+            Fit width
+          </button>
+          <button
+            className={`seg-btn ${gridFit === "fixed" ? "active" : ""}`}
+            onClick={() => chooseGridFit("fixed")}
+            aria-pressed={gridFit === "fixed"}
+          >
+            Fixed size
+          </button>
+        </div>
       </div>
     </div>
   );

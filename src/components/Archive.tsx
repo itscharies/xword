@@ -324,30 +324,7 @@ export function Archive({
               <ul className="archive-list">
                 {dayItems.map((it) =>
                   it.kind === "community" ? (
-                    <li key={it.id}>
-                      <button className="archive-item" onClick={() => onOpenPuzzle(it.id)}>
-                        <div className="ai-row">
-                          {it.authorProfile && (
-                            <Avatar
-                              username={it.authorProfile.username}
-                              displayName={it.authorProfile.display_name}
-                              size={36}
-                            />
-                          )}
-                          <div className="ai-row-text">
-                            <span className="ai-source">{it.title}</span>
-                            <span className="ai-author">
-                              By {it.authorProfile?.display_name} · @{it.authorProfile?.username}
-                            </span>
-                          </div>
-                        </div>
-                        {it.completions > 0 && (
-                          <span className="ai-pct" title="Completions">
-                            {it.completions} solved
-                          </span>
-                        )}
-                      </button>
-                    </li>
+                    <CommunityItem key={it.id} item={it} onOpen={onOpenPuzzle} />
                   ) : (
                     <SyndicatedItem key={it.id} item={it} onPick={onPick} />
                   ),
@@ -458,6 +435,51 @@ function SyndicatedItem({
         {theme && <span className="ai-theme">{theme}</span>}
         <span className="ai-author">By {item.author}</span>
         {rating > 0 && <StarRating value={rating} />}
+        {done ? (
+          <span className="ai-done" title="Solved" aria-label="Solved">
+            <CheckIcon />
+          </span>
+        ) : pct > 0 ? (
+          <span className="ai-pct" title={`${pct}% filled`}>
+            {pct}%
+          </span>
+        ) : null}
+      </button>
+    </li>
+  );
+}
+
+/** One community (user-authored) puzzle row. Shows the viewer's own progress
+ *  tick/percentage — same as a syndicated row — rather than an aggregate
+ *  "N solved" count, so it reads consistently with the rest of the list. */
+function CommunityItem({
+  item,
+  onOpen,
+}: {
+  item: ArchiveFeedItem;
+  onOpen: (id: string) => void;
+}) {
+  const prog = loadCommunityProgress(item.id);
+  const done = prog?.completed ?? false;
+  const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+  return (
+    <li>
+      <button className={`archive-item ${done ? "done" : ""}`} onClick={() => onOpen(item.id)}>
+        <div className="ai-row">
+          {item.authorProfile && (
+            <Avatar
+              username={item.authorProfile.username}
+              displayName={item.authorProfile.display_name}
+              size={36}
+            />
+          )}
+          <div className="ai-row-text">
+            <span className="ai-source">{item.title}</span>
+            <span className="ai-author">
+              By {item.authorProfile?.display_name} · @{item.authorProfile?.username}
+            </span>
+          </div>
+        </div>
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
