@@ -10,7 +10,8 @@ import {
   type AccentId,
   type Mode,
 } from "../lib/theme.ts";
-import { CheckIcon, MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
+import { MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
+import { CheckRow } from "./CheckRow.tsx";
 
 /** Body of the settings modal: theme mode + accent colour pickers. */
 export function ThemeControls() {
@@ -26,8 +27,7 @@ export function ThemeControls() {
     setAccent(id);
     setAccentState(id);
   };
-  const toggleAdvance = () => {
-    const next = !advance;
+  const changeAdvance = (next: boolean) => {
     setAutoAdvance(next);
     setAdvanceState(next);
   };
@@ -81,18 +81,11 @@ export function ThemeControls() {
 
       <div className="setting-row">
         <span className="setting-label">Typing</span>
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={advance}
-          className="check-row"
-          onClick={toggleAdvance}
-        >
-          <span className={`checkbox ${advance ? "on" : ""}`}>
-            {advance && <CheckIcon />}
-          </span>
-          <span>Skip to the next clue when a word is finished</span>
-        </button>
+        <CheckRow
+          checked={advance}
+          onChange={changeAdvance}
+          label="Skip to the next clue when a word is finished"
+        />
       </div>
     </div>
   );

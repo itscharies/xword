@@ -14,6 +14,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
+import { CheckRow } from "./CheckRow.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -405,14 +406,11 @@ export function Archive({
 
             {user && (
               <div className="setting-row">
-                <label className="setting-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={showFollowing}
-                    onChange={(e) => setShowFollowingFilter(e.target.checked)}
-                  />
-                  Show puzzles from people you follow
-                </label>
+                <CheckRow
+                  checked={showFollowing}
+                  onChange={setShowFollowingFilter}
+                  label="Show puzzles from people you follow"
+                />
               </div>
             )}
 

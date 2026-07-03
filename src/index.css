@@ -248,22 +248,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-align: left;
 }
 
-.setting-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.setting-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--accent);
-  border: var(--bw) solid var(--line);
-  cursor: pointer;
-}
-
 .account-body { display: flex; flex-direction: column; gap: 26px; }
 
 /* Each Account page block ("My puzzles", "Followers", "Following") gets the
