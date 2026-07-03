@@ -8,6 +8,30 @@
     "author": "Hemant Mehta"
   },
   {
+    "source": "gdn-quick",
+    "date": "20260703",
+    "isoDate": "2026-07-03",
+    "weekday": "Fri",
+    "title": "Guardian Quick",
+    "author": "The Guardian"
+  },
+  {
+    "source": "gdn-cryptic",
+    "date": "20260703",
+    "isoDate": "2026-07-03",
+    "weekday": "Fri",
+    "title": "Guardian Cryptic",
+    "author": "Brummie"
+  },
+  {
+    "source": "gdn-mini",
+    "date": "20260703",
+    "isoDate": "2026-07-03",
+    "weekday": "Fri",
+    "title": "Guardian Mini",
+    "author": "The Guardian"
+  },
+  {
     "source": "nyt",
     "date": "260702",
     "isoDate": "2026-07-02",
