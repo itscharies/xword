@@ -248,6 +248,22 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-align: left;
 }
 
+.setting-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.setting-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+  border: var(--bw) solid var(--line);
+  cursor: pointer;
+}
+
 .account-body { display: flex; flex-direction: column; gap: 26px; }
 
 /* Each Account page block ("My puzzles", "Followers", "Following") gets the
@@ -364,12 +380,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 
 /* Header account button's icon slot doubles as an avatar frame. */
-.account-btn-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-}
+.account-btn svg { border: 1px solid var(--line); }
 
 .account-summary {
   display: flex;
@@ -380,21 +391,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
   padding: 14px 16px;
 }
-.account-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.account-avatar-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: var(--bw) solid var(--line);
-  color: var(--muted);
-}
+.account-summary svg { flex-shrink: 0; border: 1px solid var(--line); }
 .account-identity { flex: 1; min-width: 0; }
 .account-display-name { font-weight: 700; }
 
@@ -1274,6 +1271,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .ai-source { font-size: 16px; font-weight: 700; }
 .ai-theme { font-size: 14px; font-weight: 600; }
 .ai-author { font-size: 13px; color: var(--muted); }
+.ai-row { display: flex; align-items: center; gap: 10px; }
+.ai-row svg { flex: none; border: 1px solid var(--line); }
+.ai-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 @media (hover: hover) {
   .archive-item:hover .ai-author { color: #000; }
 }

@@ -11,8 +11,9 @@ import { StarRating } from "./StarRating.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
-import { avatarUrl } from "../lib/auth.ts";
+import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem } from "../lib/puzzles.ts";
+import { Avatar } from "./Avatar.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -102,6 +103,7 @@ export function Archive({
   const [showInfo, setShowInfo] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
+  const profile = useProfile();
   useDocumentTitle("");
 
   // Kept as one state object (rather than separate useState calls per field)
@@ -279,8 +281,8 @@ export function Archive({
             aria-label={user ? "Account" : "Sign in"}
             title={user ? user.email : "Sign in"}
           >
-            {avatarUrl(user) ? (
-              <img className="account-btn-avatar" src={avatarUrl(user)!} alt="" />
+            {profile && profile !== "loading" ? (
+              <Avatar username={profile.username} displayName={profile.display_name} size={28} />
             ) : (
               <UserIcon />
             )}
@@ -323,10 +325,21 @@ export function Archive({
                   it.kind === "community" ? (
                     <li key={it.id}>
                       <button className="archive-item" onClick={() => onOpenPuzzle(it.id)}>
-                        <span className="ai-source">{it.title}</span>
-                        <span className="ai-author">
-                          By {it.authorProfile?.display_name} · @{it.authorProfile?.username}
-                        </span>
+                        <div className="ai-row">
+                          {it.authorProfile && (
+                            <Avatar
+                              username={it.authorProfile.username}
+                              displayName={it.authorProfile.display_name}
+                              size={36}
+                            />
+                          )}
+                          <div className="ai-row-text">
+                            <span className="ai-source">{it.title}</span>
+                            <span className="ai-author">
+                              By {it.authorProfile?.display_name} · @{it.authorProfile?.username}
+                            </span>
+                          </div>
+                        </div>
                         {it.completions > 0 && (
                           <span className="ai-pct" title="Completions">
                             {it.completions} solved
@@ -380,22 +393,6 @@ export function Archive({
               onClear={clearPapers}
             />
 
-            {user && (
-              <div className="setting-row">
-                <span className="setting-label">People you follow</span>
-                <div className="filter-chip-group" role="group" aria-label="People you follow">
-                  <button
-                    className={`filter-chip ${showFollowing ? "on" : ""}`}
-                    onClick={() => setShowFollowingFilter(!showFollowing)}
-                    role="checkbox"
-                    aria-checked={showFollowing}
-                  >
-                    Show their puzzles in my feed
-                  </button>
-                </div>
-              </div>
-            )}
-
             <FilterChips label="Type" options={TYPES} values={types} onToggle={toggleType} onClear={clearTypes} />
 
             <FilterChips
@@ -405,6 +402,19 @@ export function Archive({
               onToggle={toggleProgress}
               onClear={clearProgress}
             />
+
+            {user && (
+              <div className="setting-row">
+                <label className="setting-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={showFollowing}
+                    onChange={(e) => setShowFollowingFilter(e.target.checked)}
+                  />
+                  Show puzzles from people you follow
+                </label>
+              </div>
+            )}
 
             {filterCount > 0 && (
               <button className="btn" onClick={clearFilters}>

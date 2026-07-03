@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useProfile } from "../hooks/useProfile.ts";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
-import { avatarUrl } from "../lib/auth.ts";
 import {
   follow,
   listFollowers,
@@ -18,8 +17,9 @@ import {
   type PublishedPuzzle,
 } from "../lib/puzzles.ts";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
-import { DeleteIcon, EditIcon, UserIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
+import { DeleteIcon, EditIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
+import { Avatar } from "./Avatar.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
  *  Google sign-in; signed in with no `profiles` row yet -> claim a
@@ -51,11 +51,7 @@ export function AccountPage({
     } else {
       body = (
         <>
-          <AccountSummary
-            avatar={avatarUrl(user)}
-            profile={profile}
-            onSignOut={() => void signOut()}
-          />
+          <AccountSummary profile={profile} onSignOut={() => void signOut()} />
           <PuzzlesSection
             userId={user.id}
             onOpenCreate={onOpenCreate}
@@ -111,23 +107,15 @@ function SignInPrompt({
 }
 
 function AccountSummary({
-  avatar,
   profile,
   onSignOut,
 }: {
-  avatar: string | null;
   profile: Profile;
   onSignOut: () => void;
 }) {
   return (
     <div className="account-summary">
-      {avatar ? (
-        <img className="account-avatar" src={avatar} alt="" />
-      ) : (
-        <span className="account-avatar account-avatar-fallback">
-          <UserIcon />
-        </span>
-      )}
+      <Avatar username={profile.username} displayName={profile.display_name} size={48} />
       <div className="account-identity">
         <div className="account-display-name">{profile.display_name}</div>
         <div className="savedata-status">@{profile.username}</div>
@@ -246,8 +234,13 @@ function FollowersSection({ userId }: { userId: string }) {
         <ul className="archive-list">
           {followers.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
-              <span className="ai-source">{p.display_name}</span>
-              <span className="ai-author">@{p.username}</span>
+              <div className="ai-row">
+                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <div className="ai-row-text">
+                  <span className="ai-source">{p.display_name}</span>
+                  <span className="ai-author">@{p.username}</span>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
@@ -308,8 +301,13 @@ function FollowingSection({ userId }: { userId: string }) {
         <ul className="archive-list">
           {newResults.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
-              <span className="ai-source">{p.display_name}</span>
-              <span className="ai-author">@{p.username}</span>
+              <div className="ai-row">
+                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <div className="ai-row-text">
+                  <span className="ai-source">{p.display_name}</span>
+                  <span className="ai-author">@{p.username}</span>
+                </div>
+              </div>
               <div className="account-tile-actions">
                 <button
                   onClick={() => void toggleFollow(p)}
@@ -354,8 +352,13 @@ function FollowingSection({ userId }: { userId: string }) {
         <ul className="archive-list">
           {following.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
-              <span className="ai-source">{p.display_name}</span>
-              <span className="ai-author">@{p.username}</span>
+              <div className="ai-row">
+                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <div className="ai-row-text">
+                  <span className="ai-source">{p.display_name}</span>
+                  <span className="ai-author">@{p.username}</span>
+                </div>
+              </div>
               <div className="account-tile-actions">
                 <button
                   onClick={() => void toggleFollow(p)}

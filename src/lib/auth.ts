@@ -1,13 +1,8 @@
 // Plain (non-React) wrapper around Supabase auth — no-ops if Supabase isn't
 // configured, so callers never need to check `supabaseEnabled` themselves.
 
-import type { Session, User } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import { supabase, supabaseEnabled } from "./supabase.ts";
-
-/** Google's OAuth profile stashes the photo under one of these keys. */
-export function avatarUrl(user: User | null): string | null {
-  return user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-}
 
 export async function getSession(): Promise<Session | null> {
   if (!supabase) return null;
