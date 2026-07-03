@@ -15,6 +15,7 @@
     "fetch:latimes": "tsx scripts/fetch-latimes.ts",
     "fetch:guardian": "tsx scripts/fetch-guardian.ts",
     "fetch:newyorker": "tsx scripts/fetch-newyorker.ts",
+    "fetch:independent": "tsx scripts/fetch-independent.ts",
     "parse:test": "tsx scripts/parse.test.ts",
     "og": "tsx scripts/make-og.ts",
     "icons": "tsx scripts/make-icons.ts"

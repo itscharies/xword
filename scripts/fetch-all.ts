@@ -18,6 +18,7 @@ const FETCHERS = [
   "fetch-latimes",
   "fetch-guardian",
   "fetch-newyorker",
+  "fetch-independent",
 ];
 
 const failed: string[] = [];
