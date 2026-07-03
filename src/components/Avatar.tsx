@@ -20,9 +20,9 @@ function tint(hex: string, ratio: number): string {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-/** A generated, crossword-styled avatar — see lib/avatar.ts. Used anywhere
- *  we show another person's profile, since a real photo only ever exists
- *  for whoever is actually signed in (see lib/auth.ts's avatarUrl). */
+/** A generated, crossword-styled avatar — see lib/avatar.ts. Used for every
+ *  profile, including the signed-in user's own — there's no photo to show
+ *  instead (see the removed lib/auth.ts avatarUrl). */
 export function Avatar({
   username,
   displayName,
@@ -67,15 +67,16 @@ export function Avatar({
           );
         }),
       )}
-      {/* Same display face as the app's "The Daily Grid" brand title
-          (loaded globally in index.html) — it's already on the page, so an
-          inline SVG <text> here picks it up for free. */}
+      {/* The app's body face (loaded globally in index.html), not the
+          decorative "Jaro" brand-title face — it's already on the page, so
+          an inline SVG <text> here picks it up for free. */}
       <text
         x={AVATAR_CENTER * CELL + CELL / 2}
         y={AVATAR_CENTER * CELL + CELL / 2}
         textAnchor="middle"
         dominantBaseline="central"
-        fontFamily="Jaro, sans-serif"
+        fontFamily='"SN Pro", ui-sans-serif, sans-serif'
+        fontWeight={800}
         fontSize={CELL * 0.85}
         fill="#000"
       >
