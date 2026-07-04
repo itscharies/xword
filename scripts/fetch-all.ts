@@ -36,3 +36,5 @@ console.log(
     (failed.length ? ` (failed: ${failed.join(", ")})` : "") +
     `.`,
 );
+
+if (failed.length) process.exit(1);

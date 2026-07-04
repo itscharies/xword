@@ -20,7 +20,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # @supabase/supabase-js needs a native WebSocket, which Node only
+          # ships from 22 onward — Node 20 makes every fetcher crash on
+          # createClient().
+          node-version: 22
           cache: npm
 
       - run: npm ci
