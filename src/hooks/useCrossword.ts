@@ -554,12 +554,18 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   // ---- completion ---------------------------------------------------------
 
   const completed = useMemo(() => {
+    let hasSolution = false;
     for (let r = 0; r < height; r++)
       for (let c = 0; c < width; c++) {
         const sol = grid[r][c].solution;
-        if (sol && entries[r][c] !== sol) return false;
+        if (!sol) continue;
+        hasSolution = true;
+        if (entries[r][c] !== sol) return false;
       }
-    return true;
+    // A puzzle with no solution data anywhere (e.g. a Guardian Prize
+    // crossword fetched before its embargo lifts) has nothing to check
+    // against — don't call that "complete" on load.
+    return hasSolution;
   }, [entries, grid, width, height]);
 
   useEffect(() => {

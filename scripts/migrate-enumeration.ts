@@ -13,7 +13,6 @@ const GUARDIAN_SOURCES = [
   "gdn-cryptic",
   "gdn-quiptic",
   "gdn-quick-cryptic",
-  "gdn-prize",
   "gdn-mini",
 ];
 

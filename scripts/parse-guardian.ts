@@ -52,6 +52,15 @@ export function parseGuardian(jsonText: string, source: PuzzleSource): Puzzle {
   const cw = findCrossword(JSON.parse(jsonText));
   if (!cw) throw new Error("no crossword data in page");
 
+  // Prize crosswords withhold their solution until the entry deadline passes
+  // (about a week after publication) — every entry's `solution` is absent
+  // until then. Treat that the same as "not published yet" rather than
+  // saving a puzzle with no correct answers, which would look instantly
+  // solved to anyone who opens it.
+  if (!cw.entries.some((e) => e.solution)) {
+    throw new Error("no solutions published yet");
+  }
+
   const w = cw.dimensions.cols;
   const h = cw.dimensions.rows;
 

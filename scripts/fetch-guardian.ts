@@ -16,7 +16,6 @@ const TYPES: Array<{ source: PuzzleSource; slug: string }> = [
   { source: "gdn-cryptic", slug: "cryptic" },
   { source: "gdn-quiptic", slug: "quiptic" },
   { source: "gdn-quick-cryptic", slug: "quick-cryptic" },
-  { source: "gdn-prize", slug: "prize" },
   { source: "gdn-mini", slug: "mini" },
 ];
 
