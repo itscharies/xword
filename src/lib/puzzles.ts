@@ -101,6 +101,17 @@ function decodeCursor(cursor: string): ArchiveCursor {
   return JSON.parse(atob(cursor));
 }
 
+/** Today's date in the viewer's own timezone, as YYYY-MM-DD — deliberately
+ *  not `toISOString()`, which reports UTC and would reintroduce the same
+ *  lag `p_viewer_date` exists to avoid. */
+function localIsoDate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** One page of the merged home feed (syndicated + community puzzles),
  *  newest first, with same-day community puzzles sorted ahead of syndicated
  *  ones. `includeFollowing = false` drops community puzzles from the feed
@@ -122,6 +133,10 @@ export async function listArchivePage(opts: {
     p_cursor_tie: c?.tie ?? null,
     p_cursor_id: c?.itemId ?? null,
     p_page_size: pageSize,
+    // The DB's own current_date runs in UTC, which lags a viewer ahead of
+    // UTC (e.g. AEST) by up to 11 hours — send their local date instead, so
+    // a puzzle dated for their "today" isn't hidden until UTC catches up.
+    p_viewer_date: localIsoDate(),
   });
   if (error) {
     console.error("[archive] listArchivePage failed", error);
