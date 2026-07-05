@@ -22,6 +22,35 @@ export interface AnagramPool {
   toggleLock: (id: number) => void;
 }
 
+/** Snapshot of the desktop anagram helper's working state for a single clue. */
+export interface AnagramClueState {
+  pool: string;
+  tiles: AnagramTile[];
+  view: "circle" | "grid";
+  answer: string;
+}
+
+/**
+ * Holds each clue's anagram-helper progress in a plain ref (not React state),
+ * keyed by clue, so closing and reopening the helper — which unmounts it —
+ * doesn't lose whatever letters/tiles/answer were in progress. A ref is
+ * enough since the store only needs to survive across mounts, not drive
+ * re-renders itself.
+ */
+export interface AnagramHelperStore {
+  get: (key: string) => AnagramClueState | undefined;
+  set: (key: string, state: AnagramClueState) => void;
+}
+
+export function useAnagramHelperStore(): AnagramHelperStore {
+  const ref = useRef(new Map<string, AnagramClueState>());
+  const get = useCallback((key: string) => ref.current.get(key), []);
+  const set = useCallback((key: string, state: AnagramClueState) => {
+    ref.current.set(key, state);
+  }, []);
+  return { get, set };
+}
+
 /**
  * A scratch pool of letters for the simplified mobile anagram overlay: you type
  * letters in (from the on-screen keyboard), shuffle them, drag to reorder, and

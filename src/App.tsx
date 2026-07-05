@@ -4,7 +4,7 @@ import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
-import { useAnagramPool } from "./hooks/useAnagramPool.ts";
+import { useAnagramHelperStore, useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import {
   loadCommunityProgress,
@@ -484,6 +484,7 @@ function Solver({
   const isMobile = useMediaQuery("(max-width: 820px)");
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const anagramPool = useAnagramPool(showAnagram && isMobile);
+  const anagramHelperStore = useAnagramHelperStore();
 
   // Any open dialog (including the anagram overlay) takes over keyboard input —
   // the overlay routes keys into its own answer entry rather than the grid.
@@ -784,7 +785,11 @@ function Solver({
       )}
 
       {showAnagram && !isMobile && (
-        <AnagramHelper xw={xw} onClose={() => setShowAnagram(false)} />
+        <AnagramHelper
+          xw={xw}
+          store={anagramHelperStore}
+          onClose={() => setShowAnagram(false)}
+        />
       )}
 
       {conflict && (

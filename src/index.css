@@ -1000,6 +1000,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 14px;
 }
 .ana-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ana-controls-group { display: flex; align-items: center; gap: 8px; }
 
 /* Mobile anagram overlay: covers the board while the sticky on-screen keyboard
    stays live below it and feeds the letter pool. The tiles area grows to fill
