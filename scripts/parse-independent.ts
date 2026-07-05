@@ -55,7 +55,11 @@ export function parseIndependent(xml: string, source: PuzzleSource, date: string
 
   const metadata = xml.match(/<metadata>[\s\S]*?<\/metadata>/)?.[0] ?? "";
   const title = decodeEntities(metadata.match(/<title>([^<]*)<\/title>/)?.[1] ?? "");
-  const author = title.match(/\bby\s+(.+)$/)?.[1]?.trim() ?? "";
+  const creator = decodeEntities(metadata.match(/<creator>([^<]*)<\/creator>/)?.[1] ?? "");
+  // The cryptic feed leaves <creator> empty and names the setter in the
+  // title instead ("No. 12,399 by Bluebird"); the mini feed does the
+  // opposite, populating <creator> and leaving the title generic.
+  const author = creator || title.match(/\bby\s+(.+)$/)?.[1]?.trim() || "";
 
   const gridTag = xml.match(/<grid[^>]*>/)?.[0] ?? "";
   const width = Number(attr(gridTag, "width"));
