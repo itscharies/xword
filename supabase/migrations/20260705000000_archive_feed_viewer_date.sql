@@ -5,6 +5,13 @@
 -- Sunday puzzle synced hours ahead of the Sunday 00:00 UTC rollover) stayed
 -- hidden until the server's clock caught up. Take the viewer's local date as
 -- a parameter instead, and use it for both branches' publish-date cutoff.
+--
+-- `create or replace` only replaces a function with the *same* argument
+-- list — adding p_viewer_date makes this a distinct signature, so it would
+-- otherwise sit alongside the old 6-arg version and PostgREST would refuse
+-- every call as ambiguous. Drop the old signature explicitly first.
+drop function if exists list_archive_feed(boolean, double precision, smallint, double precision, text, int);
+
 create or replace function list_archive_feed(
   p_include_following boolean default true,
   p_cursor_neg_date double precision default null,
