@@ -490,8 +490,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 700;
   transition: transform 0.08s, box-shadow 0.08s;
 }
-/* Icons replace the labels only on mobile. */
-.btn-icon { display: none; align-items: center; justify-content: center; }
+/* Icon + label on desktop; the label (and caret) drop off on mobile, leaving
+   just the icon — see the .toolbar rules in the mobile media query. */
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; }
 .btn-icon svg { display: block; }
 @media (hover: hover) {
   .btn:hover { background: var(--accent-2); color: #000; }
@@ -751,6 +752,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* Dim a touch vs the letters, but keep it legible on any cell colour. */
   color: color-mix(in srgb, currentColor 55%, transparent);
   z-index: 1; /* above the circle, which sits behind at z-index 0 */
+}
+/* Nudge the number off the word-separator bar on its left edge so it doesn't
+   look like it's touching the bar. */
+.cell.after-bar-r .num {
+  left: 2px;
 }
 /* The entered letter sits on top of the number if they ever overlap. */
 .cell .cell-letter {

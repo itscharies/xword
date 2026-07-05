@@ -1,5 +1,5 @@
-// Monochrome line icons (inherit currentColor). Shown on mobile in place of
-// the Check / Reveal / Reset text labels.
+// Monochrome line icons (inherit currentColor). Paired with the Check /
+// Reveal / Anagram / Reset text labels on desktop; replace them on mobile.
 
 const base = {
   viewBox: "0 0 24 24",

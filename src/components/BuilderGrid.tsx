@@ -183,6 +183,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
           const inWord = !multi && b.highlighted.has(k);
           const isLinked = !multi && b.linkedCells.has(k);
           const entry = cell.solution ?? "";
+          const afterBar = c > 0 && !!row[c - 1].barRight;
           const cls = [
             "cell",
             cell.black ? "black" : "",
@@ -200,6 +201,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
             entry.length > 1 ? "multi" : "",
             cell.barRight ? "bar-r" : "",
             cell.barBottom ? "bar-b" : "",
+            afterBar ? "after-bar-r" : "",
           ]
             .filter(Boolean)
             .join(" ");

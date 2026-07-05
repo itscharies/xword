@@ -85,6 +85,7 @@ export function Grid({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
           const inWord = xw.highlighted.has(k);
           const isLinked = xw.linked.has(k);
           const entry = xw.entries[r][c];
+          const afterBar = c > 0 && grid[r][c - 1].barRight;
           const cls = [
             "cell",
             cell.shaded ? "shaded" : "",
@@ -95,6 +96,7 @@ export function Grid({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
             entry.length > 1 ? "multi" : "",
             cell.barRight ? "bar-r" : "",
             cell.barBottom ? "bar-b" : "",
+            afterBar ? "after-bar-r" : "",
           ]
             .filter(Boolean)
             .join(" ");
