@@ -47,6 +47,12 @@ interface WordSpan {
  * full XML parser.
  */
 export function parseIndependent(xml: string, source: PuzzleSource, date: string): Puzzle {
+  // The feed serializes empty elements inconsistently across dates — some as
+  // `<cell .../>`, others as `<cell ...></cell>` — even for the same game.
+  // Normalize to the self-closing form so the regexes below only need to
+  // handle one shape.
+  xml = xml.replace(/<([\w-]+)((?:\s+[\w:-]+="[^"]*")*)\s*><\/\1>/g, "<$1$2/>");
+
   const metadata = xml.match(/<metadata>[\s\S]*?<\/metadata>/)?.[0] ?? "";
   const title = decodeEntities(metadata.match(/<title>([^<]*)<\/title>/)?.[1] ?? "");
   const author = title.match(/\bby\s+(.+)$/)?.[1]?.trim() ?? "";
