@@ -433,7 +433,7 @@ function SyndicatedItem({
       <button className={`archive-item ${done ? "done" : ""}`} onClick={() => onPick(source, date)}>
         <span className="ai-source">{mainLabel}</span>
         {theme && <span className="ai-theme">{theme}</span>}
-        <span className="ai-author">By {item.author}</span>
+        <span className="ai-author">By {item.author || "Anonymous"}</span>
         {rating > 0 && <StarRating value={rating} />}
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">

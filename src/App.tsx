@@ -639,7 +639,7 @@ function Solver({
           <div className="title-block">
             <h1>{puzzle.title}</h1>
             <div className="byline">
-              By {puzzle.author}
+              By {puzzle.author || "Anonymous"}
               {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
               {communityId && isOwner && (
                 <> · {completions} {completions === 1 ? "person" : "people"} solved this</>
