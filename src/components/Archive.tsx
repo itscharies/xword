@@ -8,6 +8,7 @@ import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
 import { StarRating } from "./StarRating.tsx";
+import { ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
@@ -284,6 +285,10 @@ export function Archive({
           >
             {profile && profile !== "loading" ? (
               <Avatar username={profile.username} displayName={profile.display_name} size={28} />
+            ) : user && profile === "loading" ? (
+              // Shimmer square where the avatar will land, instead of a
+              // UserIcon that pops into an avatar a beat later.
+              <Sk w={28} h={28} className="sk-avatar" />
             ) : (
               <UserIcon />
             )}
@@ -306,7 +311,7 @@ export function Archive({
       </div>
 
       {loading ? (
-        <div className="loading">Loading…</div>
+        <ArchiveSkeleton />
       ) : (
         <>
           {days.length === 0 && (

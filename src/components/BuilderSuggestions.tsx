@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Builder } from "../hooks/useBuilder.ts";
 import { suggest, type Suggestion } from "../lib/wordlist.ts";
 import { define, googleUrl, type Definition } from "../lib/define.ts";
+import { Sk } from "./Skeleton.tsx";
 
 const LINGER_MS = 250;
 // Gap between the chip and the popover.
@@ -129,7 +130,12 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
         )}
       </div>
       {state === "loading" && (
-        <p className="builder-suggest-msg">Loading word list…</p>
+        // Chip-shaped shimmers where the suggestions will appear.
+        <div className="sk-chips" aria-busy="true" aria-label="Loading word list">
+          {[64, 48, 76, 56, 68, 44, 60, 52].map((w, i) => (
+            <Sk key={i} w={w} h={28} />
+          ))}
+        </div>
       )}
       {state === "error" && (
         <p className="builder-suggest-msg">Couldn't load the word list.</p>
@@ -173,7 +179,12 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
           onPointerLeave={scheduleClose}
         >
           {def.loading ? (
-            <p className="def-msg">Looking up “{hover.word}”…</p>
+            // Title + two extract lines, where the definition will land.
+            <div className="sk-stack" aria-busy="true" aria-label={`Looking up ${hover.word}`}>
+              <Sk w={110} h={15} />
+              <Sk w="100%" h={12} />
+              <Sk w="72%" h={12} />
+            </div>
           ) : def.data ? (
             <>
               <div className="def-title">{def.data.title}</div>

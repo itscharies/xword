@@ -40,6 +40,7 @@ import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
 import { Logo } from "./components/Logo.tsx";
+import { SolverSkeleton } from "./components/Skeleton.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
@@ -275,7 +276,7 @@ function PuzzleView({
   }, [source, date, user]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
-  if (!puzzle) return <div className="loading">Loading puzzle…</div>;
+  if (!puzzle) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
 }
 
@@ -330,7 +331,7 @@ function CommunityPuzzleView({
   }, [id, user]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
-  if (!puzzle) return <div className="loading">Loading puzzle…</div>;
+  if (!puzzle) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Solver
       puzzle={puzzle}
@@ -371,7 +372,7 @@ function DraftPuzzleView({
   }, [id]);
 
   if (notFound) return <div className="error">Draft not found.</div>;
-  if (!row) return <div className="loading">Loading draft…</div>;
+  if (!row) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Builder
       onOpenArchive={onOpenArchive}
@@ -408,7 +409,7 @@ function EditPuzzleView({
     };
   }, [source, date]);
 
-  if (!puzzle) return <div className="loading">Loading puzzle…</div>;
+  if (!puzzle) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Builder
       onOpenArchive={onOpenArchive}

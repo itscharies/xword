@@ -1159,6 +1159,71 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .loading, .error { padding: 40px; text-align: center; color: var(--muted); }
 
+/* ---- Skeleton loading states -------------------------------------------
+   Shimmering stand-ins (components/Skeleton.tsx) shaped like the content
+   they precede. Base block + a moving sheen in an ::after overlay, so any
+   element can become a skeleton without background-size tricks. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  flex: none;
+  background: var(--surface-2);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--fg) 9%, transparent),
+    transparent
+  );
+  animation: skeleton-shimmer 1.4s infinite;
+}
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+
+/* Square avatar placeholder — real avatars are bordered square SVGs. */
+.sk-avatar { border: 1px solid var(--line); }
+
+/* Non-interactive tile placeholders: keep .archive-item's box but drop its
+   hover/active affordances. */
+.sk-tile { pointer-events: none; }
+.sk-tile .skeleton { margin: 2px 0; }
+
+.sk-stack { display: flex; flex-direction: column; gap: 6px; }
+.sk-btn-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Puzzle-grid-shaped shimmer: same box as .grid (border, hard shadow,
+   footprint), with faint 15×15 cell lines drawn in an overlay so it reads
+   as a crossword rather than a blank slab. */
+.sk-grid {
+  width: min(92vw, 560px);
+  aspect-ratio: 1;
+  border: var(--bw) solid var(--grid-line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  background: var(--cell-bg);
+}
+.sk-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background:
+    repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px calc(100% / 15)),
+    repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px calc(100% / 15));
+}
+
+/* Suggestion-chip placeholders in the builder side panel. */
+.sk-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+
 /* ---- clickable title (opens the archive) ------------------------------- */
 
 .title-link {
@@ -1676,6 +1741,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; gap: 1px; }
+  .sk-grid { width: 100%; }
   /* Thinner circle stroke to match the 1px gridlines on small cells. */
   .cell .circle { border-width: 1px; }
   .clue-banner { width: 100%; }
@@ -1718,7 +1784,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .btn.icon-btn,
   .btn.cog-btn { width: 34px; height: 34px; padding: 0; font-size: 14px; }
 
-  /* Check / Reveal / Reset become square icon buttons. */
+  /* Check / Reveal / Reset become square icon buttons — mirror that in the
+     solver skeleton's button shimmers (!important beats their inline sizes). */
+  .sk-btn-row { flex-wrap: nowrap; gap: 8px; }
+  .sk-btn-row .skeleton { width: 34px !important; height: 34px !important; }
+
   .toolbar .btn { width: 34px; height: 34px; padding: 0; }
   .toolbar .btn .btn-label,
   .toolbar .btn .btn-caret { display: none; }

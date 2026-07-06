@@ -20,6 +20,7 @@ import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
 import { DeleteIcon, EditIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 import { Avatar } from "./Avatar.tsx";
+import { AccountPageSkeleton, TileListSkeleton } from "./Skeleton.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
  *  Google sign-in; signed in with no `profiles` row yet -> claim a
@@ -45,7 +46,7 @@ export function AccountPage({
     if (!user) {
       body = <SignInPrompt signInWithGoogle={signInWithGoogle} />;
     } else if (profile === "loading") {
-      body = null;
+      body = <AccountPageSkeleton />;
     } else if (!profile) {
       body = <ClaimProfileForm userId={user.id} />;
     } else {
@@ -158,7 +159,9 @@ function PuzzlesSection({
           + New
         </button>
       </div>
-      {puzzles === null ? null : puzzles.length === 0 ? (
+      {puzzles === null ? (
+        <TileListSkeleton rows={2} />
+      ) : puzzles.length === 0 ? (
         <p className="account-empty">
           You haven't published a puzzle yet — start one with "+ New" above.
         </p>
@@ -228,7 +231,9 @@ function FollowersSection({ userId }: { userId: string }) {
       <div className="account-section-head">
         <h2>Followers{followers && followers.length > 0 ? ` (${followers.length})` : ""}</h2>
       </div>
-      {followers === null ? null : followers.length === 0 ? (
+      {followers === null ? (
+        <TileListSkeleton rows={2} avatar />
+      ) : followers.length === 0 ? (
         <p className="account-empty">No one's following you yet.</p>
       ) : (
         <ul className="archive-list">
@@ -344,7 +349,9 @@ function FollowingSection({ userId }: { userId: string }) {
         </div>
       )}
 
-      {following === null ? null : following.length === 0 ? (
+      {following === null ? (
+        <TileListSkeleton rows={2} avatar />
+      ) : following.length === 0 ? (
         <p className="account-empty">
           You're not following anyone yet — search a username above to find friends.
         </p>
