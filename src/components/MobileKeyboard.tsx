@@ -58,7 +58,9 @@ export function MobileKeyboard({
                 aria-label="Anagram helper"
                 aria-pressed={!!anagramPool}
               >
-                <AnagramCircleIcon />
+                <span className="kb-face">
+                  <AnagramCircleIcon />
+                </span>
               </button>
             ) : (
               <button
@@ -68,7 +70,9 @@ export function MobileKeyboard({
                 aria-pressed={xw.rebus}
                 aria-label="Rebus: type multiple letters in one square"
               >
-                <RebusIcon />
+                <span className="kb-face">
+                  <RebusIcon />
+                </span>
               </button>
             ))}
           {row.split("").map((ch) => (
@@ -78,7 +82,7 @@ export function MobileKeyboard({
               onPointerDown={down(ch)}
               onClick={() => typeLetter(ch)}
             >
-              {ch}
+              <span className="kb-face">{ch}</span>
             </button>
           ))}
           {i === 2 && (
@@ -87,7 +91,9 @@ export function MobileKeyboard({
               onPointerDown={down("backspace")}
               onClick={backspace}
             >
-              <BackspaceIcon />
+              <span className="kb-face">
+                <BackspaceIcon />
+              </span>
             </button>
           )}
         </div>

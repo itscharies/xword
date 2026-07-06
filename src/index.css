@@ -881,18 +881,37 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* ---- on-screen keyboard ------------------------------------------------- */
 
+/* iOS-style layout: every letter key is exactly 10% of the row, so the
+   9-key home row centers itself with the same half-key inset per side as a
+   real phone keyboard, and the bottom row's rebus/backspace share what the
+   7 letters leave over (15% each). Keys are transparent hit targets that
+   meet edge-to-edge — the visible "face" sits 3px inside, so taps landing
+   in the visual gaps still hit the nearest key. */
 .keyboard {
   display: none;
   flex-direction: column;
-  gap: 7px;
   width: 100%;
   user-select: none;
   -webkit-user-select: none;
 }
-.kb-row { display: flex; gap: 6px; width: 100%; }
+.kb-row { display: flex; width: 100%; }
+.kb-row:nth-child(2) { justify-content: center; }
 .kb-key {
-  flex: 1 1 0;
+  flex: 0 0 10%;
   min-width: 0;
+  padding: 3px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  /* whole key is the tap target; no text selection / tap highlight */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.kb-key > * { pointer-events: none; }
+.kb-key.wide { flex: 1 1 0; }
+.kb-face {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -904,20 +923,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 17px;
   font-weight: 700;
   text-transform: uppercase;
-  /* whole key is the tap target; no text selection / tap highlight */
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
-.kb-key > * { pointer-events: none; }
-.kb-key.wide { flex: 1.5 1 0; }
-.kb-key.active { background: var(--accent-2); color: #000; }
+.kb-key.active .kb-face { background: var(--accent-2); color: #000; }
 /* `.kb-pressed` is toggled from pointer events; iOS Safari withholds `:active`
    for taps near the bottom edge (home-indicator / toolbar zone), so the lower
    rows never flashed otherwise. */
-.kb-key:active,
-.kb-key.kb-pressed {
+.kb-key:active .kb-face,
+.kb-key.kb-pressed .kb-face {
   background: var(--accent);
   color: #000;
   transform: translate(3px, 3px);
