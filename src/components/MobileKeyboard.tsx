@@ -34,9 +34,7 @@ export function MobileKeyboard({
   // withholds `:active` for taps near the bottom edge (home-indicator / toolbar
   // zone), so the lower rows never flashed. Pointer events fire everywhere, and
   // state survives the per-second timer re-renders that a raw class toggle
-  // would lose. Each key listens on touchstart as well as pointerdown — raw
-  // touch events are the earliest thing iOS delivers, and its synthesized
-  // pointerdown can trail them noticeably on scrollable pages.
+  // would lose.
   const [pressed, setPressed] = useState<string | null>(null);
   const down = (id: string) => () => setPressed(id);
   const clear = () => setPressed(null);
@@ -48,8 +46,6 @@ export function MobileKeyboard({
       onPointerUp={clear}
       onPointerCancel={clear}
       onPointerLeave={clear}
-      onTouchEnd={clear}
-      onTouchCancel={clear}
     >
       {ROWS.map((row, i) => (
         <div className="kb-row" key={i}>
@@ -58,7 +54,6 @@ export function MobileKeyboard({
               <button
                 className={`kb-key wide ${anagramPool ? "active" : ""} ${pc("anagram")}`}
                 onPointerDown={down("anagram")}
-                onTouchStart={down("anagram")}
                 onClick={onAnagram}
                 aria-label="Anagram helper"
                 aria-pressed={!!anagramPool}
@@ -71,7 +66,6 @@ export function MobileKeyboard({
               <button
                 className={`kb-key wide ${xw.rebus ? "active" : ""} ${pc("rebus")}`}
                 onPointerDown={down("rebus")}
-                onTouchStart={down("rebus")}
                 onClick={() => xw.toggleRebus()}
                 aria-pressed={xw.rebus}
                 aria-label="Rebus: type multiple letters in one square"
@@ -86,7 +80,6 @@ export function MobileKeyboard({
               key={ch}
               className={`kb-key ${pc(ch)}`}
               onPointerDown={down(ch)}
-              onTouchStart={down(ch)}
               onClick={() => typeLetter(ch)}
             >
               <span className="kb-face">{ch}</span>
@@ -96,7 +89,6 @@ export function MobileKeyboard({
             <button
               className={`kb-key wide ${pc("backspace")}`}
               onPointerDown={down("backspace")}
-              onTouchStart={down("backspace")}
               onClick={backspace}
             >
               <span className="kb-face">
