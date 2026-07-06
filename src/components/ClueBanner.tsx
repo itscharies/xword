@@ -2,8 +2,9 @@ import { useRef } from "react";
 import type { Crossword } from "../hooks/useCrossword.ts";
 import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
 
-// Drag distance (px) that maps to one grid cell of cursor movement.
-const PX_PER_CELL = 16;
+// Drag distance (px) that maps to one grid cell of cursor movement. Higher
+// = slower scrub, which makes individual words easier to pinpoint.
+const PX_PER_CELL = 24;
 // Movement (px) before a press becomes a scrub rather than a tap.
 const SCRUB_THRESHOLD = 6;
 
