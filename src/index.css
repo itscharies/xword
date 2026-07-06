@@ -935,6 +935,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   transform: translate(3px, 3px);
   box-shadow: none;
 }
+/* One-shot flash retriggered from `click`. With Safari's chrome collapsed,
+   taps in the bottom strip deliver no pointer events at all — click is the
+   only signal — so neither `:active` nor `.kb-pressed` ever paints there. */
+.kb-face.kb-flash { animation: kb-flash 180ms; }
+@keyframes kb-flash {
+  0%,
+  55% {
+    background: var(--accent);
+    color: #000;
+    transform: translate(3px, 3px);
+    box-shadow: none;
+  }
+}
 
 /* ---- completion modal --------------------------------------------------- */
 

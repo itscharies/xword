@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { AnagramCircleIcon, BackspaceIcon } from "./icons.tsx";
@@ -36,41 +36,29 @@ export function MobileKeyboard({
   // state survives the per-second timer re-renders that a raw class toggle
   // would lose.
   //
-  // With Safari's chrome collapsed, iOS swallows the touch/pointer stream for
-  // taps in the bottom strip while it decides whether the tap re-expands the
-  // URL bar — only the synthesized `click` ever reaches the page. So the
-  // pressed flash is driven from click as well (delegated below), and every
-  // flash is held for a minimum beat so a click-only tap still paints.
-  const MIN_FLASH_MS = 100;
+  // Track the held key in state rather than relying on `:active`: iOS Safari
+  // withholds `:active` for taps near the bottom edge (home-indicator / toolbar
+  // zone), so the lower rows never flashed. Pointer events fire everywhere, and
+  // state survives the per-second timer re-renders that a raw class toggle
+  // would lose.
   const [pressed, setPressed] = useState<string | null>(null);
-  const downAt = useRef(0);
-  const clearTimer = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => () => clearTimeout(clearTimer.current), []);
-  const flash = (id: string) => {
-    clearTimeout(clearTimer.current);
-    downAt.current = performance.now();
-    setPressed(id);
-  };
-  const down = (id: string) => () => flash(id);
-  const clear = () => {
-    const left = MIN_FLASH_MS - (performance.now() - downAt.current);
-    if (left <= 0) {
-      setPressed(null);
-    } else {
-      clearTimeout(clearTimer.current);
-      clearTimer.current = setTimeout(() => setPressed(null), left);
-    }
-  };
-  // Dead-zone taps arrive as a bare click with no pointer events: flash the
-  // key now and schedule the clear, since no pointerup will follow either.
-  const flashFromClick = (e: MouseEvent) => {
-    const id = (e.target as Element).closest(".kb-key")?.getAttribute("data-key");
-    if (id) {
-      flash(id);
-      clear();
-    }
-  };
+  const down = (id: string) => () => setPressed(id);
+  const clear = () => setPressed(null);
   const pc = (id: string) => (pressed === id ? "kb-pressed" : "");
+
+  // With Safari's chrome collapsed, iOS swallows the whole pointer stream for
+  // taps in the bottom strip while it decides whether the tap re-expands the
+  // URL bar — only the synthesized `click` ever arrives, so the held state
+  // above never shows. Every click also retriggers a one-shot flash animation.
+  // The class lives on the inner face, whose className prop is static, so
+  // React's pressed-state re-renders can't clip the animation mid-flight.
+  const flashFromClick = (e: MouseEvent) => {
+    const face = (e.target as Element).closest(".kb-key")?.querySelector(".kb-face");
+    if (!face) return;
+    face.classList.remove("kb-flash");
+    void (face as HTMLElement).offsetWidth; // restart if still mid-animation
+    face.classList.add("kb-flash");
+  };
 
   return (
     <div
@@ -86,7 +74,6 @@ export function MobileKeyboard({
             (xw.isCryptic ? (
               <button
                 className={`kb-key wide ${anagramPool ? "active" : ""} ${pc("anagram")}`}
-                data-key="anagram"
                 onPointerDown={down("anagram")}
                 onClick={onAnagram}
                 aria-label="Anagram helper"
@@ -99,7 +86,6 @@ export function MobileKeyboard({
             ) : (
               <button
                 className={`kb-key wide ${xw.rebus ? "active" : ""} ${pc("rebus")}`}
-                data-key="rebus"
                 onPointerDown={down("rebus")}
                 onClick={() => xw.toggleRebus()}
                 aria-pressed={xw.rebus}
@@ -114,7 +100,6 @@ export function MobileKeyboard({
             <button
               key={ch}
               className={`kb-key ${pc(ch)}`}
-              data-key={ch}
               onPointerDown={down(ch)}
               onClick={() => typeLetter(ch)}
             >
@@ -124,7 +109,6 @@ export function MobileKeyboard({
           {i === 2 && (
             <button
               className={`kb-key wide ${pc("backspace")}`}
-              data-key="backspace"
               onPointerDown={down("backspace")}
               onClick={backspace}
             >
