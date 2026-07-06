@@ -559,6 +559,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   align-items: start;
   /* Anchor for the mobile anagram overlay, which covers this region. */
   position: relative;
+  /* Grow to fill any leftover height in the .app column (e.g. fullscreen,
+     where the grid — and so .board — is capped well short of the viewport)
+     so the clue lists below can stretch down to the bottom of the page
+     instead of stopping short. min-height: 0 lets it shrink back below its
+     content's natural size when the page is too short, so .clue-col's own
+     overflow: auto (not the whole page) is what scrolls. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .board { display: flex; flex-direction: column; gap: 12px; }
@@ -820,7 +828,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* ---- clue lists --------------------------------------------------------- */
 
-.clues { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* Stretches to .main's full (now flex-grown) height, independent of .board
+   which stays aligned to the top at its own natural, content-sized height. */
+.clues { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-self: stretch; min-height: 0; }
+.clue-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .clue-col h2 {
   font-size: 13px;
   text-transform: uppercase;
@@ -836,7 +851,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 560px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 .clue-col li {
@@ -1206,6 +1222,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
 @media (min-width: 821px) {
   [data-fullscreen="true"] .app { max-width: 1600px; }
   [data-fullscreen="true"] .grid { width: min(85vw, 82vh, 900px); }
+}
+
+/* Let the clue lists stretch to fill the page instead of leaving blank space
+   below them (most visible in fullscreen, where .board is well short of the
+   taller viewport). .app needs a real (not just minimum) height so .main's
+   flex-shrink has an actual deficit to work with — otherwise the browser has
+   no reason to cap .main below its content's full height, and the page
+   itself grows instead of just .clue-col's own scrollbar kicking in. Scoped
+   to the solver (not Home/Builder/Account, which are plain scrolling pages)
+   and to desktop, where the two-column clue layout is visible at all. */
+@media (min-width: 821px) {
+  .solver.app { height: 100dvh; }
 }
 
 /* The persistent home link's wordmark matches the home page's size exactly —

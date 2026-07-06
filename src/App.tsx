@@ -633,7 +633,7 @@ function Solver({
   }, [xw.handleKeyDown, modalOpen]);
 
   return (
-    <div className="app">
+    <div className="app solver">
       <header className="header">
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
