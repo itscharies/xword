@@ -28,6 +28,7 @@ import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
 import { useFullscreen } from "./hooks/useFullscreen.ts";
+import { useWakeLock } from "./hooks/useWakeLock.ts";
 import { Grid } from "./components/Grid.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
@@ -455,6 +456,8 @@ function Solver({
   // override.
   const canEdit = isOwner || (isAdmin && !communityId);
   useDocumentTitle(puzzle.title);
+  // Solving is long stretches of reading with no touches — keep the screen on.
+  useWakeLock();
 
   const [paused, setPausedState] = useState(false);
   const pausedRef = useRef(paused);
