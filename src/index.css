@@ -1279,12 +1279,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 
 /* Fullscreen mode (desktop only — the toggle is hidden below the 820px
-   breakpoint, see .desktop-only). Focus mode: header (logo/title) hidden,
-   just the action bar, board, and clues, pinned to the viewport with no
-   page scroll — only the clue lists scroll if they don't fit. The board
-   takes the left 60% of .main and the two clue columns 20% each (.clues'
-   own 1fr 1fr halves the 4fr track). Gated to desktop widths so it can't
-   outrank the mobile .grid rule if the window is narrowed while still
+   breakpoint, see .desktop-only). Focus mode on top of the desktop solver
+   layout below: header (logo/title) hidden, app shell freed from its
+   max-width, page scroll clamped off. Gated to desktop widths so it can't
+   outrank the mobile rules if the window is narrowed while still
    fullscreen. */
 @media (min-width: 821px) {
   [data-fullscreen="true"] .solver.app {
@@ -1292,42 +1290,41 @@ button { font: inherit; cursor: pointer; color: inherit; }
     overflow: hidden;
   }
   [data-fullscreen="true"] .solver .header { display: none; }
-  [data-fullscreen="true"] .solver .main {
+}
+
+/* Desktop solver layout: the page fits the viewport (no page scroll), the
+   board takes the left 60% of .main and the two clue columns 20% each
+   (.clues' own 1fr 1fr halves the 4fr track), and only the clue lists
+   scroll when they don't fit. .app needs a real (not just minimum) height
+   so the minmax(0,1fr) row has an actual deficit to work with. Scoped to
+   the solver (not Home/Builder/Account, which are plain scrolling pages)
+   and to desktop, where the two-column clue layout is visible at all. */
+@media (min-width: 821px) {
+  .solver.app { height: 100dvh; }
+  .solver .main {
     grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
     /* One row exactly as tall as .main (minmax(0,1fr) may shrink below the
        clue lists' natural height — that's what hands them a scrollbar). */
     grid-template-rows: minmax(0, 1fr);
     align-items: stretch;
   }
-  [data-fullscreen="true"] .solver .board { min-height: 0; }
+  .solver .board { min-height: 0; }
   /* The banner spans the board column instead of its fixed 560px. */
-  [data-fullscreen="true"] .banner-desktop .clue-banner { width: 100%; }
+  .banner-desktop .clue-banner { width: 100%; }
 
   /* The grid fills whatever fits its column: full width if the height
      allows, otherwise sized off the leftover height (100cqh) times its
      aspect ratio. container-type: size gives the wrapper a definite height
      to measure against regardless of its content. */
-  [data-fullscreen="true"] .grid-fit {
+  .grid-fit {
     flex: 1 1 auto;
     min-height: 0;
     container-type: size;
   }
-  [data-fullscreen="true"] .grid {
+  .grid-fit .grid {
     width: min(100%, calc(100cqh * var(--cols) / var(--rows)));
   }
-  [data-fullscreen="true"] .sk-grid { width: min(100%, 100cqh); }
-}
-
-/* Let the clue lists stretch to fill the page instead of leaving blank space
-   below them (most visible in fullscreen, where .board is well short of the
-   taller viewport). .app needs a real (not just minimum) height so .main's
-   flex-shrink has an actual deficit to work with — otherwise the browser has
-   no reason to cap .main below its content's full height, and the page
-   itself grows instead of just .clue-col's own scrollbar kicking in. Scoped
-   to the solver (not Home/Builder/Account, which are plain scrolling pages)
-   and to desktop, where the two-column clue layout is visible at all. */
-@media (min-width: 821px) {
-  .solver.app { height: 100dvh; }
+  .grid-fit .sk-grid { width: min(100%, 100cqh); }
 }
 
 /* The persistent home link's wordmark matches the home page's size exactly —
