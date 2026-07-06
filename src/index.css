@@ -1323,8 +1323,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
   }
   .grid-fit .grid {
     width: min(100%, calc(100cqh * var(--cols) / var(--rows)));
+    /* Height-limited grids don't span the column — keep them centered. */
+    margin-inline: auto;
   }
-  .grid-fit .sk-grid { width: min(100%, 100cqh); }
+  .grid-fit .sk-grid {
+    width: min(100%, 100cqh);
+    margin-inline: auto;
+  }
 }
 
 /* The persistent home link's wordmark matches the home page's size exactly —
