@@ -94,7 +94,9 @@ export function SolverSkeleton({ onOpenArchive }: { onOpenArchive?: () => void }
 
         <div className="main">
           <div className="board">
-            <div className="skeleton sk-grid" />
+            <div className="grid-fit">
+              <div className="skeleton sk-grid" />
+            </div>
           </div>
           <div className="clues">
             <SkClueCol lines={9} />

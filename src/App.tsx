@@ -727,7 +727,11 @@ function Solver({
             <div className="banner-desktop">
               <ClueBanner xw={xw} />
             </div>
-            <Grid puzzle={puzzle} xw={xw} />
+            {/* Inert wrapper outside fullscreen; in fullscreen it's the size
+                container the grid measures its available height against. */}
+            <div className="grid-fit">
+              <Grid puzzle={puzzle} xw={xw} />
+            </div>
           </div>
           <ClueList puzzle={puzzle} xw={xw} />
           {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}

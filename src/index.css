@@ -1279,14 +1279,43 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 
 /* Fullscreen mode (desktop only — the toggle is hidden below the 820px
-   breakpoint, see .desktop-only). With the browser chrome gone there's more
-   room to work with, so let the app shell and the grid grow into it; the
-   clue columns (.main's 1fr track) follow along automatically. Gated to
-   desktop widths so it can't outrank the mobile .grid rule if the window is
-   narrowed while still fullscreen. */
+   breakpoint, see .desktop-only). Focus mode: header (logo/title) hidden,
+   just the action bar, board, and clues, pinned to the viewport with no
+   page scroll — only the clue lists scroll if they don't fit. The board
+   takes the left 60% of .main and the two clue columns 20% each (.clues'
+   own 1fr 1fr halves the 4fr track). Gated to desktop widths so it can't
+   outrank the mobile .grid rule if the window is narrowed while still
+   fullscreen. */
 @media (min-width: 821px) {
-  [data-fullscreen="true"] .app { max-width: 1600px; }
-  [data-fullscreen="true"] .grid { width: min(85vw, 82vh, 900px); }
+  [data-fullscreen="true"] .solver.app {
+    max-width: none;
+    overflow: hidden;
+  }
+  [data-fullscreen="true"] .solver .header { display: none; }
+  [data-fullscreen="true"] .solver .main {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+    /* One row exactly as tall as .main (minmax(0,1fr) may shrink below the
+       clue lists' natural height — that's what hands them a scrollbar). */
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  [data-fullscreen="true"] .solver .board { min-height: 0; }
+  /* The banner spans the board column instead of its fixed 560px. */
+  [data-fullscreen="true"] .banner-desktop .clue-banner { width: 100%; }
+
+  /* The grid fills whatever fits its column: full width if the height
+     allows, otherwise sized off the leftover height (100cqh) times its
+     aspect ratio. container-type: size gives the wrapper a definite height
+     to measure against regardless of its content. */
+  [data-fullscreen="true"] .grid-fit {
+    flex: 1 1 auto;
+    min-height: 0;
+    container-type: size;
+  }
+  [data-fullscreen="true"] .grid {
+    width: min(100%, calc(100cqh * var(--cols) / var(--rows)));
+  }
+  [data-fullscreen="true"] .sk-grid { width: min(100%, 100cqh); }
 }
 
 /* Let the clue lists stretch to fill the page instead of leaving blank space
