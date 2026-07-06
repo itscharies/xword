@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AnagramPool } from "../hooks/useAnagramPool.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { AnagramCircleIcon, BackspaceIcon } from "./icons.tsx";
@@ -35,9 +35,31 @@ export function MobileKeyboard({
   // zone), so the lower rows never flashed. Pointer events fire everywhere, and
   // state survives the per-second timer re-renders that a raw class toggle
   // would lose.
+  //
+  // With Safari's chrome collapsed, iOS holds back touch events in the bottom
+  // strip until the finger lifts (it's deciding whether the tap re-expands the
+  // URL bar), so pointerdown/up arrive back-to-back and a naive set-then-clear
+  // never paints. Keep the pressed state up for a minimum beat after each down
+  // so the flash is visible even when the events all land at once.
+  const MIN_FLASH_MS = 100;
   const [pressed, setPressed] = useState<string | null>(null);
-  const down = (id: string) => () => setPressed(id);
-  const clear = () => setPressed(null);
+  const downAt = useRef(0);
+  const clearTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(clearTimer.current), []);
+  const down = (id: string) => () => {
+    clearTimeout(clearTimer.current);
+    downAt.current = performance.now();
+    setPressed(id);
+  };
+  const clear = () => {
+    const left = MIN_FLASH_MS - (performance.now() - downAt.current);
+    if (left <= 0) {
+      setPressed(null);
+    } else {
+      clearTimeout(clearTimer.current);
+      clearTimer.current = setTimeout(() => setPressed(null), left);
+    }
+  };
   const pc = (id: string) => (pressed === id ? "kb-pressed" : "");
 
   return (
