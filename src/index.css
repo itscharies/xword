@@ -907,7 +907,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  /* `none`, not `manipulation`: the page behind the sticky bar scrolls, and
+     iOS delays pressed feedback on anything it still considers a potential
+     scroll surface while it decides pan-vs-tap. A keyboard never starts a
+     scroll, so opt out entirely — feedback becomes immediate. */
+  touch-action: none;
 }
 .kb-key > * { pointer-events: none; }
 .kb-key.wide { flex: 1 1 0; }
