@@ -1865,15 +1865,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
     z-index: 30;
     /* full-bleed past the app's horizontal padding, flush to the bottom edge */
     margin: 0 -14px;
-    /* Bottom inset: safe area, plus extra lift only while Safari's URL bar
-       is collapsed — with the chrome shrunk the page reaches the screen's
-       bottom edge, and iOS sits on touches in that strip for ~a second
-       deciding whether the tap should re-expand the browser chrome instead.
-       100dvh − 100svh is 0 with the chrome expanded (and in PWAs/Android)
-       and the collapsed chrome's height otherwise, so the lift kicks in
-       exactly when the dead zone exists. */
-    padding: 12px 14px
-      calc(12px + env(safe-area-inset-bottom, 0px) + clamp(0px, 100dvh - 100svh, 28px));
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
     border-top: 2px solid var(--line);
   }
