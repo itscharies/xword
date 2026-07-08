@@ -35,6 +35,7 @@ import { ClueBanner } from "./components/ClueBanner.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { MobileKeyboard } from "./components/MobileKeyboard.tsx";
 import { CompletionModal } from "./components/CompletionModal.tsx";
+import { MutualProgressRow } from "./components/MutualProgressRow.tsx";
 import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
@@ -663,6 +664,11 @@ function Solver({
                 </span>
               )}
             </div>
+            <MutualProgressRow
+              communityId={communityId}
+              source={communityId ? undefined : source}
+              date={communityId ? undefined : puzzle.date}
+            />
           </div>
         </div>
         {canEdit && (

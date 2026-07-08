@@ -161,6 +161,9 @@ export interface Filters {
    *  list). Defaults to on, matching the feed's previous always-shown
    *  behavior. */
   showFollowing: boolean;
+  /** Whether the viewer's own published puzzles appear in the merged feed —
+   *  same show/hide semantics as showFollowing. Defaults to on. */
+  showMine: boolean;
   /** "Complete" / "In progress" / "Not started" — multi-select. */
   progress: string[];
 }
@@ -174,10 +177,11 @@ export function getFilters(): Filters {
       papers: Array.isArray(f.papers) ? f.papers : [],
       types: Array.isArray(f.types) ? f.types : [],
       showFollowing: f.showFollowing ?? true,
+      showMine: f.showMine ?? true,
       progress: Array.isArray(f.progress) ? f.progress : [],
     };
   } catch {
-    return { papers: [], types: [], showFollowing: true, progress: [] };
+    return { papers: [], types: [], showFollowing: true, showMine: true, progress: [] };
   }
 }
 

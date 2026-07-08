@@ -178,7 +178,28 @@ const db = {
     makeSyndicatedRow("nyt", isoDaysAgo(-1), "NYT Mock Puzzle — Tomorrow (should be hidden)"),
   ] as MockSyndicated[],
 
-  progress: [] as MockProgress[],
+  // Max ↔ Iris are mutuals, so signing in as Iris shows Max's chips on
+  // today's NYT puzzle (in progress) and on Iris's own public puzzle
+  // (solved). Full Progress objects, not just the summary fields — Max's
+  // own session pulls these into the Solver, which reads `entries`.
+  progress: [
+    {
+      user_id: MAX,
+      source: "nyt",
+      puzzle_date: isoDaysAgo(0).replace(/-/g, ""),
+      puzzle_id: null,
+      data: { entries: [["C", "", ""]], revealed: [], elapsed: 30, completed: false, filled: 1, total: 3 },
+      client_updated_at: 1,
+    },
+    {
+      user_id: MAX,
+      source: null,
+      puzzle_date: null,
+      puzzle_id: "a1111111-0000-0000-0000-000000000001",
+      data: { entries: [["C", "A", "T"]], revealed: [], elapsed: 95, completed: true, filled: 3, total: 3 },
+      client_updated_at: 1,
+    },
+  ] as MockProgress[],
 };
 
 type TableName = keyof typeof db;
@@ -251,6 +272,7 @@ function isFollowing(followerId: string, followeeId: string): boolean {
 // reach one, and only if the caller already knows its id.
 function isVisibleInFeed(p: MockPuzzle, viewerId: string | null): boolean {
   if (!viewerId) return false;
+  if (p.author_id === viewerId) return true; // RLS's "own rows" clause — every tier
   if (p.visibility === "public") return isFollowing(viewerId, p.author_id);
   if (p.visibility === "mutual") {
     return isFollowing(viewerId, p.author_id) && isFollowing(p.author_id, viewerId);
@@ -294,6 +316,7 @@ function tupleGt(a: [number, number, number, string], b: [number, number, number
 
 function mockListArchiveFeed(params: {
   p_include_following: boolean;
+  p_include_mine: boolean;
   p_cursor_neg_date: number | null;
   p_cursor_kind: number | null;
   p_cursor_tie: number | null;
@@ -306,7 +329,9 @@ function mockListArchiveFeed(params: {
   const communityRows: RawFeedRow[] = params.p_include_following
     ? db.puzzles
         .filter((p) => p.created_at.slice(0, 10) <= today)
-        .filter((p) => p.author_id !== viewerId) // own puzzles live in "My Puzzles", not this feed
+        // Own rows only behind the toggle, and never drafts — those route to
+        // the Builder, not the Solver (mirrors the SQL function).
+        .filter((p) => p.author_id !== viewerId || (params.p_include_mine && p.visibility !== "draft"))
         .filter((p) => isVisibleInFeed(p, viewerId))
         .map((p) => ({
           kind: 0,
@@ -364,6 +389,43 @@ function mockListArchiveFeed(params: {
         );
 
   return afterCursor.slice(0, params.p_page_size);
+}
+
+// Mirrors list_mutual_progress: summary fields only (never the entries),
+// gated on a follow edge in both directions.
+function mockListMutualProgress(params: {
+  p_puzzle_id: string | null;
+  p_source: string | null;
+  p_puzzle_date: string | null;
+}) {
+  const viewerId = currentUserId;
+  if (!viewerId) return [];
+  return db.progress
+    .filter((pr) => isFollowing(viewerId, pr.user_id) && isFollowing(pr.user_id, viewerId))
+    .filter((pr) =>
+      params.p_puzzle_id != null
+        ? pr.puzzle_id === params.p_puzzle_id
+        : pr.source === params.p_source && pr.puzzle_date === params.p_puzzle_date,
+    )
+    .map((pr) => {
+      const d = pr.data as { completed?: boolean; filled?: number; total?: number };
+      const prof = db.profiles.find((p) => p.user_id === pr.user_id);
+      return {
+        user_id: pr.user_id,
+        username: prof?.username ?? "unknown",
+        display_name: prof?.display_name ?? "Unknown",
+        completed: d.completed ?? false,
+        filled: d.filled ?? 0,
+        total: d.total ?? 0,
+        updated_at: new Date(pr.client_updated_at).toISOString(),
+      };
+    })
+    .sort(
+      (a, b) =>
+        Number(b.completed) - Number(a.completed) ||
+        b.filled - a.filled ||
+        a.username.localeCompare(b.username),
+    );
 }
 
 function mockGetPuzzleById(id: string): MockPuzzle | null {
@@ -553,6 +615,12 @@ export function createMockSupabase() {
       if (name === "list_archive_feed") {
         return {
           data: mockListArchiveFeed(params as Parameters<typeof mockListArchiveFeed>[0]),
+          error: null,
+        };
+      }
+      if (name === "list_mutual_progress") {
+        return {
+          data: mockListMutualProgress(params as Parameters<typeof mockListMutualProgress>[0]),
           error: null,
         };
       }

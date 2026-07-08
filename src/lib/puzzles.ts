@@ -116,18 +116,21 @@ function localIsoDate(): string {
  *  newest first, with same-day community puzzles sorted ahead of syndicated
  *  ones. `includeFollowing = false` drops community puzzles from the feed
  *  entirely rather than just hiding them client-side, so pages stay full —
- *  see `list_archive_feed`'s migration comment for why that matters. */
+ *  see `list_archive_feed`'s migration comment for why that matters.
+ *  `includeMine` does the same for the viewer's own published puzzles. */
 export async function listArchivePage(opts: {
   cursor?: string | null;
   pageSize?: number;
   includeFollowing?: boolean;
+  includeMine?: boolean;
 } = {}): Promise<{ items: ArchiveFeedItem[]; nextCursor: string | null }> {
   if (!supabase) return { items: [], nextCursor: null };
-  const { cursor = null, pageSize = 24, includeFollowing = true } = opts;
+  const { cursor = null, pageSize = 24, includeFollowing = true, includeMine = true } = opts;
   const c = cursor ? decodeCursor(cursor) : null;
 
   const { data, error } = await supabase.rpc("list_archive_feed", {
     p_include_following: includeFollowing,
+    p_include_mine: includeMine,
     p_cursor_neg_date: c?.negDate ?? null,
     p_cursor_kind: c?.kind ?? null,
     p_cursor_tie: c?.tie ?? null,
@@ -168,6 +171,38 @@ export async function listArchivePage(opts: {
   const nextCursor = rows.length === pageSize && last ? encodeCursor(last) : null;
 
   return { items, nextCursor };
+}
+
+/** One mutual's progress summary on a puzzle — what `list_mutual_progress`
+ *  returns per row. Only the summary: their actual grid entries never leave
+ *  the server. */
+export interface MutualProgress {
+  user_id: string;
+  username: string;
+  display_name: string;
+  completed: boolean;
+  filled: number;
+  total: number;
+  updated_at: string;
+}
+
+/** Progress of the viewer's mutuals (follows in both directions) on one
+ *  puzzle — community (by id) or syndicated (by source + date). Empty when
+ *  signed out or when no mutual has opened the puzzle. */
+export async function listMutualProgress(
+  key: { puzzleId: string } | { source: PuzzleSource; date: string },
+): Promise<MutualProgress[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("list_mutual_progress", {
+    p_puzzle_id: "puzzleId" in key ? key.puzzleId : null,
+    p_source: "puzzleId" in key ? null : key.source,
+    p_puzzle_date: "puzzleId" in key ? null : key.date,
+  });
+  if (error) {
+    console.error("[mutuals] listMutualProgress failed", error);
+    return [];
+  }
+  return (data ?? []) as MutualProgress[];
 }
 
 /** Puzzles the given user has published themselves, newest first —

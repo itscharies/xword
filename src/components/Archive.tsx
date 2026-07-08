@@ -115,7 +115,7 @@ export function Archive({
   // stale pre-update closure value, so whichever call ran last silently won
   // and could resurrect an already-cleared filter in localStorage.
   const [filters, setFiltersState] = useState(getFilters);
-  const { papers, types, showFollowing, progress } = filters;
+  const { papers, types, showFollowing, showMine, progress } = filters;
 
   const togglePaper = (p: string) => {
     setFiltersState((f) => {
@@ -169,8 +169,15 @@ export function Archive({
       return next;
     });
   };
+  const setShowMineFilter = (v: boolean) => {
+    setFiltersState((f) => {
+      const next = { ...f, showMine: v };
+      setFilters(next);
+      return next;
+    });
+  };
   const clearFilters = () => {
-    const next: Filters = { papers: [], types: [], showFollowing: true, progress: [] };
+    const next: Filters = { papers: [], types: [], showFollowing: true, showMine: true, progress: [] };
     setFiltersState(next);
     setFilters(next);
   };
@@ -180,13 +187,14 @@ export function Archive({
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // (Re)load from the top whenever sign-in state or the "people you follow"
-  // toggle changes — both affect which rows the backend even returns, so a
-  // client-side re-filter of already-loaded pages isn't enough.
+  // (Re)load from the top whenever sign-in state or the "people you follow"/
+  // "your puzzles" toggles change — all of these affect which rows the
+  // backend even returns, so a client-side re-filter of already-loaded pages
+  // isn't enough.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listArchivePage({ includeFollowing: showFollowing }).then(({ items: page, nextCursor }) => {
+    listArchivePage({ includeFollowing: showFollowing, includeMine: showMine }).then(({ items: page, nextCursor }) => {
       if (cancelled) return;
       setItems(page);
       setCursor(nextCursor);
@@ -196,19 +204,19 @@ export function Archive({
     return () => {
       cancelled = true;
     };
-  }, [showFollowing, user]);
+  }, [showFollowing, showMine, user]);
 
   const loadingMoreRef = useRef(false);
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMore || cursor === null) return;
     loadingMoreRef.current = true;
-    listArchivePage({ cursor, includeFollowing: showFollowing }).then(({ items: page, nextCursor }) => {
+    listArchivePage({ cursor, includeFollowing: showFollowing, includeMine: showMine }).then(({ items: page, nextCursor }) => {
       setItems((prev) => [...prev, ...page]);
       setCursor(nextCursor);
       setHasMore(nextCursor !== null);
       loadingMoreRef.current = false;
     });
-  }, [cursor, hasMore, showFollowing]);
+  }, [cursor, hasMore, showFollowing, showMine]);
 
   // The progress filter applies to every item, community or syndicated —
   // they just look their status up from a different store (keyed by puzzle
@@ -262,7 +270,8 @@ export function Archive({
     [loadMore],
   );
 
-  const filterCount = papers.length + types.length + progress.length + (showFollowing ? 0 : 1);
+  const filterCount =
+    papers.length + types.length + progress.length + (showFollowing ? 0 : 1) + (showMine ? 0 : 1);
 
   return (
     <div className="app archive">
@@ -393,6 +402,11 @@ export function Archive({
                   onChange={setShowFollowingFilter}
                   label="Show puzzles from people you follow"
                 />
+                <CheckRow
+                  checked={showMine}
+                  onChange={setShowMineFilter}
+                  label="Show your puzzles"
+                />
               </div>
             )}
 
@@ -464,6 +478,8 @@ function CommunityItem({
   item: ArchiveFeedItem;
   onOpen: (id: string) => void;
 }) {
+  const { user } = useAuth();
+  const isMine = !!user && item.authorProfile?.user_id === user.id;
   const prog = loadCommunityProgress(item.id);
   const done = prog?.completed ?? false;
   const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
@@ -481,7 +497,7 @@ function CommunityItem({
           <div className="ai-row-text">
             <span className="ai-source">{item.title}</span>
             <span className="ai-author">
-              By {item.authorProfile?.display_name} · @{item.authorProfile?.username}
+              {isMine ? "By you" : `By ${item.authorProfile?.display_name} · @${item.authorProfile?.username}`}
             </span>
           </div>
         </div>

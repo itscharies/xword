@@ -137,6 +137,44 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
+/* Mutuals' progress on the open puzzle — one avatar chip each, under the
+   byline. Absent entirely (no reserved space) until a mutual has started. */
+.mutuals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.mutual-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px 2px 3px;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.mutual-chip-name {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mutual-chip-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.mutual-chip-done {
+  display: inline-flex;
+  color: var(--fg);
+}
+.mutual-chip-done svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* Account/My-puzzles pages use this same h1 as an actual page heading, not a
    puzzle byline — bigger and full-contrast so it reads as one. */
 .account-page .title-block h1 {
