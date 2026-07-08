@@ -22,8 +22,13 @@ import {
   pushProgress,
   type SaveStatus,
 } from "./lib/sync.ts";
-import { getPuzzleById } from "./lib/puzzles.ts";
-import { getSyndicatedPuzzle } from "./lib/syndicated.ts";
+import {
+  getPuzzleById,
+  getPuzzleWithSolves,
+  type MutualProgress,
+  type PublishedPuzzle,
+} from "./lib/puzzles.ts";
+import { getSyndicatedPuzzle, getSyndicatedWithSolves } from "./lib/syndicated.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
@@ -237,7 +242,7 @@ function PuzzleView({
   onOpenArchive: () => void;
 }) {
   const { user } = useAuth();
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+  const [loaded, setLoaded] = useState<{ puzzle: Puzzle; mutualProgress: MutualProgress[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   // Pull this puzzle's remote progress into localStorage *before* mounting
@@ -246,18 +251,20 @@ function PuzzleView({
   // the once-per-sign-in reconcileAll finishes, and nothing re-reads
   // localStorage afterwards, so the other device's progress never appears.
   useEffect(() => {
-    setPuzzle(null);
+    setLoaded(null);
     setNotFound(false);
     let cancelled = false;
     (async () => {
-      const p = await fetchSyndicatedPuzzle(source, date);
+      // Mutuals' solves ride along on the same fetch (see the migration) —
+      // no separate request for the solves segment to pop in from.
+      const res = await getSyndicatedWithSolves(source, date);
       if (cancelled) return;
       // The backend's merged feed already excludes puzzles fetched ahead of
       // their real publish date; this closes the same gap for someone
       // guessing the direct /<source>/<date> URL. Deliberately not applied
       // in EditPuzzleView below — an admin fixing a bad parse needs to
       // reach it before publish day too.
-      if (!p || isFutureIso(p.isoDate)) {
+      if (!res || isFutureIso(res.puzzle.isoDate)) {
         setNotFound(true);
         return;
       }
@@ -270,7 +277,7 @@ function PuzzleView({
           }
         }
       }
-      if (!cancelled) setPuzzle(p);
+      if (!cancelled) setLoaded(res);
     })();
     return () => {
       cancelled = true;
@@ -278,8 +285,14 @@ function PuzzleView({
   }, [source, date, user]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
-  if (!puzzle) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
-  return <Solver puzzle={puzzle} onOpenArchive={onOpenArchive} />;
+  if (!loaded) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
+  return (
+    <Solver
+      puzzle={loaded.puzzle}
+      onOpenArchive={onOpenArchive}
+      mutualProgress={loaded.mutualProgress}
+    />
+  );
 }
 
 /** A published puzzle, fetched from Supabase by id rather than the static
@@ -295,19 +308,21 @@ function CommunityPuzzleView({
   onOpenArchive: () => void;
 }) {
   const { user } = useAuth();
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
-  const [completions, setCompletions] = useState(0);
-  const [authorId, setAuthorId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{
+    puzzle: PublishedPuzzle;
+    mutualProgress: MutualProgress[];
+  } | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    setPuzzle(null);
+    setLoaded(null);
     setNotFound(false);
     let cancelled = false;
 
-    getPuzzleById(id).then(async (row) => {
+    // Mutuals' solves ride along on the same fetch — see PuzzleView.
+    getPuzzleWithSolves(id).then(async (res) => {
       if (cancelled) return;
-      if (!row) {
+      if (!res) {
         setNotFound(true);
         return;
       }
@@ -320,11 +335,7 @@ function CommunityPuzzleView({
           }
         }
       }
-      if (!cancelled) {
-        setPuzzle(row.data);
-        setCompletions(row.completions);
-        setAuthorId(row.author_id);
-      }
+      if (!cancelled) setLoaded(res);
     });
 
     return () => {
@@ -333,14 +344,15 @@ function CommunityPuzzleView({
   }, [id, user]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
-  if (!puzzle) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
+  if (!loaded) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Solver
-      puzzle={puzzle}
+      puzzle={loaded.puzzle.data}
       onOpenArchive={onOpenArchive}
       communityId={id}
-      authorId={authorId}
-      completions={completions}
+      authorId={loaded.puzzle.author_id}
+      completions={loaded.puzzle.completions}
+      mutualProgress={loaded.mutualProgress}
     />
   );
 }
@@ -427,6 +439,7 @@ function Solver({
   communityId,
   authorId,
   completions,
+  mutualProgress = [],
 }: {
   puzzle: Puzzle;
   onOpenArchive: () => void;
@@ -438,6 +451,10 @@ function Solver({
   authorId?: string | null;
   /** How many people have completed this published puzzle. */
   completions?: number;
+  /** Mutuals' progress on this puzzle — projected onto the puzzle fetch by
+   *  the *_with_solves RPCs, so the solves segment needs no fetch of its
+   *  own. */
+  mutualProgress?: MutualProgress[];
 }) {
   // Only syndicated puzzles (no communityId) hit the `source`-keyed branches
   // below — those always carry a source, unlike community/authored puzzles.
@@ -664,9 +681,7 @@ function Solver({
               </div>
             </div>
             <SolvesFlyout
-              communityId={communityId}
-              source={communityId ? undefined : source}
-              date={communityId ? undefined : puzzle.date}
+              mutuals={mutualProgress}
               completions={communityId && isOwner ? completions : undefined}
             />
           </div>

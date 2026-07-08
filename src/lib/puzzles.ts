@@ -173,7 +173,7 @@ export async function listArchivePage(opts: {
   return { items, nextCursor };
 }
 
-/** One mutual's progress summary on a puzzle — what `list_mutual_progress`
+/** One mutual's progress summary on a puzzle — what the solves projection
  *  returns per row. Only the summary: their actual grid entries never leave
  *  the server. */
 export interface MutualProgress {
@@ -186,23 +186,22 @@ export interface MutualProgress {
   updated_at: string;
 }
 
-/** Progress of the viewer's mutuals (follows in both directions) on one
- *  puzzle — community (by id) or syndicated (by source + date). Empty when
- *  signed out or when no mutual has opened the puzzle. */
-export async function listMutualProgress(
-  key: { puzzleId: string } | { source: PuzzleSource; date: string },
-): Promise<MutualProgress[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase.rpc("list_mutual_progress", {
-    p_puzzle_id: "puzzleId" in key ? key.puzzleId : null,
-    p_source: "puzzleId" in key ? null : key.source,
-    p_puzzle_date: "puzzleId" in key ? null : key.date,
-  });
+/** A published puzzle plus the viewer's mutuals' progress on it, projected
+ *  onto the same fetch — one round-trip, so the solves segment renders with
+ *  the puzzle instead of popping in after it. Same reachability rules as
+ *  getPuzzleById (it wraps it server-side). */
+export async function getPuzzleWithSolves(
+  id: string,
+): Promise<{ puzzle: PublishedPuzzle; mutualProgress: MutualProgress[] } | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("get_puzzle_with_solves", { p_id: id });
   if (error) {
-    console.error("[mutuals] listMutualProgress failed", error);
-    return [];
+    console.error("[puzzles] getPuzzleWithSolves failed", error);
+    return null;
   }
-  return (data ?? []) as MutualProgress[];
+  if (!data) return null;
+  const row = data as { puzzle: PublishedPuzzle; mutual_progress: MutualProgress[] };
+  return { puzzle: row.puzzle, mutualProgress: row.mutual_progress ?? [] };
 }
 
 /** Puzzles the given user has published themselves, newest first —

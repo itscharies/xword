@@ -627,6 +627,40 @@ export function createMockSupabase() {
           error: null,
         };
       }
+      // The two solves projections: puzzle + mutuals' progress in one call,
+      // mirroring the SQL functions that wrap the two rpcs above.
+      if (name === "get_puzzle_with_solves") {
+        const p = mockGetPuzzleById(params?.p_id as string);
+        if (!p) return { data: null, error: null };
+        return {
+          data: {
+            puzzle: p,
+            mutual_progress: mockListMutualProgress({
+              p_puzzle_id: p.id,
+              p_source: null,
+              p_puzzle_date: null,
+            }),
+          },
+          error: null,
+        };
+      }
+      if (name === "get_syndicated_with_solves") {
+        const s = db.syndicated_puzzles.find(
+          (row) => row.source === params?.p_source && row.puzzle_date === params?.p_puzzle_date,
+        );
+        if (!s) return { data: null, error: null };
+        return {
+          data: {
+            puzzle: s.data,
+            mutual_progress: mockListMutualProgress({
+              p_puzzle_id: null,
+              p_source: s.source,
+              p_puzzle_date: s.puzzle_date,
+            }),
+          },
+          error: null,
+        };
+      }
       return { data: null, error: { message: `mockSupabase: unknown rpc "${name}"` } };
     },
     auth: {

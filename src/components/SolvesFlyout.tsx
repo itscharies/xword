@@ -1,52 +1,27 @@
 import { useEffect, useRef, useState } from "react";
-import type { PuzzleSource } from "../lib/sources.ts";
-import { listMutualProgress, type MutualProgress } from "../lib/puzzles.ts";
-import { useAuth } from "../hooks/useAuthContext.tsx";
+import type { MutualProgress } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
 import { CheckIcon } from "./icons.tsx";
 
-/** The solver header's "solves" line, under the byline: the completion
- *  count (own puzzles) or a mutuals count, with tiny stacked avatars —
- *  hover (mouse) or tap (touch, a plain toggle) opens a flyout listing
- *  each mutual's progress (solved tick or % filled). Renders nothing when
- *  there's neither a count to show nor a mutual who's started, so the solo
- *  path keeps its plain header. */
+/** The solver header's "solves" segment, beside the title/author block:
+ *  the completion count (own puzzles) or a mutuals count, with tiny
+ *  stacked avatars — hover (mouse) or tap (touch, a plain toggle) opens a
+ *  flyout listing each mutual's progress (solved tick or % filled).
+ *  Purely presentational: the mutuals list arrives projected onto the
+ *  puzzle fetch itself (the *_with_solves RPCs), so there's no second
+ *  request for this segment to pop in from. Renders nothing when there's
+ *  neither a count to show nor a mutual who's started. */
 export function SolvesFlyout({
-  communityId,
-  source,
-  date,
+  mutuals,
   completions,
 }: {
-  /** Set for a published (/p/<id>) puzzle; source/date cover syndicated. */
-  communityId?: string;
-  source?: PuzzleSource;
-  date?: string;
+  mutuals: MutualProgress[];
   /** Total solve count — only passed for the viewer's own puzzle, where the
    *  byline already showed it. */
   completions?: number;
 }) {
-  const { user } = useAuth();
-  const [mutuals, setMutuals] = useState<MutualProgress[]>([]);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    setMutuals([]);
-    if (!user) return;
-    let cancelled = false;
-    const key = communityId
-      ? { puzzleId: communityId }
-      : source && date
-        ? { source, date }
-        : null;
-    if (!key) return;
-    listMutualProgress(key).then((rows) => {
-      if (!cancelled) setMutuals(rows);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user, communityId, source, date]);
 
   // Tap-elsewhere dismissal — blur is no good for it (iOS never focuses
   // buttons on tap), so watch the document while open.
