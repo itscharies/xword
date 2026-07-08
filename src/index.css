@@ -411,6 +411,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
     background: var(--surface);
     color: var(--fg);
   }
+  /* ...including the username line, whose own :hover rule paints it black
+     for the inverted background this card no longer has. */
+  li.archive-item.account-tile:has(.account-tile-actions button:hover) .ai-author {
+    color: var(--muted);
+  }
 }
 
 /* A search result you already follow: intentionally plain/dashed rather than
