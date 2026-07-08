@@ -235,6 +235,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   width: 13px;
   height: 13px;
 }
+/* Non-mutual solvers the count includes but the list can't name. */
+.solves-others {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* Account/My-puzzles pages use this same h1 as an actual page heading, not a
    puzzle byline — bigger and full-contrast so it reads as one. */

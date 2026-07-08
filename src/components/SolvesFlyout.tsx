@@ -56,6 +56,10 @@ export function SolvesFlyout({
   // A count with nobody to list stays plain text — nothing to fly out.
   if (started.length === 0) return <div className="solves-line">{countText}</div>;
 
+  // The count is everyone; the list is mutuals only. Own up to the gap so
+  // "2 people solved this" over a one-name list doesn't read as a bug.
+  const others = completions != null ? completions - started.filter((m) => m.completed).length : 0;
+
   // Hover open/close is mouse-only: a tap fires synthetic mouse events too,
   // and letting those open the panel would make the tap's click toggle it
   // straight back shut. Touch drives open purely through the click toggle.
@@ -100,6 +104,11 @@ export function SolvesFlyout({
               </div>
             );
           })}
+          {others > 0 && (
+            <div className="solves-others">
+              and {others} {others === 1 ? "other" : "others"}…
+            </div>
+          )}
         </div>
       </span>
     </div>
