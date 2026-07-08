@@ -137,40 +137,77 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
-/* Mutuals' progress on the open puzzle — one avatar chip each, under the
-   byline. Absent entirely (no reserved space) until a mutual has started. */
-.mutuals-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 5px;
+/* The byline's "solves" segment — hovering (or tapping) it flies out a
+   panel listing each mutual's progress on the open puzzle. */
+.solves-flyout {
+  position: relative;
+  display: inline-flex;
 }
-.mutual-chip {
+.solves-trigger {
+  /* Reads as part of the byline sentence, not as a button. */
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 7px 2px 3px;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.solves-avatars {
+  display: inline-flex;
+}
+.solves-avatar {
+  display: inline-flex;
+  border: 1px solid var(--surface);
+  background: var(--surface);
+}
+.solves-avatar + .solves-avatar {
+  margin-left: -6px;
+}
+.solves-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 180px;
+  padding: 8px 10px;
   border: var(--bw) solid var(--line);
   background: var(--surface);
-  font-size: 12px;
-  font-weight: 600;
   color: var(--fg);
 }
-.mutual-chip-name {
-  max-width: 110px;
+.solves-flyout.open .solves-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.solves-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.solves-row-name {
+  flex: 1;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mutual-chip-pct {
+.solves-row-pct {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
-.mutual-chip-done {
+.solves-row-done {
   display: inline-flex;
-  color: var(--fg);
 }
-.mutual-chip-done svg {
+.solves-row-done svg {
   width: 13px;
   height: 13px;
 }
