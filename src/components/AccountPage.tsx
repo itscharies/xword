@@ -237,6 +237,25 @@ function SocialSections({ userId }: { userId: string }) {
         following={following}
         onFollowingChanged={refresh}
       />
+      <details className="follow-info">
+        <summary>How following works — what's shared</summary>
+        <ul>
+          <li>
+            Following someone puts their <strong>public</strong> puzzles in your feed. It's
+            one-way: they see nothing of yours unless they follow you too.
+          </li>
+          <li>
+            When you follow each other (mutuals), you also see each other's{" "}
+            <strong>Mutuals only</strong> puzzles, and each other's <strong>progress</strong> on
+            any puzzle — just the solved tick or % filled, never your answers or solve times.
+          </li>
+          <li>
+            <strong>Unlisted</strong> puzzles are reachable only by their direct link, and{" "}
+            <strong>drafts</strong> stay private to you. A puzzle's solve count includes everyone
+            who's finished it, follower or not.
+          </li>
+        </ul>
+      </details>
     </>
   );
 }

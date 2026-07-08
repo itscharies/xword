@@ -38,10 +38,17 @@ export function SolvesFlyout({
   // (opened, typed nothing) would just read as noise.
   const started = mutuals.filter((m) => m.completed || m.filled > 0);
 
+  // "On this" undersells a finished solve — a single mutual gets named with
+  // their real status, and a group that has all finished gets "solved".
+  const solvedCount = started.filter((m) => m.completed).length;
   const countText =
     completions != null
       ? `${completions} ${completions === 1 ? "person" : "people"} solved this`
-      : `${started.length} ${started.length === 1 ? "mutual" : "mutuals"} on this`;
+      : started.length === 1
+        ? `${started[0].display_name} ${started[0].completed ? "solved this" : "is on this"}`
+        : solvedCount === started.length
+          ? `${started.length} mutuals solved this`
+          : `${started.length} mutuals on this`;
 
   if (completions == null && started.length === 0) return null;
 

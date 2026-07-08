@@ -421,20 +421,29 @@ export function Archive({
 function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
   const started = mutuals.filter((m) => m.completed || m.filled > 0);
   if (started.length === 0) return null;
+  // Same 99% cap as the tile's own badge: filled isn't solved.
+  const pctOf = (m: MutualProgress) =>
+    Math.min(99, Math.round((100 * m.filled) / Math.max(1, m.total)));
   const label = started
-    .map((m) =>
-      m.completed
-        ? `${m.display_name} solved this`
-        : `${m.display_name} ${Math.min(99, Math.round((100 * m.filled) / Math.max(1, m.total)))}%`,
-    )
+    .map((m) => (m.completed ? `${m.display_name} solved this` : `${m.display_name} ${pctOf(m)}%`))
     .join(" · ");
   return (
     <span className="ai-mutuals" title={label} aria-label={label}>
       {started.slice(0, 3).map((m) => (
-        <span className="solves-avatar" key={m.user_id}>
-          <Avatar username={m.username} displayName={m.display_name} size={16} />
+        <span className="ai-mutual" key={m.user_id}>
+          <span className="solves-avatar">
+            <Avatar username={m.username} displayName={m.display_name} size={16} />
+          </span>
+          {m.completed ? (
+            <span className="ai-mutual-done">
+              <CheckIcon />
+            </span>
+          ) : (
+            <span className="ai-mutual-pct">{pctOf(m)}%</span>
+          )}
         </span>
       ))}
+      {started.length > 3 && <span className="ai-mutual-pct">+{started.length - 3}</span>}
     </span>
   );
 }

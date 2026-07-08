@@ -386,6 +386,27 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .account-empty { color: var(--muted); font-size: 13px; margin: 0; }
 
+/* "How following works" — a collapsed footnote under the social sections,
+   quiet until someone actually wonders what following shares. */
+.follow-info {
+  font-size: 13px;
+  color: var(--muted);
+}
+.follow-info summary {
+  cursor: pointer;
+  font-weight: 600;
+  width: fit-content;
+}
+.follow-info ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+}
+.follow-info strong { color: var(--fg); }
+
 /* Puzzle/profile tiles reuse .archive-item's box look; this modifier just
    loosens the gap a little for the extra action button some of them carry,
    and lets it act as its own click target ("go to the puzzle") alongside
@@ -1636,6 +1657,25 @@ button { font: inherit; cursor: pointer; color: inherit; }
   right: 7px;
   bottom: 7px;
   display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-mutual {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ai-mutual-pct {
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ai-mutual-done { display: inline-flex; }
+.ai-mutual-done svg { width: 11px; height: 11px; }
+@media (hover: hover) {
+  /* Match the username's hover treatment on the inverted card. */
+  .archive-item:hover .ai-mutual-pct { color: #000; }
 }
 
 /* ---- responsive --------------------------------------------------------- */
