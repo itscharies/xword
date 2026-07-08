@@ -137,14 +137,21 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
-/* The "solves" line under the byline — hovering (or tapping) it flies out
-   a panel listing each mutual's progress on the open puzzle. */
+/* The "solves" segment beside the title/author block — hovering (or
+   tapping) it flies out a panel listing each mutual's progress on the
+   open puzzle. */
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
 .solves-line {
-  /* Matches .title-block .byline, which it sits directly beneath. */
+  /* Matches .title-block .byline, which it sits beside. */
   color: var(--muted);
   font-size: 12px;
   font-weight: 400;
-  margin-top: 2px;
+  white-space: nowrap;
 }
 .solves-flyout {
   position: relative;

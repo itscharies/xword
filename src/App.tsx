@@ -642,12 +642,13 @@ function Solver({
       <header className="header">
         <div className="header-left">
           <Logo onClick={onOpenArchive} />
-          <div className="title-block">
-            <h1>{puzzle.title}</h1>
-            <div className="byline">
-              By {puzzle.author || "Anonymous"}
-              {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
-              {saveStatus && (
+          <div className="title-row">
+            <div className="title-block">
+              <h1>{puzzle.title}</h1>
+              <div className="byline">
+                By {puzzle.author || "Anonymous"}
+                {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
+                {saveStatus && (
                 <span
                   className={`save-status save-status-${saveStatus}`}
                   title={saveStatus === "error" ? "Couldn't reach the server — check your connection." : undefined}
@@ -658,8 +659,9 @@ function Solver({
                     : saveStatus === "saved"
                       ? "Saved ✓"
                       : "Sync failed ⚠"}
-                </span>
-              )}
+                  </span>
+                )}
+              </div>
             </div>
             <SolvesFlyout
               communityId={communityId}
