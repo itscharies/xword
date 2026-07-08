@@ -14,6 +14,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
+import { AvatarStack } from "./AvatarStack.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -436,11 +437,7 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
     <span className="ai-mutuals" title={label} aria-label={label}>
       {finished.length > 0 && (
         <span className="ai-mutual">
-          {finished.map((m) => (
-            <span className="solves-avatar" key={m.user_id}>
-              <Avatar username={m.username} displayName={m.display_name} size={16} />
-            </span>
-          ))}
+          <AvatarStack people={finished} />
           <span className="ai-mutual-done">
             <CheckIcon />
           </span>
@@ -448,9 +445,7 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
       )}
       {partial.map((m) => (
         <span className="ai-mutual" key={m.user_id}>
-          <span className="solves-avatar">
-            <Avatar username={m.username} displayName={m.display_name} size={16} />
-          </span>
+          <AvatarStack people={[m]} />
           <span className="ai-mutual-pct">{pctOf(m)}%</span>
         </span>
       ))}

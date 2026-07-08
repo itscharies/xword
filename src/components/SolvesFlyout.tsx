@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MutualProgress } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
+import { AvatarStack } from "./AvatarStack.tsx";
 import { CheckIcon } from "./icons.tsx";
 
 /** The solver header's "solves" segment, beside the title/author block:
@@ -76,13 +77,7 @@ export function SolvesFlyout({
           aria-label={`${countText} — show mutuals' progress`}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="solves-avatars" aria-hidden>
-            {started.slice(0, 4).map((m) => (
-              <span className="solves-avatar" key={m.user_id}>
-                <Avatar username={m.username} displayName={m.display_name} size={16} />
-              </span>
-            ))}
-          </span>
+          <AvatarStack people={started.slice(0, 4)} />
           {countText}
         </button>
         <div className="solves-panel" role="tooltip">

@@ -168,9 +168,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .solves-avatars {
   display: inline-flex;
+  align-items: center;
 }
 .solves-avatar {
   display: inline-flex;
+  /* Stacked with depth: the lead avatar is full size, the rest render
+     smaller and slide behind it (AvatarStack sets descending z-index). */
+  position: relative;
   /* At 16px the avatar's own cell strokes scale away to nothing — a real
      border keeps the tile readable against the header, and doubles as the
      separation ring where the stack overlaps. */
