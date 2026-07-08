@@ -671,16 +671,6 @@ function Solver({
             />
           </div>
         </div>
-        {canEdit && (
-          <button
-            className="btn"
-            onClick={() =>
-              goTo(communityId ? `draft/${communityId}` : `edit/${puzzle.source}/${puzzle.date}`)
-            }
-          >
-            <EditIcon /> Edit
-          </button>
-        )}
       </header>
 
       {/* display: contents outside [data-grid-fit="fixed"] — a transparent
@@ -715,6 +705,18 @@ function Solver({
             >
               {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             </button>
+            {canEdit && (
+              <button
+                className="btn icon-btn"
+                onClick={() =>
+                  goTo(communityId ? `draft/${communityId}` : `edit/${puzzle.source}/${puzzle.date}`)
+                }
+                aria-label="Edit puzzle"
+                title="Edit puzzle"
+              >
+                <EditIcon />
+              </button>
+            )}
             <button
               className="btn cog-btn"
               onClick={() => setShowSettings(true)}
