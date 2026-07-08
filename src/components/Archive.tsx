@@ -7,7 +7,6 @@ import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
-import { StarRating } from "./StarRating.tsx";
 import { ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
@@ -427,20 +426,32 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
   const label = started
     .map((m) => (m.completed ? `${m.display_name} solved this` : `${m.display_name} ${pctOf(m)}%`))
     .join(" · ");
+  // Everyone who's finished shares one stacked-avatar group and a single
+  // tick; only the in-progress mutuals carry their own %. (The server sorts
+  // completed first, so the slice favours finishers.)
+  const shown = started.slice(0, 3);
+  const finished = shown.filter((m) => m.completed);
+  const partial = shown.filter((m) => !m.completed);
   return (
     <span className="ai-mutuals" title={label} aria-label={label}>
-      {started.slice(0, 3).map((m) => (
+      {finished.length > 0 && (
+        <span className="ai-mutual">
+          {finished.map((m) => (
+            <span className="solves-avatar" key={m.user_id}>
+              <Avatar username={m.username} displayName={m.display_name} size={16} />
+            </span>
+          ))}
+          <span className="ai-mutual-done">
+            <CheckIcon />
+          </span>
+        </span>
+      )}
+      {partial.map((m) => (
         <span className="ai-mutual" key={m.user_id}>
           <span className="solves-avatar">
             <Avatar username={m.username} displayName={m.display_name} size={16} />
           </span>
-          {m.completed ? (
-            <span className="ai-mutual-done">
-              <CheckIcon />
-            </span>
-          ) : (
-            <span className="ai-mutual-pct">{pctOf(m)}%</span>
-          )}
+          <span className="ai-mutual-pct">{pctOf(m)}%</span>
         </span>
       ))}
       {started.length > 3 && <span className="ai-mutual-pct">+{started.length - 3}</span>}
@@ -468,7 +479,6 @@ function SyndicatedItem({
     source === "nyt" ? themeName(item.title) : item.title !== SOURCES[source].label ? item.title : null;
   const prog = loadProgress(source, date);
   const done = prog?.completed ?? false;
-  const rating = prog?.rating ?? 0;
   // Cap at 99% while unsolved: a fully-filled grid with a wrong letter is
   // 100% filled but not "done", and showing 100% would look solved. 100%/the
   // tick is reserved for a correct solve.
@@ -479,7 +489,6 @@ function SyndicatedItem({
         <span className="ai-source">{mainLabel}</span>
         {theme && <span className="ai-theme">{theme}</span>}
         <span className="ai-author">By {item.author || "Anonymous"}</span>
-        {rating > 0 && <StarRating value={rating} />}
         <MutualStack mutuals={item.mutualProgress} />
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
