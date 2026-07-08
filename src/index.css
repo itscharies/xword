@@ -137,8 +137,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
-/* The byline's "solves" segment — hovering (or tapping) it flies out a
-   panel listing each mutual's progress on the open puzzle. */
+/* The "solves" line under the byline — hovering (or tapping) it flies out
+   a panel listing each mutual's progress on the open puzzle. */
+.solves-line {
+  /* Matches .title-block .byline, which it sits directly beneath. */
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 2px;
+}
 .solves-flyout {
   position: relative;
   display: inline-flex;
@@ -165,6 +172,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   display: inline-flex;
   border: 1px solid var(--surface);
   background: var(--surface);
+}
+/* The svg would otherwise sit on the text baseline, dropping the stack a
+   few px below centre of the trigger's line. */
+.solves-avatar svg {
+  display: block;
 }
 .solves-avatar + .solves-avatar {
   margin-left: -6px;

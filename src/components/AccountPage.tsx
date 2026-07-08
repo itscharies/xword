@@ -59,8 +59,7 @@ export function AccountPage({
             onOpenPuzzle={onOpenPuzzle}
             onOpenDraft={onOpenDraft}
           />
-          <FollowersSection userId={user.id} />
-          <FollowingSection userId={user.id} />
+          <SocialSections userId={user.id} />
         </>
       );
     }
@@ -220,11 +219,51 @@ function PuzzlesSection({
   );
 }
 
-function FollowersSection({ userId }: { userId: string }) {
+/** Followers + Following as one unit: both need the "who do I follow" list
+ *  (Following to render it, Followers for its follow-back buttons), and a
+ *  follow-back has to show up in both at once — so the list lives here. */
+function SocialSections({ userId }: { userId: string }) {
+  const [following, setFollowing] = useState<Profile[] | null>(null);
+  const refresh = () => {
+    listFollowing(userId).then(setFollowing);
+  };
+  useEffect(refresh, [userId]);
+
+  return (
+    <>
+      <FollowersSection userId={userId} following={following} onFollowingChanged={refresh} />
+      <FollowingSection
+        userId={userId}
+        following={following}
+        onFollowingChanged={refresh}
+      />
+    </>
+  );
+}
+
+function FollowersSection({
+  userId,
+  following,
+  onFollowingChanged,
+}: {
+  userId: string;
+  following: Profile[] | null;
+  onFollowingChanged: () => void;
+}) {
   const [followers, setFollowers] = useState<Profile[] | null>(null);
   useEffect(() => {
     listFollowers(userId).then(setFollowers);
   }, [userId]);
+
+  // No button at all until the following list has loaded — a follow-back
+  // that pops in beside everyone and then vanishes off half of them would
+  // just look like a glitch.
+  const followingIds = following === null ? null : new Set(following.map((p) => p.user_id));
+
+  const followBack = async (p: Profile) => {
+    await follow(userId, p.user_id);
+    onFollowingChanged();
+  };
 
   return (
     <section className="account-section">
@@ -246,6 +285,17 @@ function FollowersSection({ userId }: { userId: string }) {
                   <span className="ai-author">@{p.username}</span>
                 </div>
               </div>
+              {followingIds !== null && !followingIds.has(p.user_id) && (
+                <div className="account-tile-actions">
+                  <button
+                    onClick={() => void followBack(p)}
+                    aria-label={`Follow ${p.display_name} back`}
+                    title="Follow back"
+                  >
+                    <UserPlusIcon />
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -254,15 +304,17 @@ function FollowersSection({ userId }: { userId: string }) {
   );
 }
 
-function FollowingSection({ userId }: { userId: string }) {
+function FollowingSection({
+  userId,
+  following,
+  onFollowingChanged,
+}: {
+  userId: string;
+  following: Profile[] | null;
+  onFollowingChanged: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
-  const [following, setFollowing] = useState<Profile[] | null>(null);
-
-  const refresh = () => {
-    listFollowing(userId).then(setFollowing);
-  };
-  useEffect(refresh, [userId]);
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,7 +326,7 @@ function FollowingSection({ userId }: { userId: string }) {
   const toggleFollow = async (p: Profile) => {
     if (followingIds.has(p.user_id)) await unfollow(userId, p.user_id);
     else await follow(userId, p.user_id);
-    refresh();
+    onFollowingChanged();
   };
 
   // Someone you've already searched up and followed shouldn't show as a

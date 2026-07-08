@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { listMutualProgress, type MutualProgress } from "../lib/puzzles.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { Avatar } from "./Avatar.tsx";
 import { CheckIcon } from "./icons.tsx";
 
-/** The byline's "solves" segment: the completion count (own puzzles) or a
- *  mutuals count, with tiny stacked avatars — hovering or tapping it opens
- *  a flyout listing each mutual's progress (solved tick or % filled).
- *  Renders nothing when there's neither a count to show nor a mutual who's
- *  started, so the solo path keeps its plain byline. */
+/** The solver header's "solves" line, under the byline: the completion
+ *  count (own puzzles) or a mutuals count, with tiny stacked avatars —
+ *  hover (mouse) or tap (touch, a plain toggle) opens a flyout listing
+ *  each mutual's progress (solved tick or % filled). Renders nothing when
+ *  there's neither a count to show nor a mutual who's started, so the solo
+ *  path keeps its plain header. */
 export function SolvesFlyout({
   communityId,
   source,
@@ -27,6 +28,7 @@ export function SolvesFlyout({
   const { user } = useAuth();
   const [mutuals, setMutuals] = useState<MutualProgress[]>([]);
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     setMutuals([]);
@@ -46,6 +48,17 @@ export function SolvesFlyout({
     };
   }, [user, communityId, source, date]);
 
+  // Tap-elsewhere dismissal — blur is no good for it (iOS never focuses
+  // buttons on tap), so watch the document while open.
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDocDown);
+    return () => document.removeEventListener("pointerdown", onDocDown);
+  }, [open]);
+
   // Only mutuals who've actually started — a row whose grid is still empty
   // (opened, typed nothing) would just read as noise.
   const started = mutuals.filter((m) => m.completed || m.filled > 0);
@@ -58,25 +71,28 @@ export function SolvesFlyout({
   if (completions == null && started.length === 0) return null;
 
   // A count with nobody to list stays plain text — nothing to fly out.
-  if (started.length === 0) return <> · {countText}</>;
+  if (started.length === 0) return <div className="solves-line">{countText}</div>;
 
+  // Hover open/close is mouse-only: a tap fires synthetic mouse events too,
+  // and letting those open the panel would make the tap's click toggle it
+  // straight back shut. Touch drives open purely through the click toggle.
   return (
-    <>
-      {" · "}
+    <div className="solves-line">
       <span
+        ref={wrapRef}
         className={`solves-flyout ${open ? "open" : ""}`}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onPointerEnter={(e) => {
+          if (e.pointerType === "mouse") setOpen(true);
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") setOpen(false);
+        }}
       >
         <button
           className="solves-trigger"
           aria-expanded={open}
           aria-label={`${countText} — show mutuals' progress`}
-          // No onFocus-opens: a tap fires focus *then* click, and the pair
-          // would open-then-toggle-shut, so the panel could never open on
-          // touch. Click alone toggles (Enter included); blur still dismisses.
           onClick={() => setOpen((v) => !v)}
-          onBlur={() => setOpen(false)}
         >
           <span className="solves-avatars" aria-hidden>
             {started.slice(0, 4).map((m) => (
@@ -109,6 +125,6 @@ export function SolvesFlyout({
           })}
         </div>
       </span>
-    </>
+    </div>
   );
 }

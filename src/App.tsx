@@ -647,12 +647,6 @@ function Solver({
             <div className="byline">
               By {puzzle.author || "Anonymous"}
               {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
-              <SolvesFlyout
-                communityId={communityId}
-                source={communityId ? undefined : source}
-                date={communityId ? undefined : puzzle.date}
-                completions={communityId && isOwner ? completions : undefined}
-              />
               {saveStatus && (
                 <span
                   className={`save-status save-status-${saveStatus}`}
@@ -667,6 +661,12 @@ function Solver({
                 </span>
               )}
             </div>
+            <SolvesFlyout
+              communityId={communityId}
+              source={communityId ? undefined : source}
+              date={communityId ? undefined : puzzle.date}
+              completions={communityId && isOwner ? completions : undefined}
+            />
           </div>
         </div>
         {canEdit && (
