@@ -15,7 +15,6 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
-import { CheckRow } from "./CheckRow.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -35,6 +34,13 @@ function themeName(title: string): string | null {
 }
 
 const PROGRESS_STATUSES = ["Complete", "In progress", "Not started"] as const;
+
+/** The community entries in the Sources filter row — they sit beside the
+ *  paper names and behave the same way (multi-select include; an empty
+ *  selection means everything shows). */
+const FOLLOWING_CHIP = "Following";
+const MINE_CHIP = "Your puzzles";
+const COMMUNITY_CHIPS: string[] = [FOLLOWING_CHIP, MINE_CHIP];
 
 function progressStatus(prog: Progress | null): (typeof PROGRESS_STATUSES)[number] {
   if (prog?.completed) return "Complete";
@@ -115,7 +121,17 @@ export function Archive({
   // stale pre-update closure value, so whichever call ran last silently won
   // and could resurrect an already-cleared filter in localStorage.
   const [filters, setFiltersState] = useState(getFilters);
-  const { papers, types, showFollowing, showMine, progress } = filters;
+  const { papers: rawPapers, types, progress } = filters;
+  // Signed out, the community chips aren't offered — drop any persisted
+  // ones too, so a stale selection can't silently hide every paper.
+  const papers = user ? rawPapers : rawPapers.filter((p) => !COMMUNITY_CHIPS.includes(p));
+
+  // Which community rows the backend should even return. An empty Sources
+  // selection means "no filter", so both kinds stay in; otherwise each kind
+  // needs its chip. Paper chips alone don't refetch — they only narrow the
+  // syndicated side, which is done client-side below.
+  const includeFollowing = papers.length === 0 || papers.includes(FOLLOWING_CHIP);
+  const includeMine = papers.length === 0 || papers.includes(MINE_CHIP);
 
   const togglePaper = (p: string) => {
     setFiltersState((f) => {
@@ -162,22 +178,8 @@ export function Archive({
       return next;
     });
   };
-  const setShowFollowingFilter = (v: boolean) => {
-    setFiltersState((f) => {
-      const next = { ...f, showFollowing: v };
-      setFilters(next);
-      return next;
-    });
-  };
-  const setShowMineFilter = (v: boolean) => {
-    setFiltersState((f) => {
-      const next = { ...f, showMine: v };
-      setFilters(next);
-      return next;
-    });
-  };
   const clearFilters = () => {
-    const next: Filters = { papers: [], types: [], showFollowing: true, showMine: true, progress: [] };
+    const next: Filters = { papers: [], types: [], progress: [] };
     setFiltersState(next);
     setFilters(next);
   };
@@ -187,14 +189,14 @@ export function Archive({
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // (Re)load from the top whenever sign-in state or the "people you follow"/
-  // "your puzzles" toggles change — all of these affect which rows the
-  // backend even returns, so a client-side re-filter of already-loaded pages
-  // isn't enough.
+  // (Re)load from the top whenever sign-in state or the Following/Your
+  // puzzles chips change — all of these affect which rows the backend even
+  // returns, so a client-side re-filter of already-loaded pages isn't
+  // enough.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listArchivePage({ includeFollowing: showFollowing, includeMine: showMine }).then(({ items: page, nextCursor }) => {
+    listArchivePage({ includeFollowing, includeMine }).then(({ items: page, nextCursor }) => {
       if (cancelled) return;
       setItems(page);
       setCursor(nextCursor);
@@ -204,19 +206,19 @@ export function Archive({
     return () => {
       cancelled = true;
     };
-  }, [showFollowing, showMine, user]);
+  }, [includeFollowing, includeMine, user]);
 
   const loadingMoreRef = useRef(false);
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMore || cursor === null) return;
     loadingMoreRef.current = true;
-    listArchivePage({ cursor, includeFollowing: showFollowing, includeMine: showMine }).then(({ items: page, nextCursor }) => {
+    listArchivePage({ cursor, includeFollowing, includeMine }).then(({ items: page, nextCursor }) => {
       setItems((prev) => [...prev, ...page]);
       setCursor(nextCursor);
       setHasMore(nextCursor !== null);
       loadingMoreRef.current = false;
     });
-  }, [cursor, hasMore, showFollowing, showMine]);
+  }, [cursor, hasMore, includeFollowing, includeMine]);
 
   // The progress filter applies to every item, community or syndicated —
   // they just look their status up from a different store (keyed by puzzle
@@ -224,9 +226,10 @@ export function Archive({
   const matchesProgress = (prog: Progress | null) =>
     progress.length === 0 || progress.includes(progressStatus(prog));
 
-  // Papers/Type describe syndicated sources and don't apply to community
-  // puzzles — once either is active, community puzzles (which match neither)
-  // drop out of the filtered view along with every non-matching source.
+  // The Sources row covers both worlds: paper chips match syndicated
+  // puzzles, the Following/Your puzzles chips match community ones. Type
+  // still describes syndicated sources only, so it drops community puzzles
+  // once active.
   const filteredItems = useMemo(() => {
     return items.filter((it) => {
       if (it.kind === "syndicated") {
@@ -235,10 +238,14 @@ export function Archive({
         if (types.length > 0 && !types.includes(meta.type)) return false;
         return matchesProgress(loadProgress(it.source!, it.puzzleDate!));
       }
-      if (papers.length > 0 || types.length > 0) return false;
+      if (types.length > 0) return false;
+      if (papers.length > 0) {
+        const mine = !!user && it.authorProfile?.user_id === user.id;
+        if (!papers.includes(mine ? MINE_CHIP : FOLLOWING_CHIP)) return false;
+      }
       return matchesProgress(loadCommunityProgress(it.id));
     });
-  }, [items, papers, types, progress]);
+  }, [items, papers, types, progress, user]);
 
   // Group by date — items arrive from the server already sorted newest-day
   // first, community-before-syndicated within a day, so insertion order into
@@ -270,8 +277,7 @@ export function Archive({
     [loadMore],
   );
 
-  const filterCount =
-    papers.length + types.length + progress.length + (showFollowing ? 0 : 1) + (showMine ? 0 : 1);
+  const filterCount = papers.length + types.length + progress.length;
 
   return (
     <div className="app archive">
@@ -378,8 +384,8 @@ export function Archive({
         <Modal title="Filters" onClose={() => setShowFilters(false)}>
           <div className="settings">
             <FilterChips
-              label="Papers"
-              options={PAPERS}
+              label="Sources"
+              options={user ? [...PAPERS, ...COMMUNITY_CHIPS] : PAPERS}
               values={papers}
               onToggle={togglePaper}
               onClear={clearPapers}
@@ -394,21 +400,6 @@ export function Archive({
               onToggle={toggleProgress}
               onClear={clearProgress}
             />
-
-            {user && (
-              <div className="setting-row">
-                <CheckRow
-                  checked={showFollowing}
-                  onChange={setShowFollowingFilter}
-                  label="Show puzzles from people you follow"
-                />
-                <CheckRow
-                  checked={showMine}
-                  onChange={setShowMineFilter}
-                  label="Show your puzzles"
-                />
-              </div>
-            )}
 
             {filterCount > 0 && (
               <button className="btn" onClick={clearFilters}>

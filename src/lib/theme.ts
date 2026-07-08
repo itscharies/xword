@@ -150,20 +150,14 @@ export function setGridFit(fit: GridFit): void {
 const FILTER_KEY = "xword:filters";
 
 export interface Filters {
-  /** Paper names from lib/sources.ts's PAPERS to include — multi-select;
-   *  empty means no filter (every paper shows). */
+  /** The Sources row: paper names from lib/sources.ts's PAPERS plus the
+   *  community chips (Archive.tsx's FOLLOWING_CHIP / MINE_CHIP) —
+   *  multi-select; empty means no filter (everything shows). Still keyed
+   *  "papers" so selections persisted before the community chips joined
+   *  the row keep working. */
   papers: string[];
   /** Same idea for lib/sources.ts's TYPES (Crossword/Mini/Cryptic). */
   types: string[];
-  /** Whether puzzles from people you follow appear in the merged feed at
-   *  all — a plain show/hide toggle, not a narrowing to one person's
-   *  puzzles (that mode doesn't exist any more; the feed is always one
-   *  list). Defaults to on, matching the feed's previous always-shown
-   *  behavior. */
-  showFollowing: boolean;
-  /** Whether the viewer's own published puzzles appear in the merged feed —
-   *  same show/hide semantics as showFollowing. Defaults to on. */
-  showMine: boolean;
   /** "Complete" / "In progress" / "Not started" — multi-select. */
   progress: string[];
 }
@@ -176,12 +170,10 @@ export function getFilters(): Filters {
     return {
       papers: Array.isArray(f.papers) ? f.papers : [],
       types: Array.isArray(f.types) ? f.types : [],
-      showFollowing: f.showFollowing ?? true,
-      showMine: f.showMine ?? true,
       progress: Array.isArray(f.progress) ? f.progress : [],
     };
   } catch {
-    return { papers: [], types: [], showFollowing: true, showMine: true, progress: [] };
+    return { papers: [], types: [], progress: [] };
   }
 }
 

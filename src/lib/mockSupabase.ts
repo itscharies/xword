@@ -326,27 +326,30 @@ function mockListArchiveFeed(params: {
   const today = isoDaysAgo(0);
   const viewerId = currentUserId;
 
-  const communityRows: RawFeedRow[] = params.p_include_following
-    ? db.puzzles
-        .filter((p) => p.created_at.slice(0, 10) <= today)
-        // Own rows only behind the toggle, and never drafts — those route to
-        // the Builder, not the Solver (mirrors the SQL function).
-        .filter((p) => p.author_id !== viewerId || (params.p_include_mine && p.visibility !== "draft"))
-        .filter((p) => isVisibleInFeed(p, viewerId))
-        .map((p) => ({
-          kind: 0,
-          item_id: p.id,
-          iso_date: p.created_at.slice(0, 10),
-          title: p.title,
-          source: null,
-          weekday: null,
-          author: null,
-          author_id: p.author_id,
-          completions: p.completions,
-          neg_date: -Date.parse(`${p.created_at.slice(0, 10)}T00:00:00Z`),
-          tie: -Date.parse(p.created_at),
-        }))
-    : [];
+  // Each flag governs only its own rows — Following and Your puzzles are
+  // independent chips now (mirrors the SQL function). Own drafts always stay
+  // out: they route to the Builder, not the Solver.
+  const communityRows: RawFeedRow[] = db.puzzles
+    .filter((p) => p.created_at.slice(0, 10) <= today)
+    .filter((p) =>
+      p.author_id === viewerId
+        ? params.p_include_mine && p.visibility !== "draft"
+        : params.p_include_following,
+    )
+    .filter((p) => isVisibleInFeed(p, viewerId))
+    .map((p) => ({
+      kind: 0,
+      item_id: p.id,
+      iso_date: p.created_at.slice(0, 10),
+      title: p.title,
+      source: null,
+      weekday: null,
+      author: null,
+      author_id: p.author_id,
+      completions: p.completions,
+      neg_date: -Date.parse(`${p.created_at.slice(0, 10)}T00:00:00Z`),
+      tie: -Date.parse(p.created_at),
+    }));
 
   const syndicatedRows: RawFeedRow[] = db.syndicated_puzzles
     .filter((s) => s.iso_date <= today) // never leak a puzzle fetched ahead of its publish date
