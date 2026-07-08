@@ -304,6 +304,7 @@ interface RawFeedRow {
   completions: number | null;
   neg_date: number;
   tie: number;
+  mutual_progress: ReturnType<typeof mockListMutualProgress>;
 }
 
 function tupleGt(a: [number, number, number, string], b: [number, number, number, string]): boolean {
@@ -349,6 +350,11 @@ function mockListArchiveFeed(params: {
       completions: p.completions,
       neg_date: -Date.parse(`${p.created_at.slice(0, 10)}T00:00:00Z`),
       tie: -Date.parse(p.created_at),
+      mutual_progress: mockListMutualProgress({
+        p_puzzle_id: p.id,
+        p_source: null,
+        p_puzzle_date: null,
+      }),
     }));
 
   const syndicatedRows: RawFeedRow[] = db.syndicated_puzzles
@@ -365,6 +371,11 @@ function mockListArchiveFeed(params: {
       completions: null,
       neg_date: -Date.parse(`${s.iso_date}T00:00:00Z`),
       tie: s.source_priority,
+      mutual_progress: mockListMutualProgress({
+        p_puzzle_id: null,
+        p_source: s.source,
+        p_puzzle_date: s.puzzle_date,
+      }),
     }));
 
   const merged = [...communityRows, ...syndicatedRows].sort((a, b) =>

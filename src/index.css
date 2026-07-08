@@ -1628,6 +1628,16 @@ button { font: inherit; cursor: pointer; color: inherit; }
   .archive-item:hover .ai-pct { background: var(--surface); color: var(--fg); }
 }
 
+/* Mutuals on this puzzle — stacked mini avatars in the tile's bottom-right
+   corner (who/at-what-% lives in the tooltip). Same .solves-avatar tiles as
+   the solver page's flyout trigger. */
+.ai-mutuals {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  display: inline-flex;
+}
+
 /* ---- responsive --------------------------------------------------------- */
 
 /* ---- builder (/new) ----------------------------------------------------- */

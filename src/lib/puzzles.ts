@@ -66,6 +66,8 @@ export interface ArchiveFeedItem {
   /** Community only — hydrated from `profiles` after the feed query. */
   authorProfile: Profile | null;
   completions: number;
+  /** Mutuals' progress on this puzzle, projected onto the feed query. */
+  mutualProgress: MutualProgress[];
 }
 
 interface RawFeedRow {
@@ -80,6 +82,7 @@ interface RawFeedRow {
   completions: number | null;
   neg_date: number;
   tie: number;
+  mutual_progress: MutualProgress[] | null;
 }
 
 /** The four scalar keyset-pagination params `list_archive_feed` needs to
@@ -165,6 +168,7 @@ export async function listArchivePage(opts: {
     author: r.author,
     authorProfile: r.author_id ? (byId.get(r.author_id) ?? null) : null,
     completions: r.completions ?? 0,
+    mutualProgress: r.mutual_progress ?? [],
   }));
 
   const last = rows[rows.length - 1];

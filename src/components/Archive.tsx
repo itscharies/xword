@@ -13,7 +13,7 @@ import { loadCommunityProgress, loadProgress, type Progress } from "../lib/stora
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
-import { listArchivePage, type ArchiveFeedItem } from "../lib/puzzles.ts";
+import { listArchivePage, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
 
 function formatDate(iso: string): string {
@@ -413,6 +413,32 @@ export function Archive({
   );
 }
 
+/** Mutuals who've started this puzzle, as a tiny stacked-avatar strip in
+ *  the tile's corner — the same data the solver page's flyout shows,
+ *  projected onto the feed query so it costs no extra request. Details
+ *  live in the tooltip; the tile is already a button, so this stays
+ *  non-interactive. */
+function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
+  const started = mutuals.filter((m) => m.completed || m.filled > 0);
+  if (started.length === 0) return null;
+  const label = started
+    .map((m) =>
+      m.completed
+        ? `${m.display_name} solved this`
+        : `${m.display_name} ${Math.min(99, Math.round((100 * m.filled) / Math.max(1, m.total)))}%`,
+    )
+    .join(" · ");
+  return (
+    <span className="ai-mutuals" title={label} aria-label={label}>
+      {started.slice(0, 3).map((m) => (
+        <span className="solves-avatar" key={m.user_id}>
+          <Avatar username={m.username} displayName={m.display_name} size={16} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /** One syndicated puzzle row — its own component only so the per-item
  *  progress lookup below doesn't get lost among the community-item JSX. */
 function SyndicatedItem({
@@ -445,6 +471,7 @@ function SyndicatedItem({
         {theme && <span className="ai-theme">{theme}</span>}
         <span className="ai-author">By {item.author || "Anonymous"}</span>
         {rating > 0 && <StarRating value={rating} />}
+        <MutualStack mutuals={item.mutualProgress} />
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
@@ -492,6 +519,7 @@ function CommunityItem({
             </span>
           </div>
         </div>
+        <MutualStack mutuals={item.mutualProgress} />
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
