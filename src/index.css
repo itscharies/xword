@@ -137,28 +137,14 @@ button { font: inherit; cursor: pointer; color: inherit; }
   margin-top: 1px;
 }
 
-/* The "solves" segment beside the title/author block — hovering (or
-   tapping) it flies out a panel listing each mutual's progress on the
-   open puzzle. */
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-width: 0;
-  width: 100%;
-}
-/* Let the title row actually span the page so the solves segment can sit
-   against the far edge — the header's own children otherwise shrink-wrap. */
-.solver .header-left {
-  flex: 1;
-}
+/* The "solves" line under the byline — hovering (or tapping) it flies out
+   a panel listing each mutual's progress on the open puzzle. */
 .solves-line {
-  /* Matches .title-block .byline, which it sits beside. */
+  /* Matches .title-block .byline, which it sits directly beneath. */
   color: var(--muted);
   font-size: 12px;
   font-weight: 400;
-  white-space: nowrap;
+  margin-top: 2px;
 }
 .solves-flyout {
   position: relative;
@@ -202,9 +188,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   display: none;
   position: absolute;
   top: 100%;
-  /* Right-anchored: the trigger hugs the page's right edge, so a
-     left-anchored panel (wider than the trigger) would overflow it. */
-  right: 0;
+  left: 0;
   z-index: 40;
   min-width: 180px;
   padding: 8px 10px;
