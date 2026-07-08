@@ -170,7 +170,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .solves-avatar {
   display: inline-flex;
-  border: 1px solid var(--surface);
+  /* At 16px the avatar's own cell strokes scale away to nothing — a real
+     border keeps the tile readable against the header, and doubles as the
+     separation ring where the stack overlaps. */
+  border: 1px solid #000;
   background: var(--surface);
 }
 /* The svg would otherwise sit on the text baseline, dropping the stack a
@@ -204,6 +207,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   gap: 7px;
   font-size: 12px;
   font-weight: 600;
+}
+/* Same story as .solves-avatar at panel size. */
+.solves-row > svg {
+  border: 1px solid #000;
 }
 .solves-row-name {
   flex: 1;
