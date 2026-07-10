@@ -139,6 +139,18 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
   const setActive = (p: Pos) => {
     activeRef.current = p;
     setActiveState(p);
+    // Keep `direction` naming a word that really runs through the cursor.
+    // Moves that deliberately preserve orientation (the banner's drag
+    // scrubber, gap-filling advances) can land on a cell with no word in
+    // the current direction; everything *looks* right anyway because
+    // clueThrough falls back to the other word — but the stale direction
+    // re-asserts itself at the first cell that has both words, snapping
+    // the cursor to the cross word mid-type. Normalizing here, on every
+    // cursor move, closes that gap for all paths at once.
+    const here = lookup.get(keyOf(p.row, p.col));
+    if (here && !here[directionRef.current]) {
+      setDirection(otherDir(directionRef.current));
+    }
   };
   const setDirection = (d: Direction) => {
     directionRef.current = d;
