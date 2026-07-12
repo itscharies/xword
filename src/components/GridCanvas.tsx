@@ -13,9 +13,9 @@ const WORD_PAD = 24;
 /** Pointer travel (px) before a press counts as a pan instead of a tap. */
 const DRAG_PX = 6;
 /** Longest side of the minimap (px). */
-const MINIMAP_SIZE = 120;
+const MINIMAP_SIZE = 88;
 /** How long the minimap lingers after the last pan or zoom. */
-const MINIMAP_HIDE_MS = 900;
+const MINIMAP_HIDE_MS = 450;
 /** Zoom speed for ctrl/cmd+wheel (and trackpad pinch, which browsers report
  *  as ctrl+wheel): scale multiplies by e^(-delta * this). */
 const WHEEL_ZOOM = 0.005;
@@ -149,6 +149,23 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
     );
   };
 
+  /** On mobile the canvas layout pins .solve-body to one viewport height,
+   *  but the page itself loads with the header above it — until that's
+   *  scrolled away, .solve-body's bottom hangs below the fold and the
+   *  sticky keyboard rides up over the bottom of the canvas, hiding the
+   *  grid's last rows at full pan. The old scrolling board left that scroll
+   *  to the solver; the canvas swallows every touch gesture, so it has to
+   *  do it itself: called on mount and whenever panning starts. No-op once
+   *  pinned, and on desktop (.solve-body is display: contents there, and
+   *  the page never scrolls). */
+  const scrollHeaderAway = () => {
+    if (!matchMedia("(max-width: 820px)").matches) return;
+    const body = viewportRef.current?.closest(".solve-body");
+    if (body && body.getBoundingClientRect().top > 1) {
+      body.scrollIntoView({ block: "start" });
+    }
+  };
+
   /** Where the content actually is right now — mid-animation this differs
    *  from view.current (which already holds the animation's target), so
    *  gestures read the computed transform to take over without a jump. */
@@ -166,6 +183,7 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
   const didInit = useRef(false);
   useLayoutEffect(() => {
     didInit.current = false;
+    scrollHeaderAway();
     sizeGrid();
     apply({ s: 1, tx: 0, ty: 0 });
   }, [puzzle]);
@@ -220,6 +238,7 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
       ay, ay + activeEl.offsetHeight * s,
     );
     if (dx || dy) {
+      scrollHeaderAway();
       apply({ s, tx: tx - dx, ty: ty - dy }, true);
       showMinimap();
     }
@@ -269,6 +288,22 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
       }
     };
 
+    // scrollHeaderAway moves the viewport under the fingers mid-gesture;
+    // the stored positions are viewport-relative, so shift them along or
+    // the first pan/pinch frame would jump by the scrolled distance.
+    const pinPage = () => {
+      const before = vp.getBoundingClientRect();
+      scrollHeaderAway();
+      const after = vp.getBoundingClientRect();
+      const dx = before.left - after.left;
+      const dy = before.top - after.top;
+      if (dx || dy)
+        pointers.forEach((p) => {
+          p.x += dx;
+          p.y += dy;
+        });
+    };
+
     const down = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       suppressClick.current = false;
@@ -284,6 +319,7 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
       } else if (pointers.size === 2) {
         mode = "pinch";
         for (const id of pointers.keys()) capture(id);
+        pinPage();
         anchorPinch();
       }
     };
@@ -296,7 +332,10 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
         if (Math.hypot(p.x - start.x, p.y - start.y) > DRAG_PX) {
           mode = "pan";
           capture(e.pointerId);
-          last = p;
+          // Deferred to here (not pointerdown) so plain taps don't shift
+          // the page — and the cell under the finger — before their click.
+          pinPage();
+          last = pos(e);
         }
       } else if (mode === "pan") {
         const { s, tx, ty } = view.current;
