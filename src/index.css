@@ -2106,11 +2106,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
     z-index: 30;
     flex-wrap: nowrap;
     margin: 0 -14px;
-    /* Extra top inset so that when it sticks under a translucent status bar
-       (installed PWA) the buttons clear it; its background fills behind it. */
-    padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
+    padding: 8px 14px;
     background: var(--bg);
     border-bottom: 2px solid var(--line);
+  }
+  /* Only while actually pinned at the viewport top (useStuck.ts toggles the
+     class) does the bar take the extra inset that keeps its buttons clear
+     of a translucent status bar (installed PWA), with its background
+     filling behind it. Applied permanently instead, the inset reads as a
+     status-bar-sized dead gap below the header whenever the page is
+     scrolled to the top. In a regular browser the inset is 0 either way. */
+  .actionbar.stuck {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
   }
 
   .actionbar .btn {

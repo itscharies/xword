@@ -1,4 +1,5 @@
 import { Logo } from "./Logo.tsx";
+import { useStuck } from "../hooks/useStuck.ts";
 
 /** Shimmering placeholder blocks shown while async data loads. Each skeleton
  *  mirrors the layout of the content it stands in for, so the real UI slots
@@ -62,6 +63,7 @@ export function ArchiveSkeleton() {
  *  can still navigate back), then a grid-shaped shimmer and two clue
  *  columns. */
 export function SolverSkeleton({ onOpenArchive }: { onOpenArchive?: () => void }) {
+  const actionbarRef = useStuck<HTMLDivElement>();
   return (
     <div className="app solver" aria-busy="true" aria-label="Loading puzzle">
       <header className="header">
@@ -76,7 +78,7 @@ export function SolverSkeleton({ onOpenArchive }: { onOpenArchive?: () => void }
       </header>
 
       <div className="solve-body">
-        <div className="actionbar">
+        <div className="actionbar" ref={actionbarRef}>
           {/* Check / Reveal dropdowns, two icon buttons … timer group + icons. */}
           <div className="sk-btn-row">
             <Sk w={110} h={42} />

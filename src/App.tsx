@@ -34,6 +34,7 @@ import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
 import { useFullscreen } from "./hooks/useFullscreen.ts";
 import { useGridFit } from "./hooks/useGridFit.ts";
+import { useStuck } from "./hooks/useStuck.ts";
 import { useWakeLock } from "./hooks/useWakeLock.ts";
 import { Grid } from "./components/Grid.tsx";
 import { GridCanvas } from "./components/GridCanvas.tsx";
@@ -507,6 +508,7 @@ function Solver({
 
   const isMobile = useMediaQuery("(max-width: 820px)");
   const gridFit = useGridFit();
+  const actionbarRef = useStuck<HTMLDivElement>();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const anagramPool = useAnagramPool(showAnagram && isMobile);
   const anagramHelperStore = useAnagramHelperStore();
@@ -693,7 +695,7 @@ function Solver({
           grouping node so the header can still scroll away above it there,
           leaving just the actionbar's icon row visible; see index.css. */}
       <div className="solve-body">
-        <div className="actionbar">
+        <div className="actionbar" ref={actionbarRef}>
           <Toolbar
             xw={xw}
             onRequestReset={() => setShowReset(true)}
