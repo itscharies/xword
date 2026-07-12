@@ -97,21 +97,21 @@ export function ThemeControls() {
       </div>
 
       <div className="setting-row">
-        <span className="setting-label">Grid (phone)</span>
+        <span className="setting-label">Grid</span>
         <div className="seg">
           <button
             className={`seg-btn ${gridFit === "width" ? "active" : ""}`}
             onClick={() => chooseGridFit("width")}
             aria-pressed={gridFit === "width"}
           >
-            Fit width
+            Fit
           </button>
           <button
-            className={`seg-btn ${gridFit === "fixed" ? "active" : ""}`}
-            onClick={() => chooseGridFit("fixed")}
-            aria-pressed={gridFit === "fixed"}
+            className={`seg-btn ${gridFit === "canvas" ? "active" : ""}`}
+            onClick={() => chooseGridFit("canvas")}
+            aria-pressed={gridFit === "canvas"}
           >
-            Fixed size
+            Pan &amp; zoom
           </button>
         </div>
       </div>

@@ -33,8 +33,10 @@ import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
 import { useFullscreen } from "./hooks/useFullscreen.ts";
+import { useGridFit } from "./hooks/useGridFit.ts";
 import { useWakeLock } from "./hooks/useWakeLock.ts";
 import { Grid } from "./components/Grid.tsx";
+import { GridCanvas } from "./components/GridCanvas.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
@@ -504,6 +506,7 @@ function Solver({
   const [conflict, setConflict] = useState<Progress | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 820px)");
+  const gridFit = useGridFit();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   const anagramPool = useAnagramPool(showAnagram && isMobile);
   const anagramHelperStore = useAnagramHelperStore();
@@ -686,7 +689,7 @@ function Solver({
         </div>
       </header>
 
-      {/* display: contents outside [data-grid-fit="fixed"] — a transparent
+      {/* display: contents outside [data-grid-fit="canvas"] — a transparent
           grouping node so the header can still scroll away above it there,
           leaving just the actionbar's icon row visible; see index.css. */}
       <div className="solve-body">
@@ -751,11 +754,17 @@ function Solver({
             <div className="banner-desktop">
               <ClueBanner xw={xw} />
             </div>
-            {/* Inert wrapper outside fullscreen; in fullscreen it's the size
-                container the grid measures its available height against. */}
-            <div className="grid-fit">
-              <Grid puzzle={puzzle} xw={xw} />
-            </div>
+            {/* Canvas mode swaps the plain grid for the pan/zoom viewport.
+                The .grid-fit wrapper is inert outside fullscreen; in
+                fullscreen it's the size container the grid measures its
+                available height against. */}
+            {gridFit === "canvas" ? (
+              <GridCanvas puzzle={puzzle} xw={xw} />
+            ) : (
+              <div className="grid-fit">
+                <Grid puzzle={puzzle} xw={xw} />
+              </div>
+            )}
           </div>
           <ClueList puzzle={puzzle} xw={xw} />
           {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}

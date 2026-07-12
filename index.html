@@ -85,6 +85,8 @@
           t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         if (t) document.documentElement.dataset.theme = t;
         if (a) document.documentElement.dataset.accent = a;
+        // "fixed" is the old name for what is now the pan/zoom canvas mode.
+        if (gf === "fixed") gf = "canvas";
         if (gf) document.documentElement.dataset.gridFit = gf;
       } catch (e) {}
     </script>

@@ -125,14 +125,28 @@ export function setAutoAdvance(on: boolean): void {
 
 const GRID_FIT_KEY = "xword:gridFit";
 
-/** "width" (default) shrinks the grid to fit the screen, like today. "fixed"
- *  keeps cells at a legible minimum size and scrolls the grid area instead —
- *  see the `[data-grid-fit="fixed"]` rules in index.css. */
-export type GridFit = "width" | "fixed";
+/** "width" (default) sizes the grid to fit the screen, like today. "canvas"
+ *  keeps cells at their full --min-cell size and turns the grid area into a
+ *  pan/zoomable canvas — see GridCanvas.tsx and the `[data-grid-fit="canvas"]`
+ *  rules in index.css. ("fixed", the old scroll-the-board mode canvas
+ *  replaces, reads back as "canvas"; index.html's pre-paint script does the
+ *  same mapping.) */
+export type GridFit = "width" | "canvas";
+
+/** Unlike the other settings (pure CSS via the dataset), grid fit swaps which
+ *  component the solver renders, so changes need to reach React — see
+ *  useGridFit.ts. */
+const gridFitListeners = new Set<() => void>();
+
+export function subscribeGridFit(fn: () => void): () => void {
+  gridFitListeners.add(fn);
+  return () => gridFitListeners.delete(fn);
+}
 
 export function getGridFit(): GridFit {
   try {
-    return localStorage.getItem(GRID_FIT_KEY) === "fixed" ? "fixed" : "width";
+    const v = localStorage.getItem(GRID_FIT_KEY);
+    return v === "canvas" || v === "fixed" ? "canvas" : "width";
   } catch {
     return "width";
   }
@@ -145,6 +159,7 @@ export function setGridFit(fit: GridFit): void {
   } catch {
     /* ignore */
   }
+  gridFitListeners.forEach((fn) => fn());
 }
 
 const FILTER_KEY = "xword:filters";

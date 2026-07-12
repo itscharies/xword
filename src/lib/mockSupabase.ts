@@ -8,7 +8,7 @@
 // is driven by the dev-only switcher in App.tsx via mockSignIn/mockSignOut,
 // not by real OAuth (there's nothing to redirect to in mock mode).
 
-import type { Puzzle } from "../types.ts";
+import type { Cell, Clue, Puzzle } from "../types.ts";
 import { SOURCE_ORDER, type PuzzleSource } from "./sources.ts";
 
 // ---------------------------------------------------------------------------
@@ -97,8 +97,94 @@ function miniPuzzle(opts: {
   };
 }
 
-function makeSyndicatedRow(source: PuzzleSource, isoDate: string, title: string): MockSyndicated {
+/** A generated full-size 15x15 — big enough to exercise the grid layout
+ *  modes (the canvas pan/zoom view in particular), which the 3x1 mini can
+ *  never overflow. Grid pattern is scanned for numbering and clues, so the
+ *  fixture stays consistent by construction. */
+function bigPuzzle(opts: {
+  title: string;
+  author: string;
+  isoDate: string;
+  date: string;
+  source?: PuzzleSource;
+}): Puzzle {
+  // '#' = block. A standard-looking, roughly symmetric 15x15 pattern.
+  const rows = [
+    "...#.....#.....",
+    "...#.....#.....",
+    "...............",
+    "......#...#....",
+    "###....#.......",
+    ".....#....#....",
+    "....#....#.....",
+    "...#.......#...",
+    ".....#....#....",
+    "....#....#.....",
+    ".......#....###",
+    "....#...#......",
+    "...............",
+    ".....#.....#...",
+    ".....#.....#...",
+  ];
+  const size = rows.length;
+  const letter = (r: number, c: number) =>
+    String.fromCharCode(65 + ((r * size + c * 7) % 26));
+  const grid: Cell[][] = rows.map((row, r) =>
+    [...row].map((ch, c) => (ch === "#" ? { black: true } : { solution: letter(r, c) })),
+  );
+
+  // Standard numbering scan: a cell gets a number when it starts an across
+  // and/or down run of at least two cells.
+  const open = (r: number, c: number) =>
+    r >= 0 && r < size && c >= 0 && c < size && !grid[r][c].black;
+  const across: Clue[] = [];
+  const down: Clue[] = [];
+  let num = 0;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!open(r, c)) continue;
+      const startsAcross = !open(r, c - 1) && open(r, c + 1);
+      const startsDown = !open(r - 1, c) && open(r + 1, c);
+      if (!startsAcross && !startsDown) continue;
+      grid[r][c].number = ++num;
+      if (startsAcross) {
+        let len = 0;
+        let answer = "";
+        while (open(r, c + len)) answer += grid[r][c + len++].solution;
+        across.push({ number: num, clue: `Mock across, ${len} letters`, answer, row: r, col: c, len });
+      }
+      if (startsDown) {
+        let len = 0;
+        let answer = "";
+        while (open(r + len, c)) answer += grid[r + len++][c].solution;
+        down.push({ number: num, clue: `Mock down, ${len} letters`, answer, row: r, col: c, len });
+      }
+    }
+  }
+
+  return {
+    source: opts.source,
+    date: opts.date,
+    isoDate: opts.isoDate,
+    weekday: weekdayOf(opts.isoDate),
+    title: opts.title,
+    author: opts.author,
+    editor: "Mock Editor",
+    width: size,
+    height: size,
+    grid,
+    clues: { across, down },
+  };
+}
+
+function makeSyndicatedRow(
+  source: PuzzleSource,
+  isoDate: string,
+  title: string,
+  big = false,
+): MockSyndicated {
   const date = isoDate.replace(/-/g, "");
+  const make = big ? bigPuzzle : miniPuzzle;
   return {
     source,
     puzzle_date: date,
@@ -107,7 +193,7 @@ function makeSyndicatedRow(source: PuzzleSource, isoDate: string, title: string)
     title,
     author: "Mock Author",
     source_priority: SOURCE_ORDER.indexOf(source),
-    data: miniPuzzle({ title, author: "Mock Author", isoDate, date, source }),
+    data: make({ title, author: "Mock Author", isoDate, date, source }),
   };
 }
 
@@ -167,7 +253,7 @@ const db = {
   ] as MockPuzzle[],
 
   syndicated_puzzles: [
-    makeSyndicatedRow("nyt", isoDaysAgo(0), "NYT Mock Puzzle — Today"),
+    makeSyndicatedRow("nyt", isoDaysAgo(0), "NYT Mock Puzzle — Today", true),
     // Same day as the row above, different source — exercises the
     // same-day, cross-source (SOURCE_ORDER) tie-break.
     makeSyndicatedRow("gdn-mini", isoDaysAgo(0), "Guardian Mini Mock — Today"),

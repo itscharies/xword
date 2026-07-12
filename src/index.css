@@ -7,8 +7,9 @@
 :root {
   --sh: 5px; /* offset for the hard shadows */
   --bw: 3px; /* border width */
-  /* Cell side length in [data-grid-fit="fixed"] mode (see the mobile grid
-     rules below) — big enough to stay tappable on a 15x15 grid. */
+  /* Full cell side length in [data-grid-fit="canvas"] mode — the zoomed-all-
+     the-way-in size (see GridCanvas.tsx). Big enough to stay tappable on a
+     15x15 grid. */
   --min-cell: 42px;
   font-family: "SN Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
@@ -707,7 +708,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* A transparent grouping node around the actionbar/main/mobile-bar — normally
    invisible to layout (its children act as if they were direct .app
    children, same as before it existed), so it changes nothing outside
-   [data-grid-fit="fixed"] mode. See that rule below for what it becomes. */
+   [data-grid-fit="canvas"] mode. See that rule below for what it becomes. */
 .solve-body { display: contents; }
 
 .grid {
@@ -725,6 +726,77 @@ button { font: inherit; cursor: pointer; color: inherit; }
   /* Make the grid a query container so cells can size their text relative to
      each square's width (cqw = 1% of grid width; cell width = 100/cols cqw). */
   container-type: inline-size;
+}
+
+/* ---- canvas (pan & zoom) grid mode --------------------------------------
+   [data-grid-fit="canvas"]: instead of shrinking the grid to the screen, the
+   grid area becomes a viewport-sized canvas the solver pans and zooms —
+   drag/pinch/wheel handling, the fit↔full-size zoom clamp, and the minimap
+   all live in GridCanvas.tsx. */
+
+/* The viewport: clips and hosts the pannable layer, filling whatever space
+   the layout gives the board (flex: 1 both in the desktop board column and
+   in the mobile sticky solve-body). touch-action: none hands every touch
+   gesture to the pointer handlers instead of the page. */
+.grid-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+/* The moving layer: sized by its content (the grid at full size below),
+   positioned purely by transform. It's also the cells' offsetParent, so
+   GridCanvas can measure word positions in untransformed grid space. The
+   right/bottom padding reserves room for the grid's offset box-shadow, so
+   panning flush to an edge doesn't clip it. */
+.canvas-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  padding: 0 var(--sh) var(--sh) 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+/* Full cell size — GridCanvas only ever transform-scales the layer *down*
+   from here (zoom is capped at 1:1). --canvas-cell is set by GridCanvas
+   (sizeGrid) when a small grid would fit the viewport at more than
+   --min-cell per square: the layout itself grows instead, keeping a fully
+   zoomed-out mini crisp rather than GPU-upscaled. */
+[data-grid-fit="canvas"] .grid {
+  width: calc(var(--cols) * var(--canvas-cell, var(--min-cell)));
+  flex: none;
+}
+/* Minimap, floating top-right of the viewport: the grid's block pattern with
+   the active word marked, plus a --hl rectangle framing the part of the grid
+   currently on screen. GridCanvas fades it in while panning/zooming and back
+   out shortly after. */
+.canvas-minimap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  box-shadow: 3px 3px 0 var(--shadow-col);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  overflow: hidden;
+}
+.canvas-minimap.show { opacity: 1; }
+.canvas-minimap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.canvas-minimap-view {
+  position: absolute;
+  border: 2px solid var(--hl);
+  background: rgba(var(--hl-rgb), 0.18);
 }
 
 .cell {
@@ -2087,16 +2159,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
     border-top: 2px solid var(--line);
   }
 
-  /* [data-grid-fit="fixed"]: cells stay a legible fixed size instead of
+  /* [data-grid-fit="canvas"]: the grid keeps its full cell size and pans/
+     zooms inside a viewport-sized canvas (GridCanvas.tsx) instead of
      shrinking to the screen width. .solve-body (actionbar + main +
      mobile-bar) becomes a real, one-viewport-tall, position: sticky box
      instead of its normal no-op display: contents — the page can still
      scroll by the header's height (same as "fit width" — scroll up and only
      the actionbar icon row stays visible), but once .solve-body itself hits
      the top of the viewport it's stuck there, so .board (the one flexible
-     row in between) is capped rather than free to grow, and is the only
-     part that then scrolls internally. That capped height also means a
-     taller mobile-bar (a long clue wrapping to two lines) squeezes .board
+     row in between) is capped rather than free to grow, and hands its space
+     to the canvas viewport. That capped height also means a taller
+     mobile-bar (a long clue wrapping to two lines) squeezes .board
      automatically, with no extra JS.
      100svh, not 100dvh: dvh tracks the browser chrome shrinking/growing as
      you scroll, so a sticky element sized with it is fighting the exact
@@ -2105,7 +2178,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
      shift with it, reading as the grid/keyboard getting clipped right at the
      top/bottom edge. svh is the small, worst-case viewport (chrome fully
      expanded) and never changes during scroll, so nothing shifts underfoot. */
-  [data-grid-fit="fixed"] .solve-body {
+  [data-grid-fit="canvas"] .solve-body {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -2114,42 +2187,25 @@ button { font: inherit; cursor: pointer; color: inherit; }
     height: 100svh;
     min-height: 0;
   }
-  [data-grid-fit="fixed"] .main {
+  [data-grid-fit="canvas"] .main {
     display: flex;
     /* Without this it defaults to row: .board's flex: 1 1 auto would then
        size its *width* (the main axis), while its height falls back to the
        base .main rule's align-items: start — i.e. sized to fit its content
-       instead of being capped, so there's never any vertical overflow for
-       .board to scroll. Column makes height the main axis instead. */
+       instead of being capped, so there'd be no height deficit for the
+       canvas viewport to fill. Column makes height the main axis instead. */
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
   }
-  [data-grid-fit="fixed"] .board {
+  [data-grid-fit="canvas"] .board {
     flex: 1 1 auto;
     min-height: 0;
-    align-items: flex-start;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
     /* Bleed past .app's 14px side padding, like .actionbar/.mobile-bar do,
-       then restore that as padding instead — otherwise .board is boxed into
-       a strip 28px narrower than the screen, and scrolling stops 14px short
-       of each true edge. Padding-right also gives .grid's box-shadow (falls
-       outside its border box, offset bottom-right by --sh) room, instead of
-       overflow: auto clipping it flush at the grid's edge. */
+       so the pan/zoom viewport gets the full screen width. No padding put
+       back: the canvas clamps its own edges (FIT_PAD in GridCanvas.tsx). */
     width: calc(100% + 28px);
     margin: 0 -14px;
-    padding: 0 calc(14px + var(--sh)) var(--sh) 14px;
-  }
-  [data-grid-fit="fixed"] .grid {
-    /* Never smaller than --min-cell per square, but a small grid (a mini,
-       say 5x5) that would fit the screen at a bigger size just grows to
-       fill it instead of sitting tiny in the middle — aspect-ratio (kept
-       from the base rule) derives height from whichever width wins. */
-    width: max(calc(var(--cols) * var(--min-cell)), 100%);
-    flex: none;
-    margin: 0 auto;
   }
 }
 
