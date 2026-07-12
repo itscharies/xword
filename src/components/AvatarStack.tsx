@@ -8,9 +8,9 @@ import { Avatar } from "./Avatar.tsx";
 export function AvatarStack({ people }: { people: MutualProgress[] }) {
   return (
     <span className="solves-avatars" aria-hidden>
-      {people.map((m, i) => (
+      {people.slice(0, 3).map((m, i) => (
         <span className="solves-avatar" key={m.user_id} style={{ zIndex: people.length - i }}>
-          <Avatar username={m.username} displayName={m.display_name} size={i === 0 ? 16 : 12} />
+          <Avatar username={m.username} displayName={m.display_name} size={16 - (i * 4)} />
         </span>
       ))}
     </span>
