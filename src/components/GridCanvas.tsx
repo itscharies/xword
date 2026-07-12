@@ -13,7 +13,7 @@ const WORD_PAD = 24;
 /** Pointer travel (px) before a press counts as a pan instead of a tap. */
 const DRAG_PX = 6;
 /** Longest side of the minimap (px). */
-const MINIMAP_SIZE = 88;
+const MINIMAP_SIZE = 72;
 /** How long the minimap lingers after the last pan or zoom. */
 const MINIMAP_HIDE_MS = 450;
 /** Zoom speed for ctrl/cmd+wheel (and trackpad pinch, which browsers report
@@ -237,10 +237,12 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
       WORD_PAD, vp.clientHeight - WORD_PAD,
       ay, ay + activeEl.offsetHeight * s,
     );
+    // No showMinimap() here, deliberately: the map is for orienting during
+    // a hand-driven pan/zoom — flashing it on every caret-driven auto-pan
+    // (typing across a word, tabbing through clues) is just noise.
     if (dx || dy) {
       scrollHeaderAway();
       apply({ s, tx: tx - dx, ty: ty - dy }, true);
-      showMinimap();
     }
   }, [xw.active.row, xw.active.col, xw.direction]);
 
