@@ -5,8 +5,11 @@ import { Grid } from "./Grid.tsx";
 
 /** Breathing room (px) between the fully zoomed-out grid and the viewport
  *  edge — the fit (minimum) scale is computed against the viewport minus
- *  this, so "all the way out" never looks flush-cropped. */
-const FIT_PAD = 10;
+ *  this, so "all the way out" never looks flush-cropped. Matches the
+ *  solve-body gap the mobile canvas layout collapses (see index.css), so
+ *  the resting grid keeps the spacing the layout used to have while pans
+ *  can still run flush to the toolbar and keyboard. */
+const FIT_PAD = 12;
 /** Gap (px) kept between a panned-to word and the viewport edge, so landing
  *  on a word never leaves it looking cut off at a side. */
 const WORD_PAD = 24;

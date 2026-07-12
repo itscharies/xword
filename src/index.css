@@ -2181,7 +2181,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   [data-grid-fit="canvas"] .solve-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    /* No gap: the canvas viewport runs right up to the actionbar and the
+       keyboard bar, so panned content clips at those edges instead of at a
+       dead strip 12px short of them. The resting inset the gap used to
+       provide lives inside the canvas instead (FIT_PAD in GridCanvas.tsx). */
+    gap: 0;
     position: sticky;
     top: 0;
     height: 100svh;
