@@ -1,0 +1,48 @@
+// Message protocol between the builder's useAutofill hook (main thread) and
+// workers/fill.worker.ts (the background fill search).
+
+/** One cell of a slot: its "r,c" key and its current content — "" when empty
+ *  (a square the fill should complete), one letter when typed, or the full
+ *  multi-letter string for a rebus square (a fixed run of letters). */
+export interface FillCellSpec {
+  key: string;
+  letters: string;
+}
+
+/** A slot (an across or down word) as its ordered cells. */
+export interface SlotSpec {
+  cells: FillCellSpec[];
+}
+
+export interface FillRequest {
+  type: "fill";
+  runId: number;
+  wordlistUrl: string;
+  slots: SlotSpec[];
+  /** Stop after this many complete fills. */
+  maxSolutions: number;
+  /** Abandon the search after trying this many words (bounds CPU time). */
+  nodeBudget: number;
+  /** Tie-break seed: words of equal score are tried in a per-run shuffled
+   *  order (STWL scores are coarse bands, so a stable sort would otherwise
+   *  walk ties alphabetically and every fill would start with AA-words). */
+  seed: number;
+}
+
+export type WorkerRequest = FillRequest | { type: "cancel" };
+
+/** A complete fill: one letter for every empty cell, keyed "r,c". */
+export type FillSolution = Record<string, string>;
+
+export type FillResponse =
+  | { type: "progress"; runId: number; nodes: number; solutions: number }
+  | {
+      type: "result";
+      runId: number;
+      solutions: FillSolution[];
+      /** True when the whole search space was covered (a "no fill" is then
+       *  definitive, not just a budget timeout). */
+      exhausted: boolean;
+      nodes: number;
+    }
+  | { type: "error"; runId: number; message: string };

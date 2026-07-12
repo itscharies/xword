@@ -246,6 +246,18 @@ export const SystemIcon = () => (
   </svg>
 );
 
+// Magic wand with sparkles, for the builder's autofill button.
+export const WandIcon = () => (
+  <svg {...base} strokeWidth={2}>
+    <path d="M3 21L14.5 9.5" />
+    <path d="M16.5 7.5L19 5" />
+    <path d="M19 11.5v5" />
+    <path d="M16.5 14h5" />
+    <path d="M8.5 2.5v4" />
+    <path d="M6.5 4.5h4" />
+  </svg>
+);
+
 // Small disclosure caret on the Toolbar's reveal dropdown.
 export const ChevronDownIcon = () => (
   <svg {...base} width={12} height={12} strokeWidth={3}>

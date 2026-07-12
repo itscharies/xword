@@ -54,6 +54,18 @@ export function numberGrid(grid: Cell[][]): WordStart[] {
   return starts;
 }
 
+/** Cells covered by a word start, in order. */
+export function slotCells(s: WordStart): Array<{ row: number; col: number }> {
+  const cells: Array<{ row: number; col: number }> = [];
+  for (let i = 0; i < s.len; i++) {
+    cells.push({
+      row: s.direction === "down" ? s.row + i : s.row,
+      col: s.direction === "across" ? s.col + i : s.col,
+    });
+  }
+  return cells;
+}
+
 /** Read the solution letters of a word given its start, direction and length. */
 export function readWord(
   grid: Cell[][],

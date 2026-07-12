@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Cell, Direction, Puzzle } from "../types.ts";
-import { numberGrid, readWord, type WordStart } from "../lib/numbering.ts";
+import { numberGrid, readWord, slotCells, type WordStart } from "../lib/numbering.ts";
 import { splitEnumeration } from "../lib/enumeration.ts";
+import { loadWordSet } from "../lib/wordlist.ts";
+import { useAutofill } from "./useAutofill.ts";
 import {
   clearBuilderDraft,
   loadBuilderDraft,
@@ -42,18 +44,6 @@ export function enumerationOf(grid: Cell[][], s: WordStart): string {
   }
   parts.push(run);
   return parts.join(",");
-}
-
-/** Cells covered by a word start, in order. */
-function slotCells(s: WordStart): Pos[] {
-  const cells: Pos[] = [];
-  for (let i = 0; i < s.len; i++) {
-    cells.push({
-      row: s.direction === "down" ? s.row + i : s.row,
-      col: s.direction === "across" ? s.col + i : s.col,
-    });
-  }
-  return cells;
 }
 
 const blankCell = (): Cell => ({});
@@ -240,6 +230,45 @@ export function useBuilder() {
       .map((p) => numbered[p.row][p.col].solution || ".")
       .join("");
   }, [activeSlot, numbered]);
+
+  // "Is this a real word" index for the unknown-word highlight, loaded (with
+  // the rest of the word list machinery) once the author enters fill mode.
+  const [wordSet, setWordSet] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (mode !== "fill" || wordSet) return;
+    let live = true;
+    loadWordSet()
+      .then((s) => live && setWordSet(s))
+      .catch(() => {}); // no highlight without the list; suggestions surface the error
+    return () => {
+      live = false;
+    };
+  }, [mode, wordSet]);
+
+  // Cells of complete words the word list doesn't know — flagged in the grid
+  // so a doubtful corner shows up at a glance while filling.
+  const unknownCells = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    if (!wordSet) return set;
+    for (const s of orderedStarts) {
+      const cells = slotCells(s);
+      let word = "";
+      for (const p of cells) {
+        const sol = numbered[p.row][p.col].solution;
+        if (!sol) {
+          word = "";
+          break;
+        }
+        word += sol;
+      }
+      if (word && !wordSet.has(word))
+        for (const p of cells) set.add(keyOf(p.row, p.col));
+    }
+    return set;
+  }, [wordSet, orderedStarts, numbered]);
+
+  // Background fill search + the ghost proposal overlay it produces.
+  const autofill = useAutofill({ numbered, orderedStarts, gridRef, setGrid });
 
   // Decoration flags of the active cell — drives the toggle buttons' on state.
   const activeProps = useMemo(() => {
@@ -881,6 +910,8 @@ export function useBuilder() {
     activeSlot,
     activePattern,
     activeProps,
+    unknownCells,
+    autofill,
     acrossStarts,
     downStarts,
     clueText,

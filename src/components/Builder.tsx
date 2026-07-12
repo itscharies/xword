@@ -10,6 +10,7 @@ import type { PuzzleSource } from "../lib/sources.ts";
 import { BuilderGrid } from "./BuilderGrid.tsx";
 import { BuilderClues } from "./BuilderClues.tsx";
 import { BuilderSuggestions } from "./BuilderSuggestions.tsx";
+import { BuilderAutofill } from "./BuilderAutofill.tsx";
 import { MobileKeyboard } from "./MobileKeyboard.tsx";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { Modal } from "./Modal.tsx";
@@ -288,6 +289,7 @@ export function Builder({
       <div className="main builder-main">
         <div className="board">
           <BuilderGrid b={b} />
+          <BuilderAutofill b={b} />
           <BuilderSuggestions b={b} />
         </div>
         <BuilderClues b={b} />

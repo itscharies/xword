@@ -183,11 +183,15 @@ export function BuilderGrid({ b }: { b: Builder }) {
           const inWord = !multi && b.highlighted.has(k);
           const isLinked = !multi && b.linkedCells.has(k);
           const entry = cell.solution ?? "";
+          // A pending autofill proposal paints its letter as a ghost.
+          const ghost =
+            !entry && !cell.black ? b.autofill.proposal?.get(k) : undefined;
           const afterBar = c > 0 && !!row[c - 1].barRight;
           const cls = [
             "cell",
             cell.black ? "black" : "",
             cell.shaded ? "shaded" : "",
+            b.unknownCells.has(k) ? "unknown" : "",
             isActive
               ? "active"
               : isSelected
@@ -221,7 +225,11 @@ export function BuilderGrid({ b }: { b: Builder }) {
               {cell.circled && <span className="circle" />}
               {cell.barRight && <span className="sep sep-r" />}
               {cell.barBottom && <span className="sep sep-b" />}
-              {entry && <span className="cell-letter">{entry}</span>}
+              {entry ? (
+                <span className="cell-letter">{entry}</span>
+              ) : ghost ? (
+                <span className="cell-letter ghost">{ghost}</span>
+              ) : null}
             </div>
           );
         }),

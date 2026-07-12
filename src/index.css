@@ -1837,6 +1837,55 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-weight: 600;
 }
 
+/* ---- builder autofill ---------------------------------------------------- */
+
+/* Letters an autofill proposal wants to write: half-opacity in the highlight
+   colour (--ants: accent in dark mode, a darker accent tint in light mode),
+   so they read as "pending" until accepted. */
+.builder-grid .cell .cell-letter.ghost {
+  color: var(--ants);
+  opacity: 0.5;
+}
+
+/* Complete words the word list doesn't know: a red mark under the letters,
+   spell-check style, so doubtful entries show up while filling. */
+.builder-grid .cell.unknown::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: max(2px, calc(8cqw / var(--cols)));
+  height: max(2px, calc(5cqw / var(--cols)));
+  background: var(--wrong);
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* The "fill it in for me" strip between the grid and the suggestions. */
+.builder-autofill {
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  background: var(--surface);
+  width: min(92vw, 560px);
+  max-width: 100%;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.autofill-msg {
+  flex: 1;
+  min-width: 140px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.builder-autofill .autofill-accept {
+  background: var(--accent);
+  color: #000;
+}
+
 /* ---- builder fill suggestions ------------------------------------------- */
 .builder-suggest {
   border: var(--bw) solid var(--line);

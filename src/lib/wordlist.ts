@@ -9,7 +9,9 @@ export interface Suggestion {
 
 let loadPromise: Promise<Map<number, Suggestion[]>> | null = null;
 
-function parse(text: string): Map<number, Suggestion[]> {
+/** Parse a `WORD;score` list into score-sorted per-length buckets. Also used
+ *  by the autofill worker, which fetches and indexes the list on its own. */
+export function parseWordlist(text: string): Map<number, Suggestion[]> {
   const byLen = new Map<number, Suggestion[]>();
   for (const line of text.split("\n")) {
     const i = line.indexOf(";");
@@ -34,13 +36,33 @@ export function loadWordlist(): Promise<Map<number, Suggestion[]>> {
         if (!r.ok) throw new Error(`wordlist ${r.status}`);
         return r.text();
       })
-      .then(parse)
+      .then(parseWordlist)
       .catch((e) => {
         loadPromise = null; // allow a retry on the next call
         throw e;
       });
   }
   return loadPromise;
+}
+
+let wordSetPromise: Promise<Set<string>> | null = null;
+
+/** The word list as a Set, for O(1) "is this a real word" checks (the
+ *  builder's unknown-word highlight). Shares the loadWordlist fetch. */
+export function loadWordSet(): Promise<Set<string>> {
+  if (!wordSetPromise) {
+    wordSetPromise = loadWordlist()
+      .then((byLen) => {
+        const set = new Set<string>();
+        for (const arr of byLen.values()) for (const s of arr) set.add(s.word);
+        return set;
+      })
+      .catch((e) => {
+        wordSetPromise = null; // allow a retry on the next call
+        throw e;
+      });
+  }
+  return wordSetPromise;
 }
 
 /**
