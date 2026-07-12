@@ -3,12 +3,13 @@ import type { Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
 import { Grid } from "./Grid.tsx";
 
-/** Breathing room (px) between the fully zoomed-out grid and the viewport
- *  edge — the fit (minimum) scale is computed against the viewport minus
- *  this, so "all the way out" never looks flush-cropped. Matches the
- *  solve-body gap the mobile canvas layout collapses (see index.css), so
- *  the resting grid keeps the spacing the layout used to have while pans
- *  can still run flush to the toolbar and keyboard. */
+/** Breathing room (px) between the grid and the viewport edge whenever the
+ *  grid is at rest — every side, both at the fit (minimum) scale and at the
+ *  pan limits when zoomed in, where the grid edge settles this far inside
+ *  the viewport instead of flush against it. Mid-pan the content still
+ *  clips at the true edges (the toolbar, keyboard and screen sides — the
+ *  mobile layout collapses its solve-body gap for exactly that; see
+ *  index.css). */
 const FIT_PAD = 12;
 /** Gap (px) kept between a panned-to word and the viewport edge, so landing
  *  on a word never leaves it looking cut off at a side. */
@@ -121,8 +122,10 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
     const s = clamp(next.s, minS, maxS);
     const cw = gw * s;
     const ch = gh * s;
-    const tx = cw <= vw ? (vw - cw) / 2 : clamp(next.tx, vw - cw, 0);
-    const ty = ch <= vh ? (vh - ch) / 2 : clamp(next.ty, vh - ch, 0);
+    // Pan limits keep FIT_PAD of background visible past the grid edge, so
+    // panning to an extreme leaves the grid resting inset, not flush-cut.
+    const tx = cw <= vw ? (vw - cw) / 2 : clamp(next.tx, vw - cw - FIT_PAD, FIT_PAD);
+    const ty = ch <= vh ? (vh - ch) / 2 : clamp(next.ty, vh - ch - FIT_PAD, FIT_PAD);
     view.current = { s, tx, ty };
 
     content.style.transition = animate ? `transform ${EASE}` : "none";
