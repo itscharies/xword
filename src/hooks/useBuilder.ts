@@ -230,16 +230,14 @@ export function useBuilder() {
     [slotThrough, active, direction],
   );
 
-  // The active word as a fill pattern: each cell's letter, or "." if empty.
-  // Rebus cells (multi-letter) can't constrain a single-letter match, so treat
-  // them as unknown. Used to query the suggestion word list.
+  // The active word as a fill pattern: each cell's letters, or "." if empty.
+  // Rebus cells contribute their full string, so the pattern tracks the
+  // answer's letters (not the cell count) and suggestions must spell the rebus.
+  // Used to query the suggestion word list.
   const activePattern = useMemo<string | null>(() => {
     if (!activeSlot) return null;
     return slotCells(activeSlot)
-      .map((p) => {
-        const sol = numbered[p.row][p.col].solution ?? "";
-        return sol.length === 1 ? sol : ".";
-      })
+      .map((p) => numbered[p.row][p.col].solution || ".")
       .join("");
   }, [activeSlot, numbered]);
 
@@ -585,19 +583,25 @@ export function useBuilder() {
     writeCell(row, col, "");
   }, []);
 
-  /** Write a whole word across the active slot (from the suggestion list). */
+  /** Write a whole word across the active slot (from the suggestion list).
+   *  Rebus cells keep their width: each consumes as many letters as it holds,
+   *  matching how activePattern expanded them for the suggestion query. */
   const fillSlot = useCallback(
     (word: string) => {
       const slot = slotThrough(activeRef.current, directionRef.current);
       if (!slot) return;
-      const letters = word.toUpperCase().replace(/[^A-Z]/g, "").split("");
+      const letters = word.toUpperCase().replace(/[^A-Z]/g, "");
       const g = gridRef.current.map((row) => row.map((c) => ({ ...c })));
-      slotCells(slot).forEach((p, i) => {
-        if (i < letters.length) {
-          g[p.row][p.col].solution = letters[i];
-          delete g[p.row][p.col].rebus;
-        }
-      });
+      let i = 0;
+      for (const p of slotCells(slot)) {
+        const cell = g[p.row][p.col];
+        const take = cell.rebus ? (cell.solution ?? "").length || 1 : 1;
+        const chunk = letters.slice(i, i + take);
+        if (!chunk) break;
+        cell.solution = chunk;
+        cell.rebus = chunk.length > 1 ? true : undefined;
+        i += take;
+      }
       setGrid(g);
     },
     [slotThrough],

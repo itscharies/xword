@@ -44,9 +44,10 @@ export function loadWordlist(): Promise<Map<number, Suggestion[]>> {
 }
 
 /**
- * Words matching `pattern` — uppercase letters with "." for unknown cells,
+ * Words matching `pattern` — uppercase letters with "." for unknown letters,
  * e.g. ".A..E" — ranked by score, capped at `limit`. A blank pattern returns
- * the top-scored words of that length.
+ * the top-scored words of that length. Rebus cells arrive pre-expanded (one
+ * pattern letter per answer letter), so matching stays purely positional.
  */
 export async function suggest(
   pattern: string,
