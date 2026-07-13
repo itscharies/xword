@@ -30,8 +30,11 @@ Sources span four papers:
 - **Seattle Times** (AmuseLabs) — `st-large`, `st-mini` (dated ids) and
   `st-midi` (sequential `midi-crossword-<N>`, labelled by publishTime). The
   non-large *regular* set is deactivated upstream.
-- **LA Times** (`latimes`) — Andrews McMeel uclick XML, via the Seattle Times'
-  free puzzle-society embed (a public subscription-id authenticates the API).
+- **LA Times** (`latimes`) — the LA Times' own AmuseLabs instance
+  (`lat.amuselabs.com`, ids `tcaYYMMDD`), reusing the Seattle Times
+  descrambler/parser — this feed carries circled cells, which the old Andrews
+  McMeel uclick XML didn't. The player needs a `loadToken` (minted by the
+  date-picker page) plus an `fvlt` checksum; see `fetch-latimes.ts`.
 - **Guardian** — `gdn-quick`, `gdn-cryptic`, `gdn-quiptic`, `gdn-quick-cryptic`,
   `gdn-prize`, `gdn-mini`; each puzzle's data is embedded in its page `.json`,
   walked back by number per type. (Everyman is an Observer puzzle, gone from
