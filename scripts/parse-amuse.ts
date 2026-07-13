@@ -22,11 +22,13 @@ function weekdayFromIso(iso: string): string {
  * the out-of-bounds tail swaps (JS reads past the end as `undefined`).
  *
  * AmuseLabs revs this transform's constants from time to time (~2026-07-01,
- * then again ~2026-07-08; each rev breaks every fetch until re-ported here) —
- * if fetches start failing to decode again, find the function the player
- * bundle's c-min.js feeds `rawc` through (follow the `Nl(m, {isRawcEncoded...`
- * call; the descrambler was last named `Il`) and update the `pass(...)` calls
- * below.
+ * ~2026-07-08, ~2026-07-13; each rev breaks every decode) — so the fetchers
+ * self-heal via `ensureDescrambler` (amuse-heal.ts), which pulls the current
+ * player bundle, extracts the live descrambler (the function passed alongside
+ * `flowName` in the `isRawcEncoded` branch — `Ol`, `Il`, then `Pl` across
+ * revs) and installs it over this static port. When that happens, the run
+ * logs the extracted source: paste its constants into the `pass(...)` calls
+ * below to keep the static fallback current.
  */
 function descramble(input: string): string {
   const a: (string | undefined)[] = input.split("");
@@ -60,25 +62,53 @@ function descramble(input: string): string {
       n = s;
     }
   };
-  pass(49, 49, [[5, 6]]);
-  pass(16, 22, [
+  pass(38, 57, [[16, 17]]);
+  pass(0, 63, [[10, 11]]);
+  pass(55, 55, [
+    [14, 15],
     [3, 4],
-    [8, 9],
-    [7, 8],
-    [11, 12],
   ]);
-  pass(0, 39, [
-    [1, 2],
-    [13, 14],
+  pass(11, 47, [
+    [5, 6],
+    [3, 4],
+    [16, 17],
   ]);
   return a.map((c) => c ?? "").join("");
 }
 
+/** A descrambler auto-ported from the live player bundle (see amuse-heal.ts);
+ *  when installed it takes precedence over the static port above. */
+let installedDescramble: ((s: string) => string) | null = null;
+
+export function installDescramble(fn: (s: string) => string): void {
+  installedDescramble = fn;
+}
+
+function decodeWith(fn: (s: string) => string, rawc: string): AmuseRaw {
+  const json = Buffer.from(fn(rawc), "base64").toString("utf8");
+  return JSON.parse(json) as AmuseRaw;
+}
+
 /** Decode a `rawc` blob into the AmuseLabs puzzle JSON. */
 export function decodeRawc(rawc: string): AmuseRaw {
-  const b64 = descramble(rawc);
-  const json = Buffer.from(b64, "base64").toString("utf8");
-  return JSON.parse(json) as AmuseRaw;
+  if (installedDescramble) {
+    try {
+      return decodeWith(installedDescramble, rawc);
+    } catch {
+      /* fall through to the static port */
+    }
+  }
+  return decodeWith(descramble, rawc);
+}
+
+/** Whether `rawc` decodes with any descrambler we currently have. */
+export function canDecodeRawc(rawc: string): boolean {
+  try {
+    decodeRawc(rawc);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface AmusePlacedWord {

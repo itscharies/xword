@@ -18,6 +18,7 @@
 //   days      how far back to look (default 21)
 //   --refetch re-parse and overwrite dates we already have (the store upserts)
 import { parseAmuse, extractRawc } from "./parse-amuse.ts";
+import { ensureDescrambler } from "./amuse-heal.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import { SOURCES } from "../src/lib/sources.ts";
 import type { Puzzle } from "../src/types.ts";
@@ -108,9 +109,11 @@ async function main(): Promise<void> {
     if (have.has(ymd)) continue;
     const id = `tca${ymd.slice(2)}`;
     try {
-      const html = await fetchText(playerUrl(id, token, uid));
+      const pageUrl = playerUrl(id, token, uid);
+      const html = await fetchText(pageUrl);
       const rawc = extractRawc(html);
       if (!rawc) continue; // not published yet (or an error page — no payload)
+      await ensureDescrambler(rawc, html, pageUrl);
       const puzzle = polish(parseAmuse(rawc, "latimes", ymd));
       await saveSyndicatedPuzzle("latimes", puzzle);
       const circles = puzzle.grid.flat().filter((c) => c.circled).length;

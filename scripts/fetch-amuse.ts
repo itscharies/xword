@@ -8,6 +8,7 @@
 //
 // Run: npm run fetch:amuse [days]   (default 21 days back)
 import { parseAmuse, extractRawc, decodeRawc } from "./parse-amuse.ts";
+import { ensureDescrambler } from "./amuse-heal.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
@@ -58,9 +59,11 @@ async function fetchDated(
   for (const ymd of recentYmd(DAYS)) {
     if (have.has(ymd)) continue;
     try {
-      const html = await fetchText(url(set, idFor(ymd)));
+      const pageUrl = url(set, idFor(ymd));
+      const html = await fetchText(pageUrl);
       const rawc = extractRawc(html);
       if (!rawc) continue; // not published yet
+      await ensureDescrambler(rawc, html, pageUrl);
       const puzzle = parseAmuse(rawc, source, ymd);
       await saveSyndicatedPuzzle(source, puzzle);
       console.log(`  ${source} ${ymd} — "${puzzle.title}"`);
@@ -111,9 +114,11 @@ async function fetchMidi(): Promise<number> {
   let added = 0;
   for (let id = head; id > head - DAYS && id > 0; id--) {
     try {
-      const html = await fetchText(url(MIDI_SET, `midi-crossword-${id}`));
+      const pageUrl = url(MIDI_SET, `midi-crossword-${id}`);
+      const html = await fetchText(pageUrl);
       const rawc = extractRawc(html);
       if (!rawc) continue;
+      await ensureDescrambler(rawc, html, pageUrl);
       const pub = decodeRawc(rawc).publishTime;
       if (!pub) continue;
       const ymd = ymdFromDate(new Date(pub));
