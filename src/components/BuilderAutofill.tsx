@@ -19,7 +19,7 @@ export function BuilderAutofill({ b }: { b: Builder }) {
           disabled={!af.canStart}
           title={
             af.canStart
-              ? "Search the word list for words that complete the grid"
+              ? "Search the word list for fills that complete the grid, branching out from the selected word"
               : "No empty squares to fill"
           }
         >

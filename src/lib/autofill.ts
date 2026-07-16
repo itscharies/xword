@@ -12,6 +12,9 @@ export interface FillCellSpec {
 /** A slot (an across or down word) as its ordered cells. */
 export interface SlotSpec {
   cells: FillCellSpec[];
+  /** The author's selected word: the search fills this slot first, so the
+   *  streamed options each try a different word here and branch out from it. */
+  preferred?: boolean;
 }
 
 export interface FillRequest {

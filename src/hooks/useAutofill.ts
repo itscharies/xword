@@ -18,6 +18,9 @@ const keyOf = (r: number, c: number) => `${r},${c}`;
 export interface AutofillDeps {
   numbered: Cell[][];
   orderedStarts: WordStart[];
+  /** The word under the cursor when the search starts: it's filled first, so
+   *  the options each try a different word there and branch out from it. */
+  activeSlot?: WordStart;
   gridRef: React.MutableRefObject<Cell[][]>;
   setGrid: (g: Cell[][]) => void;
 }
@@ -30,7 +33,13 @@ export interface AutofillDeps {
  * search is still adding more. Any grid edit invalidates a running search or
  * pending proposal — it was computed against the old letters.
  */
-export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: AutofillDeps) {
+export function useAutofill({
+  numbered,
+  orderedStarts,
+  activeSlot,
+  gridRef,
+  setGrid,
+}: AutofillDeps) {
   const [status, setStatus] = useState<"idle" | "running" | "done">("idle");
   const [options, setOptions] = useState<FillSolution[]>([]);
   const [index, setIndex] = useState(0);
@@ -111,6 +120,14 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
         key: keyOf(p.row, p.col),
         letters: numbered[p.row][p.col].solution ?? "",
       })),
+      // A fully-typed selection carries no preference — there's nothing to
+      // enumerate there and the worker ignores closed slots anyway.
+      ...(activeSlot &&
+      s.row === activeSlot.row &&
+      s.col === activeSlot.col &&
+      s.direction === activeSlot.direction
+        ? { preferred: true }
+        : {}),
     }));
     runIdRef.current++;
     setStatus("running");
@@ -129,7 +146,7 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
       seed: Math.floor(Math.random() * 0x7fffffff),
     };
     ensureWorker().postMessage(req);
-  }, [orderedStarts, numbered, clearVariants]);
+  }, [orderedStarts, numbered, activeSlot, clearVariants]);
 
   // Cancels a running search and drops any proposal (also the Cancel button).
   const dismiss = useCallback(() => {

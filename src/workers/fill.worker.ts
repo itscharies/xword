@@ -74,6 +74,10 @@ interface Slot {
   cellAt: (string | null)[];
   /** The open cell keys, deduped, in order. */
   cells: string[];
+  /** Fill this slot first (the author's selected word), so the options
+   *  enumerate words for it. Only ever open at the root: choosing it there
+   *  binds all its cells, and deeper picks fall back to most-constrained. */
+  preferred: boolean;
 }
 
 /** Compile slot specs into the search model. Slots with no open cells are the
@@ -99,7 +103,14 @@ function compile(slots: SlotSpec[]): { model: Slot[]; used: Set<string> } {
       }
     }
     if (cells.length === 0) used.add(fixed.join(""));
-    else model.push({ len: fixed.length, fixed, cellAt, cells });
+    else
+      model.push({
+        len: fixed.length,
+        fixed,
+        cellAt,
+        cells,
+        preferred: !!s.preferred,
+      });
   }
   return { model, used };
 }
@@ -260,10 +271,13 @@ async function search(
       }
       const n = countFor(slot, pat);
       if (n === 0) return "dead";
-      if (n < bestCount) {
+      if (n < bestCount || slot.preferred) {
         bestCount = n;
         best = slot;
         bestPat = pat;
+        // The author's word wins the root pick outright — later slots must
+        // not displace it, and its own count no longer matters.
+        if (slot.preferred) bestCount = -Infinity;
       }
     }
     if (!best) {

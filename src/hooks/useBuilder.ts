@@ -276,8 +276,15 @@ export function useBuilder() {
     return set;
   }, [orderedStarts, numbered]);
 
-  // Background fill search + the ghost proposal overlay it produces.
-  const autofill = useAutofill({ numbered, orderedStarts, gridRef, setGrid });
+  // Background fill search + the ghost proposal overlay it produces. The
+  // active slot seeds the search: options branch out from the selected word.
+  const autofill = useAutofill({
+    numbered,
+    orderedStarts,
+    activeSlot,
+    gridRef,
+    setGrid,
+  });
 
   // Decoration flags of the active cell — drives the toggle buttons' on state.
   const activeProps = useMemo(() => {
