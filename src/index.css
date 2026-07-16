@@ -1984,11 +1984,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   color: var(--ants);
   opacity: 0.5;
 }
+/* The cursor cell's highlight is the accent itself, so an accent-coloured
+   ghost would vanish there — render it like a pending real letter (real
+   letters are black on the highlight) instead. */
+.builder-grid .cell.active .cell-letter.ghost {
+  color: #000;
+  opacity: 0.45;
+}
 
 /* Ghost letters that differ across the fills found so far: a dotted accent
    mark under the letter, so the author can see where the fill branches.
    Unmarked ghosts are the same in every option. */
 .builder-grid .cell.branch::after {
+  --branch-mark: var(--ants);
   content: "";
   position: absolute;
   left: 20%;
@@ -1997,14 +2005,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   height: max(2px, calc(5cqw / var(--cols)));
   background: repeating-linear-gradient(
     90deg,
-    var(--ants) 0,
-    var(--ants) max(2px, calc(5cqw / var(--cols))),
+    var(--branch-mark) 0,
+    var(--branch-mark) max(2px, calc(5cqw / var(--cols))),
     transparent max(2px, calc(5cqw / var(--cols))),
     transparent max(4px, calc(10cqw / var(--cols)))
   );
   opacity: 0.6;
   pointer-events: none;
   z-index: 2;
+}
+/* Same accent-on-accent problem as the ghost letter: go dark on the cursor. */
+.builder-grid .cell.active.branch::after {
+  --branch-mark: #000;
+  opacity: 0.4;
 }
 
 /* Complete words the word list doesn't know: a red mark under the letters,
