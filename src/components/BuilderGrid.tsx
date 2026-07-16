@@ -21,9 +21,13 @@ export function BuilderGrid({ b }: { b: Builder }) {
   const { grid, width, height, mode } = b;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Paint-mode drag: paint each entered cell to the first cell's target value.
+  // Paint-mode drag: paint each cell dragged over to the first cell's target
+  // value.
   const painting = useRef(false);
   const paintBlack = useRef(false);
+  // Last cell a drag visited (either mode) — dedupes the pointermove stream
+  // and anchors gap-filling between paint strokes' move events.
+  const lastCell = useRef<{ r: number; c: number } | null>(null);
 
   // Fill-mode marquee: track the drag origin, whether it became a drag, and the
   // shift state at press. Preview cells + rectangle are component state so they
@@ -81,6 +85,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
   };
 
   const onCellDown = (r: number, c: number, e: React.PointerEvent) => {
+    lastCell.current = { r, c };
     if (mode === "paint") {
       painting.current = true;
       paintBlack.current = !grid[r][c].black;
@@ -101,23 +106,51 @@ export function BuilderGrid({ b }: { b: Builder }) {
     setRect(null);
   };
 
-  const onCellEnter = (r: number, c: number) => {
-    if (mode === "paint") {
-      if (painting.current) b.setBlack(r, c, paintBlack.current);
+  // Drags track the pointer by hit-testing its coordinates on each move, not
+  // with per-cell pointerenter: a touch pointerdown implicitly captures the
+  // pointer to the first cell, so enter events never fire on its neighbours
+  // and drag-painting on a phone was impossible. Coordinates behave the same
+  // for mouse and finger.
+  const cellAt = (e: React.PointerEvent) => {
+    const hit = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>("[data-r]");
+    if (!hit || !containerRef.current?.contains(hit)) return null;
+    return { r: Number(hit.dataset.r), c: Number(hit.dataset.c) };
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (mode === "paint" ? !painting.current : !dragging.current) return;
+    const p = cellAt(e);
+    if (!p || (lastCell.current?.r === p.r && lastCell.current?.c === p.c))
       return;
+    if (mode === "paint") {
+      // Paint the whole path from the previous cell: a quick stroke can skip
+      // squares between move events, which would leave gaps in the line.
+      const from = lastCell.current ?? p;
+      const steps = Math.max(Math.abs(p.r - from.r), Math.abs(p.c - from.c), 1);
+      for (let i = 1; i <= steps; i++) {
+        b.setBlack(
+          from.r + Math.round(((p.r - from.r) * i) / steps),
+          from.c + Math.round(((p.c - from.c) * i) / steps),
+          paintBlack.current,
+        );
+      }
+    } else if (start.current) {
+      moved.current = true;
+      const set = new Set<string>();
+      for (const q of cellsBetween(start.current, p)) {
+        if (!grid[q.row][q.col].black) set.add(keyOf(q.row, q.col));
+      }
+      previewRef.current = set;
+      setPreview(set);
+      setRect(rectBetween(start.current, p));
     }
-    if (!dragging.current || !start.current) return;
-    moved.current = true;
-    const set = new Set<string>();
-    for (const p of cellsBetween(start.current, { r, c })) {
-      if (!grid[p.row][p.col].black) set.add(keyOf(p.row, p.col));
-    }
-    previewRef.current = set;
-    setPreview(set);
-    setRect(rectBetween(start.current, { r, c }));
+    lastCell.current = p;
   };
 
   const endDrag = (e: React.PointerEvent) => {
+    lastCell.current = null;
     if (mode === "paint") {
       painting.current = false;
       return;
@@ -133,6 +166,19 @@ export function BuilderGrid({ b }: { b: Builder }) {
     } else {
       b.selectCell(start.current.r, start.current.c, e.shiftKey);
     }
+    start.current = null;
+    previewRef.current = null;
+    setPreview(null);
+    setRect(null);
+  };
+
+  // The browser reclaimed the gesture (fill-mode drags stay scrollable on
+  // touch — only paint mode sets touch-action: none). Abort outright: the
+  // start of a page scroll must not count as a tap on its starting cell.
+  const cancelDrag = () => {
+    lastCell.current = null;
+    painting.current = false;
+    dragging.current = false;
     start.current = null;
     previewRef.current = null;
     setPreview(null);
@@ -166,9 +212,10 @@ export function BuilderGrid({ b }: { b: Builder }) {
       }
       role="grid"
       aria-label="Crossword builder grid"
+      onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerLeave={endDrag}
-      onPointerCancel={endDrag}
+      onPointerCancel={cancelDrag}
     >
       {grid.map((row, r) =>
         row.map((cell, c) => {
@@ -219,7 +266,6 @@ export function BuilderGrid({ b }: { b: Builder }) {
               data-r={r}
               data-c={c}
               onPointerDown={(e) => onCellDown(r, c, e)}
-              onPointerEnter={() => onCellEnter(r, c)}
             >
               {cell.number !== undefined && (
                 <span className="num">{cell.number}</span>
