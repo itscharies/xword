@@ -35,8 +35,9 @@ const ctx = self as unknown as {
 // How many candidates to count per slot when picking the next one to fill —
 // only the relative order matters, so counting stops early.
 const COUNT_CAP = 32;
-// Yield to the event loop (cancel messages, progress) every this many words.
-const YIELD_EVERY = 2048;
+// Yield to the event loop (cancel messages, progress) every this many words
+// (~0.1s of search — words are cheap since the per-letter candidate index).
+const YIELD_EVERY = 8192;
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -288,7 +289,9 @@ async function search(
         solution: Object.fromEntries(assign),
         nodes,
       });
-      return "sol";
+      // Enough options: end the whole run (reported as a budget stop, so
+      // "exhausted" stays honest — the space wasn't fully covered).
+      return solutions >= req.maxSolutions ? "stop" : "sol";
     }
     if (deadStates.has(key)) return "dead";
 

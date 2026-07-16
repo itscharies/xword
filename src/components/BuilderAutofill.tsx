@@ -34,7 +34,11 @@ export function BuilderAutofill({ b }: { b: Builder }) {
         <>
           <span className="autofill-msg" aria-live="polite">
             Searching for fills…
-            {af.nodes >= 1000 && ` ${Math.round(af.nodes / 1000)}k words tried`}
+            {af.nodes >= 1_000_000
+              ? ` ${(af.nodes / 1_000_000).toFixed(1)}M words tried`
+              : af.nodes >= 1000
+                ? ` ${Math.round(af.nodes / 1000)}k words tried`
+                : ""}
           </span>
           <button className="btn" onClick={af.dismiss}>
             Cancel

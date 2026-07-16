@@ -24,6 +24,8 @@ export interface FillRequest {
   slots: SlotSpec[];
   /** Abandon the search after trying this many words (bounds CPU time). */
   nodeBudget: number;
+  /** Stop after streaming this many fills (bounds the options list). */
+  maxSolutions: number;
   /** Tie-break seed: words of equal score are tried in a per-run shuffled
    *  order (STWL scores are coarse bands, so a stable sort would otherwise
    *  walk ties alphabetically and every fill would start with AA-words).
