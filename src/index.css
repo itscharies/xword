@@ -819,8 +819,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
    from here (zoom is capped at 1:1). --canvas-cell is set by GridCanvas
    (sizeGrid) when a small grid would fit the viewport at more than
    --min-cell per square: the layout itself grows instead, keeping a fully
-   zoomed-out mini crisp rather than GPU-upscaled. */
-[data-grid-fit="canvas"] .grid {
+   zoomed-out mini crisp rather than GPU-upscaled.
+   Scoped to the viewport, not [data-grid-fit="canvas"]: the fit setting is
+   a root attribute, and grids outside a canvas (the builder's) must keep
+   their fit-to-screen width regardless of the solver preference. */
+.grid-canvas .grid {
   width: calc(var(--cols) * var(--canvas-cell, var(--min-cell)));
   flex: none;
 }
@@ -1886,6 +1889,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .builder-grid { position: relative; }
 .builder-grid.paint-mode,
 .builder-grid.paint-mode .cell { cursor: crosshair; }
+/* Paint mode owns every touch gesture on the grid: one finger draws, and a
+   drag can't be stolen by the page scroller mid-stroke (which would both
+   stop the stroke and leave the pointerdown's square flipped — scrolling
+   used to toggle squares). Scroll the page from outside the grid; fill mode
+   keeps the default so it scrolls normally. */
+.builder-grid.paint-mode { touch-action: none; }
 
 /* Multi-selected cells (shift-click / marquee) — an accent tint over the cell. */
 .builder-grid .cell.selected {
@@ -1974,6 +1983,28 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .builder-grid .cell .cell-letter.ghost {
   color: var(--ants);
   opacity: 0.5;
+}
+
+/* Ghost letters that differ across the fills found so far: a dotted accent
+   mark under the letter, so the author can see where the fill branches.
+   Unmarked ghosts are the same in every option. */
+.builder-grid .cell.branch::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: max(2px, calc(8cqw / var(--cols)));
+  height: max(2px, calc(5cqw / var(--cols)));
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ants) 0,
+    var(--ants) max(2px, calc(5cqw / var(--cols))),
+    transparent max(2px, calc(5cqw / var(--cols))),
+    transparent max(4px, calc(10cqw / var(--cols)))
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Complete words the word list doesn't know: a red mark under the letters,
@@ -2255,7 +2286,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
     height: 100svh;
     min-height: 0;
   }
-  [data-grid-fit="canvas"] .main {
+  /* .solve-body-scoped (not bare .main/.board): the fit attribute lives on
+     the root, and the builder's .main/.board — which never render a canvas —
+     must not inherit the solver's canvas layout. */
+  [data-grid-fit="canvas"] .solve-body .main {
     display: flex;
     /* Without this it defaults to row: .board's flex: 1 1 auto would then
        size its *width* (the main axis), while its height falls back to the
@@ -2266,7 +2300,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
     flex: 1 1 auto;
     min-height: 0;
   }
-  [data-grid-fit="canvas"] .board {
+  [data-grid-fit="canvas"] .solve-body .board {
     flex: 1 1 auto;
     min-height: 0;
     /* Bleed past .app's 14px side padding, like .actionbar/.mobile-bar do,

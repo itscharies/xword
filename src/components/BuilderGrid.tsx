@@ -192,6 +192,8 @@ export function BuilderGrid({ b }: { b: Builder }) {
             cell.black ? "black" : "",
             cell.shaded ? "shaded" : "",
             b.unknownCells.has(k) ? "unknown" : "",
+            // This ghost letter varies across the fills found so far.
+            ghost && b.autofill.branchCells.has(k) ? "branch" : "",
             isActive
               ? "active"
               : isSelected
