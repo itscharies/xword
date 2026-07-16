@@ -3,7 +3,7 @@ import { useBuilder } from "../hooks/useBuilder.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { getProfile } from "../lib/profile.ts";
-import { publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
+import { localIsoDate, publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
 import { saveSyndicatedPuzzle } from "../lib/syndicated.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
@@ -135,6 +135,11 @@ export function Builder({
   };
 
   const openPublish = () => {
+    // First-publishing with the Date field blank dates the puzzle "today" in
+    // the author's own timezone — the day it goes live — rather than letting
+    // the feed fall back to the (UTC) day the draft row was first created.
+    // Written back into builder state so later re-saves keep the same date.
+    if (!isEditingPublished && !b.date) b.setDate(localIsoDate());
     const puzzle = b.buildPuzzle();
     const warnings = puzzleWarnings(puzzle);
     if (warnings.length && !window.confirm(`Heads up: ${warnings.join(" and ")}. Publish anyway?`)) {

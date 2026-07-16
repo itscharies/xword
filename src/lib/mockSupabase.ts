@@ -221,7 +221,9 @@ const db = {
       data: miniPuzzle({ title: "Iris's Public Puzzle", author: "Iris", isoDate: isoDaysAgo(0), date: "p1" }),
       visibility: "public",
       completions: 2,
-      created_at: `${isoDaysAgo(0)}T09:00:00Z`,
+      // Drafted days before its puzzle date — the feed must list it under
+      // the date the author picked (today), not the day the row was created.
+      created_at: `${isoDaysAgo(3)}T09:00:00Z`,
     },
     {
       id: "a1111111-0000-0000-0000-000000000002",
@@ -416,8 +418,12 @@ function mockListArchiveFeed(params: {
   // Each flag governs only its own rows — Following and Your puzzles are
   // independent chips now (mirrors the SQL function). Own drafts always stay
   // out: they route to the Builder, not the Solver.
+  // A community puzzle's feed date is the one its author picked in the
+  // builder, falling back to the day its row was created for puzzles that
+  // never set one — mirrors puzzle_publish_date() on the SQL side.
+  const pubDate = (p: MockPuzzle) => p.data.isoDate || p.created_at.slice(0, 10);
   const communityRows: RawFeedRow[] = db.puzzles
-    .filter((p) => p.created_at.slice(0, 10) <= today)
+    .filter((p) => pubDate(p) <= today)
     .filter((p) =>
       p.author_id === viewerId
         ? params.p_include_mine && p.visibility !== "draft"
@@ -427,14 +433,14 @@ function mockListArchiveFeed(params: {
     .map((p) => ({
       kind: 0,
       item_id: p.id,
-      iso_date: p.created_at.slice(0, 10),
+      iso_date: pubDate(p),
       title: p.title,
       source: null,
       weekday: null,
       author: null,
       author_id: p.author_id,
       completions: p.completions,
-      neg_date: -Date.parse(`${p.created_at.slice(0, 10)}T00:00:00Z`),
+      neg_date: -Date.parse(`${pubDate(p)}T00:00:00Z`),
       tie: -Date.parse(p.created_at),
       mutual_progress: mockListMutualProgress({
         p_puzzle_id: p.id,

@@ -107,7 +107,7 @@ function decodeCursor(cursor: string): ArchiveCursor {
 /** Today's date in the viewer's own timezone, as YYYY-MM-DD — deliberately
  *  not `toISOString()`, which reports UTC and would reintroduce the same
  *  lag `p_viewer_date` exists to avoid. */
-function localIsoDate(): string {
+export function localIsoDate(): string {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
