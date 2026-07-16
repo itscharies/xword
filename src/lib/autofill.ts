@@ -19,8 +19,6 @@ export interface FillRequest {
   runId: number;
   wordlistUrl: string;
   slots: SlotSpec[];
-  /** Stop after this many complete fills. */
-  maxSolutions: number;
   /** Abandon the search after trying this many words (bounds CPU time). */
   nodeBudget: number;
   /** Tie-break seed: words of equal score are tried in a per-run shuffled
@@ -35,11 +33,12 @@ export type WorkerRequest = FillRequest | { type: "cancel" };
 export type FillSolution = Record<string, string>;
 
 export type FillResponse =
-  | { type: "progress"; runId: number; nodes: number; solutions: number }
+  | { type: "progress"; runId: number; nodes: number }
+  /** Fills stream back one at a time, as the search finds them. */
+  | { type: "solution"; runId: number; solution: FillSolution; nodes: number }
   | {
-      type: "result";
+      type: "done";
       runId: number;
-      solutions: FillSolution[];
       /** True when the whole search space was covered (a "no fill" is then
        *  definitive, not just a budget timeout). */
       exhausted: boolean;

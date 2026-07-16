@@ -2,8 +2,9 @@ import type { Builder } from "../hooks/useBuilder.ts";
 import { WandIcon } from "./icons.tsx";
 
 /** The "fill it in for me" strip under the builder grid. Kicks off the
- *  background search, shows its progress, then walks the returned fills:
- *  each option appears as ghost letters on the grid until accepted. */
+ *  background search and walks the fills as they stream in — the option
+ *  count keeps climbing while the search runs, and each option appears as
+ *  ghost letters on the grid until accepted. */
 export function BuilderAutofill({ b }: { b: Builder }) {
   const af = b.autofill;
   if (b.mode !== "fill") return null;
@@ -28,7 +29,7 @@ export function BuilderAutofill({ b }: { b: Builder }) {
         </button>
       )}
 
-      {af.status === "running" && (
+      {af.status === "running" && af.count === 0 && (
         <>
           <span className="autofill-msg" aria-live="polite">
             Searching for fills…
@@ -62,10 +63,11 @@ export function BuilderAutofill({ b }: { b: Builder }) {
         </>
       )}
 
-      {af.status === "done" && !af.error && af.count > 0 && (
+      {!af.error && af.count > 0 && (
         <>
           <span className="autofill-msg" aria-live="polite">
             Option {af.index + 1} of {af.count}
+            {af.status === "running" && "… still searching"}
           </span>
           {af.count > 1 && (
             <button className="btn" onClick={() => af.cycle(1)}>

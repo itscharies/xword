@@ -5,15 +5,16 @@
 // The algorithm is a classic constraint fill: repeatedly take the unfilled
 // slot with the fewest matching words (most-constrained-first), try its
 // candidates in score order so strong words surface, and backtrack on dead
-// ends. After each complete fill the search unwinds to its first choice
-// point, so the options returned differ in a whole word choice rather than
-// in one corner cell.
+// ends. Each complete fill is streamed back the moment it's found, then the
+// search unwinds to its first choice point and keeps going until the word
+// list or the node budget runs out — so the options differ in a whole word
+// choice rather than in one corner cell, and the list grows as long as the
+// search keeps producing.
 
 import { parseWordlist, type Suggestion } from "../lib/wordlist.ts";
 import type {
   FillRequest,
   FillResponse,
-  FillSolution,
   SlotSpec,
   WorkerRequest,
 } from "../lib/autofill.ts";
@@ -120,7 +121,7 @@ function wordHash(word: string, seed: number): number {
 async function search(
   req: FillRequest,
   token: RunToken,
-): Promise<{ solutions: FillSolution[]; exhausted: boolean; nodes: number }> {
+): Promise<{ exhausted: boolean; nodes: number }> {
   const { buckets, words } = await ensureWordlist(req.wordlistUrl);
   const { model, used } = compile(req.slots);
 
@@ -140,7 +141,6 @@ async function search(
   };
 
   const assign = new Map<string, string>();
-  const solutions: FillSolution[] = [];
   // Candidate counts per pattern string. Deliberately ignores the used-words
   // set, so entries stay valid as words bind and unbind while backtracking
   // (a count of 0 is then a safe prune: no word fits, used or not).
@@ -175,8 +175,8 @@ async function search(
     return n;
   };
 
-  /** "sol": a fill was recorded somewhere below (unwind to the root choice);
-   *  "dead": this subtree holds no fill; "stop": budget/cancel/enough found. */
+  /** "sol": a fill was streamed from somewhere below (unwind to the root
+   *  choice); "dead": this subtree holds no fill; "stop": budget/cancel. */
   const dfs = async (depth: number): Promise<"sol" | "dead" | "stop"> => {
     // Pick the open slot with the fewest candidates; a slot completed by
     // crossing words must itself be a real word or the branch dies here.
@@ -202,7 +202,12 @@ async function search(
       }
     }
     if (!best) {
-      solutions.push(Object.fromEntries(assign));
+      ctx.postMessage({
+        type: "solution",
+        runId: req.runId,
+        solution: Object.fromEntries(assign),
+        nodes,
+      });
       return "sol";
     }
 
@@ -210,12 +215,7 @@ async function search(
       if (used.has(s.word) || !matches(best, s.word)) continue;
       if (++nodes >= req.nodeBudget) return "stop";
       if (nodes % YIELD_EVERY === 0) {
-        ctx.postMessage({
-          type: "progress",
-          runId: req.runId,
-          nodes,
-          solutions: solutions.length,
-        });
+        ctx.postMessage({ type: "progress", runId: req.runId, nodes });
         await tick();
         if (token.cancelled) return "stop";
       }
@@ -234,17 +234,14 @@ async function search(
       for (const k of bound) assign.delete(k);
 
       if (r === "stop") return "stop";
-      if (r === "sol") {
-        if (depth > 0) return "sol";
-        if (solutions.length >= req.maxSolutions) return "stop";
-        // At the root, keep going: the next word here is the next option.
-      }
+      // "sol": unwind to the root, where the next word is the next option.
+      if (r === "sol" && depth > 0) return "sol";
     }
     return "dead";
   };
 
   const r = await dfs(0);
-  return { solutions, exhausted: r !== "stop", nodes };
+  return { exhausted: r !== "stop", nodes };
 }
 
 // ---- message loop ----------------------------------------------------------
@@ -265,9 +262,9 @@ ctx.onmessage = (e: MessageEvent<WorkerRequest>) => {
   current = token;
   chain = chain.then(async () => {
     try {
-      const { solutions, exhausted, nodes } = await search(msg, token);
+      const { exhausted, nodes } = await search(msg, token);
       if (token.cancelled) return;
-      ctx.postMessage({ type: "result", runId: msg.runId, solutions, exhausted, nodes });
+      ctx.postMessage({ type: "done", runId: msg.runId, exhausted, nodes });
     } catch (err) {
       if (token.cancelled) return;
       ctx.postMessage({
