@@ -230,11 +230,16 @@ export function BuilderGrid({ b }: { b: Builder }) {
           const inWord = !multi && b.highlighted.has(k);
           const isLinked = !multi && b.linkedCells.has(k);
           const entry = cell.solution ?? "";
-          // A pending autofill proposal paints its letter as a ghost, badged
-          // with how many different letters the found fills put here.
+          // A pending autofill proposal paints its letter as a ghost. Squares
+          // the found fills disagree on are badged with the shown letter's
+          // share of the fills, e.g. "3/8".
           const ghost =
             !entry && !cell.black ? b.autofill.proposal?.get(k) : undefined;
-          const ghostVariants = ghost ? (b.autofill.variants.get(k) ?? 0) : 0;
+          const tallies = ghost ? b.autofill.variants.get(k) : undefined;
+          const share =
+            ghost && tallies && tallies.size > 1
+              ? `${tallies.get(ghost) ?? 0}/${b.autofill.count}`
+              : null;
           const afterBar = c > 0 && !!row[c - 1].barRight;
           const cls = [
             "cell",
@@ -278,9 +283,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
               ) : ghost ? (
                 <>
                   <span className="cell-letter ghost">{ghost}</span>
-                  {ghostVariants > 1 && (
-                    <span className="variants">{ghostVariants}</span>
-                  )}
+                  {share && <span className="variants">{share}</span>}
                 </>
               ) : null}
             </div>

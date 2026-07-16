@@ -1992,14 +1992,17 @@ button { font: inherit; cursor: pointer; color: inherit; }
   opacity: 0.45;
 }
 
-/* How many different letters the found fills put in this square — badged in
-   the corner opposite the number, on ghosts that actually vary. An unbadged
-   ghost is the same in every option found so far. */
+/* The shown ghost letter's share of the found fills ("3/8") — badged in the
+   corner opposite the number, on squares the fills disagree on. An unbadged
+   ghost is the same in every option found so far. Slightly smaller than the
+   cell number so the fraction fits. */
 .builder-grid .cell .variants {
   position: absolute;
   top: 1px;
   right: 1px;
-  font-size: max(5px, calc(24cqw / var(--cols)));
+  max-width: 95%;
+  overflow: hidden;
+  font-size: max(5px, calc(18cqw / var(--cols)));
   font-weight: 700;
   line-height: 1;
   color: var(--ants);

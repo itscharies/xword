@@ -37,22 +37,23 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
   const [nodes, setNodes] = useState(0);
   const [exhausted, setExhausted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // How many distinct letters each cell takes across the found fills — the
-  // grid badges a ghost cell that varies with its count, so the author can
-  // see at a glance where the fill branches and by how much (a count of 1,
-  // not shown, means the letter is the same in every option found so far).
-  const [variants, setVariants] = useState<Map<string, number>>(new Map());
+  // Per cell, how many of the found fills use each letter there. The grid
+  // badges a ghost square the options disagree on with the shown letter's
+  // share of the fills ("3/8"); squares every fill agrees on get no badge.
+  const [variants, setVariants] = useState<Map<string, Map<string, number>>>(
+    new Map(),
+  );
 
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef(0);
   const statusRef = useRef(status);
   statusRef.current = status;
-  // The distinct letters seen per cell. Republished as counts only when a
-  // new letter appears, which dries up fast — O(cells) per streamed solution.
-  const lettersRef = useRef(new Map<string, Set<string>>());
+  // Mutable tallies behind `variants`, snapshotted into state per solution —
+  // O(cells) per streamed solution either way.
+  const countsRef = useRef(new Map<string, Map<string, number>>());
 
   const clearVariants = useCallback(() => {
-    lettersRef.current = new Map();
+    countsRef.current = new Map();
     setVariants(new Map());
   }, []);
 
@@ -67,21 +68,16 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
         if (msg.type === "progress") {
           setNodes(msg.nodes);
         } else if (msg.type === "solution") {
-          let grew = false;
           for (const [k, letter] of Object.entries(msg.solution)) {
-            let seen = lettersRef.current.get(k);
-            if (!seen) lettersRef.current.set(k, (seen = new Set()));
-            if (!seen.has(letter)) {
-              seen.add(letter);
-              grew = true;
-            }
+            let per = countsRef.current.get(k);
+            if (!per) countsRef.current.set(k, (per = new Map()));
+            per.set(letter, (per.get(letter) ?? 0) + 1);
           }
-          if (grew)
-            setVariants(
-              new Map(
-                [...lettersRef.current].map(([k, s]) => [k, s.size]),
-              ),
-            );
+          setVariants(
+            new Map(
+              [...countsRef.current].map(([k, per]) => [k, new Map(per)]),
+            ),
+          );
           // Append without touching index: the author may be mid-cycle.
           setOptions((prev) => [...prev, msg.solution]);
           setNodes(msg.nodes);

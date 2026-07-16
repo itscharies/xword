@@ -5,7 +5,7 @@ import { WandIcon } from "./icons.tsx";
  *  background search and walks the fills as they stream in — the option
  *  count keeps climbing while the search runs, and each option appears as
  *  ghost letters on the grid until accepted. Ghost letters that vary across
- *  the options carry a count of how many letters the fills put there. */
+ *  the options carry the shown letter's share of the fills, e.g. "3/8". */
 export function BuilderAutofill({ b }: { b: Builder }) {
   const af = b.autofill;
   if (b.mode !== "fill") return null;
