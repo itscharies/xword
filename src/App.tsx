@@ -523,20 +523,17 @@ function Solver({
   // must have come from another tab or device, not from us.
   const lastSyncedAtRef = useRef(saved?.updatedAt ?? 0);
 
-  // Save indicator: "saving" the moment an edit schedules a debounced push,
-  // "saved" once that request lands, then fades back to nothing after a
-  // couple of seconds so it doesn't linger as permanent header clutter.
+  // Save status, surfaced in the byline only when a push fails — the sign of
+  // possible progress loss. The happy path stays silent: a transient
+  // "Saving…"/"Saved ✓" made the byline wrap and reflow the board below it
+  // every few keystrokes when the title ran long. A later successful push
+  // clears the warning.
   const saveKey = communityId ? `community:${communityId}` : `${puzzle.source}:${puzzle.date}`;
   const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
   useEffect(() => {
     setSaveStatus(null);
     return onSaveStatus(saveKey, setSaveStatus);
   }, [saveKey]);
-  useEffect(() => {
-    if (saveStatus !== "saved") return;
-    const t = setTimeout(() => setSaveStatus(null), 2500);
-    return () => clearTimeout(t);
-  }, [saveStatus]);
 
   const buildProgress = (): Progress => ({
     entries: xw.entries,
@@ -670,21 +667,15 @@ function Solver({
             <div className="byline">
               By {puzzle.author || "Anonymous"}
               {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
-              {saveStatus && (
-                <span className={`save-status save-status-${saveStatus}`}>
+              {saveStatus === "error" && (
+                <span className="save-status save-status-error">
                   {" · "}
-                  {saveStatus === "saving" ? (
-                    "Saving…"
-                  ) : saveStatus === "saved" ? (
-                    "Saved ✓"
-                  ) : (
-                    <Tip
-                      className="tip-text"
-                      tip="Couldn't reach the server — check your connection."
-                    >
-                      Sync failed ⚠
-                    </Tip>
-                  )}
+                  <Tip
+                    className="tip-text"
+                    tip="Couldn't reach the server — check your connection."
+                  >
+                    Sync failed ⚠
+                  </Tip>
                 </span>
               )}
             </div>
