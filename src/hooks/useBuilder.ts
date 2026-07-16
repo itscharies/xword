@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Cell, Direction, Puzzle } from "../types.ts";
 import { numberGrid, readWord, slotCells, type WordStart } from "../lib/numbering.ts";
+import { appendRefs, refLabel, splitGeneratedRefs, stripRefs } from "../lib/clueRefs.ts";
 import { splitEnumeration } from "../lib/enumeration.ts";
 import { loadWordSet } from "../lib/wordlist.ts";
 import { useAutofill } from "./useAutofill.ts";
@@ -766,7 +767,6 @@ export function useBuilder() {
     const clone = grid.map((row) => row.map((c) => ({ ...c })));
     const starts = numberGrid(clone);
     const byKey = new Map(starts.map((s) => [slotKey(s), s]));
-    const cap = (d: Direction) => (d === "across" ? "Across" : "Down");
     const toClue = (s: WordStart) => {
       // Keep the clue text clean; the length goes in its own `enumeration`
       // field. Strip any enumeration the author typed so it isn't duplicated.
@@ -776,15 +776,11 @@ export function useBuilder() {
         : split.enumeration;
       // Render cross-references into the clue text so the solver's parseClueRefs
       // links them, e.g. "See 14-Across" / "<clue> (see 14-Across, 3-Down)".
-      let clue = split.clue;
-      const refs = (links.get(slotKey(s)) ?? [])
+      const labels = (links.get(slotKey(s)) ?? [])
         .map((k) => byKey.get(k))
         .filter((t): t is WordStart => Boolean(t))
-        .map((t) => `${t.number}-${cap(t.direction)}`);
-      if (refs.length) {
-        const joined = refs.join(", ");
-        clue = clue ? `${clue} (see ${joined})` : `See ${joined}`;
-      }
+        .map((t) => refLabel(t.number, t.direction));
+      const clue = appendRefs(split.clue, labels);
       return {
         number: s.number,
         clue,
@@ -802,6 +798,14 @@ export function useBuilder() {
         weekday: "short",
       });
     }
+    // The refs are already baked into the clue text above for solvers; this
+    // structured copy, pruned to slots the exported grid still has, is what
+    // importPuzzle restores so the links stay editable across a draft
+    // round-trip. Same shape as the localStorage draft's `links`.
+    const exportLinks = [...links]
+      .map(([source, targets]) =>
+        [source, targets.filter((t) => byKey.has(t))] as [string, string[]])
+      .filter(([source, targets]) => byKey.has(source) && targets.length > 0);
     return {
       date: iso.replace(/-/g, ""),
       isoDate: iso,
@@ -817,6 +821,7 @@ export function useBuilder() {
         across: starts.filter((s) => s.direction === "across").map(toClue),
         down: starts.filter((s) => s.direction === "down").map(toClue),
       },
+      ...(exportLinks.length ? { links: exportLinks } : {}),
     };
   }, [grid, clueText, links, date, title, author, editor, width, height, autoEnumerate, cryptic]);
 
@@ -851,11 +856,9 @@ export function useBuilder() {
     window.location.reload();
   }, []);
 
-  // Load an already-parsed Puzzle (e.g. a syndicated one an admin is
-  // fixing) into the editing state, replacing whatever draft was here.
-  // `links` is left empty — any cross-references already read as plain
-  // "(see N-Across)" text inside the imported clue strings, so nothing is
-  // lost; re-linking is only needed if the author wants the highlight UI.
+  // Load an already-parsed Puzzle (a Supabase draft being continued, or a
+  // syndicated one an admin is fixing) into the editing state, replacing
+  // whatever draft was here.
   const importPuzzle = useCallback((puzzle: Puzzle) => {
     setWidthState(puzzle.width);
     setHeightState(puzzle.height);
@@ -865,15 +868,54 @@ export function useBuilder() {
     setDirection("across");
     setMode("fill");
     setCryptic(Boolean(puzzle.cryptic));
-    setLinks(new Map());
+
+    // Rebuild clue text and structured links together. buildPuzzle writes
+    // links twice — baked into the clue text for solvers, and structurally
+    // in puzzle.links — so restore the structure and strip the baked text,
+    // or it reads as authored text and doubles up on the next export.
+    // Drafts saved before puzzle.links existed (and syndicated clues like
+    // "See 5-Down") only have the text: when a clue ends in exactly the
+    // generated format, recover it into a real link the same way.
+    const clueList = [
+      ...puzzle.clues.across.map((c) => ({ c, direction: "across" as Direction })),
+      ...puzzle.clues.down.map((c) => ({ c, direction: "down" as Direction })),
+    ];
+    const keyOfClue = ({ c, direction }: (typeof clueList)[number]) =>
+      slotKey({ row: c.row, col: c.col, direction });
+    const keyByNumber = new Map(clueList.map((e) => [`${e.c.number}-${e.direction}`, keyOfClue(e)]));
+    const labelByKey = new Map(clueList.map((e) => [keyOfClue(e), refLabel(e.c.number, e.direction)]));
+
+    const nextLinks = new Map<string, string[]>(
+      (puzzle.links ?? [])
+        .map(([source, targets]) =>
+          [source, targets.filter((t) => labelByKey.has(t))] as [string, string[]])
+        .filter(([source, targets]) => labelByKey.has(source) && targets.length > 0),
+    );
 
     const nextClueText = new Map<string, string>();
-    for (const c of puzzle.clues.across) {
-      nextClueText.set(slotKey({ row: c.row, col: c.col, direction: "across" }), c.clue);
+    for (const e of clueList) {
+      const key = keyOfClue(e);
+      let text = e.c.clue;
+      const targets = nextLinks.get(key);
+      if (targets) {
+        text = stripRefs(text, targets.map((t) => labelByKey.get(t)!));
+      } else {
+        const generated = splitGeneratedRefs(text);
+        if (generated) {
+          const keys = generated.refs
+            .map((r) => keyByNumber.get(`${r.number}-${r.direction}`))
+            .filter((k): k is string => Boolean(k) && k !== key);
+          // Only convert when every ref resolves to a real, other slot —
+          // anything else is authored prose and stays in the text.
+          if (keys.length === generated.refs.length) {
+            nextLinks.set(key, keys);
+            text = generated.clue;
+          }
+        }
+      }
+      nextClueText.set(key, text);
     }
-    for (const c of puzzle.clues.down) {
-      nextClueText.set(slotKey({ row: c.row, col: c.col, direction: "down" }), c.clue);
-    }
+    setLinks(nextLinks);
     setClueText(nextClueText);
 
     setTitle(puzzle.title);

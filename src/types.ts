@@ -61,6 +61,13 @@ export interface Puzzle {
     across: Clue[];
     down: Clue[];
   };
+  /** Cross-references between clues as the builder's structured links:
+   * [source slot key, target slot keys], a slot key being "row,col,direction".
+   * The same refs are baked into the clue text (e.g. "(see 14-Across)") for
+   * solvers; this copy is what lets a draft round-trip back into the builder
+   * as editable links instead of fossilizing into the text. Only present on
+   * builder-authored puzzles that have links. */
+  links?: [string, string[]][];
   /** Whether this is a cryptic puzzle (offers the anagram helper, shows clue
    * enumerations). Authored puzzles set it explicitly; source-based puzzles
    * fall back to inferring it from their source's type. */

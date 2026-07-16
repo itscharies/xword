@@ -14,6 +14,51 @@ export interface ClueRef {
 // Numbers may be joined by commas/spaces or the words and/or/nor.
 const REF_RE = /((?:\d+\s*-\s*[, ]*(?:(?:and|or|nor)\s+)?)+)(Across|Down)/gi;
 
+/** "14-Across" — the label format the builder bakes into clue text. */
+export function refLabel(number: number, direction: Direction): string {
+  return `${number}-${direction === "across" ? "Across" : "Down"}`;
+}
+
+/** Bake cross-reference labels into a clue's text in the format parseClueRefs
+ *  (and anyone else reading the exported file) picks up. */
+export function appendRefs(clue: string, labels: string[]): string {
+  if (!labels.length) return clue;
+  const joined = labels.join(", ");
+  return clue ? `${clue} (see ${joined})` : `See ${joined}`;
+}
+
+/** Exact inverse of appendRefs for the given labels — importing a puzzle
+ *  whose structured links are known strips the baked text back out so it
+ *  doesn't read as authored text and double up on the next export. */
+export function stripRefs(clue: string, labels: string[]): string {
+  if (!labels.length) return clue;
+  const joined = labels.join(", ");
+  if (clue === `See ${joined}`) return "";
+  const suffix = ` (see ${joined})`;
+  return clue.endsWith(suffix) ? clue.slice(0, -suffix.length) : clue;
+}
+
+// Exactly appendRefs's output: "14-Across" labels joined by ", " — anything
+// looser (NYT's "17-, 25- and 43-Across", refs mid-sentence) is authored
+// prose and stays in the text.
+const LABEL_LIST_RE = /^\d+-(?:Across|Down)(?:, \d+-(?:Across|Down))*$/i;
+
+/** Detect a clue whose refs exist only as appendRefs-style text — a draft
+ *  saved before links were stored structurally, or a syndicated "See 5-Down"
+ *  clue — and split them back apart. Returns null unless the text ends in
+ *  exactly the generated format. */
+export function splitGeneratedRefs(text: string): { clue: string; refs: ClueRef[] } | null {
+  const m = /^(?:(.*) \(see ([^()]+)\)|[Ss]ee (.+))$/.exec(text);
+  if (!m) return null;
+  const refsText = m[2] ?? m[3];
+  if (!LABEL_LIST_RE.test(refsText)) return null;
+  const refs = refsText.split(", ").map((label) => {
+    const [n, d] = label.split("-");
+    return { number: Number(n), direction: d.toLowerCase() as Direction };
+  });
+  return { clue: m[1] ?? "", refs };
+}
+
 /**
  * Extract cross-references to other entries from a clue's text, so the app can
  * highlight the linked answers when that clue is selected.

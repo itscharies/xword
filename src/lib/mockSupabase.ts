@@ -247,7 +247,33 @@ const db = {
       id: "a1111111-0000-0000-0000-000000000004",
       author_id: SAM,
       title: "Sam's Draft",
-      data: miniPuzzle({ title: "Sam's Draft", author: "Sam", isoDate: isoDaysAgo(0), date: "p4" }),
+      // A legacy-format draft: its cross-reference exists only as text baked
+      // into the 1-Across clue, with no structured `links` field — reopening
+      // it must recover the ref into a real link with the text stripped.
+      data: {
+        date: "p4",
+        isoDate: isoDaysAgo(0),
+        weekday: weekdayOf(isoDaysAgo(0)),
+        title: "Sam's Draft",
+        author: "Sam",
+        editor: "Mock Editor",
+        width: 2,
+        height: 2,
+        grid: [
+          [{ solution: "A", number: 1 }, { solution: "B", number: 2 }],
+          [{ solution: "B", number: 3 }, { solution: "A" }],
+        ],
+        clues: {
+          across: [
+            { number: 1, clue: "First half (see 3-Across)", answer: "AB", row: 0, col: 0, len: 2 },
+            { number: 3, clue: "Second half", answer: "BA", row: 1, col: 0, len: 2 },
+          ],
+          down: [
+            { number: 1, clue: "Reading downward", answer: "AB", row: 0, col: 0, len: 2 },
+            { number: 2, clue: "Also downward", answer: "BA", row: 0, col: 1, len: 2 },
+          ],
+        },
+      },
       visibility: "draft",
       completions: 0,
       created_at: `${isoDaysAgo(0)}T10:00:00Z`,
@@ -651,7 +677,13 @@ class MockQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
     }
 
     if (this.op === "insert") {
-      const toInsert = (Array.isArray(this.payload) ? this.payload : [this.payload!]).map((r) => ({ ...r }));
+      // Mirror the real tables' column defaults (id uuid, created_at now()) —
+      // publishing reads the generated id back via .select("id").single().
+      const toInsert = (Array.isArray(this.payload) ? this.payload : [this.payload!]).map((r) => ({
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        ...r,
+      }));
       this.setRows([...this.rows, ...toInsert]);
       return this.finish(toInsert);
     }
