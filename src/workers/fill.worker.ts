@@ -25,11 +25,6 @@ const ctx = self as unknown as {
   postMessage: (msg: FillResponse) => void;
 };
 
-// STWL scores run 0–50 in coarse bands, and the low bands hide outright junk
-// ("UOYRO;20") next to merely-weak entries. Autofill only places words at or
-// above this bar; the suggestions panel and the unknown-word highlight keep
-// the full list, so hand-placed oddballs stay allowed.
-const MIN_SCORE = 25;
 // How many candidates to count per slot when picking the next one to fill —
 // only the relative order matters, so counting stops early.
 const COUNT_CAP = 32;
@@ -39,6 +34,8 @@ const YIELD_EVERY = 2048;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 // ---- word list (fetched once, kept across runs) ---------------------------
+// Every entry is fair game for the fill: the list is already culled to
+// fill-quality words at build time (see scripts/build-wordlist.ts).
 
 let buckets: Map<number, Suggestion[]> | null = null;
 let words: Set<string> | null = null;
@@ -51,9 +48,8 @@ async function ensureWordlist(url: string) {
     buckets = new Map();
     words = new Set<string>();
     for (const [len, arr] of parseWordlist(await r.text())) {
-      const good = arr.filter((s) => s.score >= MIN_SCORE);
-      if (good.length) buckets.set(len, good);
-      for (const s of good) words.add(s.word);
+      buckets.set(len, arr);
+      for (const s of arr) words.add(s.word);
     }
     loadedFrom = url;
   }

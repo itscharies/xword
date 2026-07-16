@@ -6,9 +6,15 @@
 //   with attribution (shown in the builder), and redistributes this derived
 //   list under the same licence. See public/wordlist.LICENSE.txt.
 //
-// The source is a `WORD;score` file (score 0–50). We drop the score-0 "avoid"
-// tier and any entry that isn't pure A–Z (a handful contain digits), then write
+// The source is a `WORD;score` file (score 0–50 in coarse bands). The bands
+// below 40 are mostly junk — misspellings, keyboard mash, dubious partials
+// ("TRRBS;20", "EMMMA;30", "SNLUK;30") — with the quality cliff at 40, so we
+// keep only 40+ entries (also roughly halving the served file). We likewise
+// drop anything that isn't pure A–Z (a handful contain digits), then write
 // the normalised list to public/wordlist.txt for the app to lazy-load.
+//
+// The builder trusts the list wholesale: autofill draws from every entry, and
+// hand-typed words outside it get the unknown-word highlight.
 //
 // Usage: tsx scripts/build-wordlist.ts <path-to-stwl.dict>
 
@@ -18,6 +24,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, "..", "public", "wordlist.txt");
+const MIN_SCORE = 40;
 
 async function main() {
   const src = process.argv[2];
@@ -32,7 +39,7 @@ async function main() {
       continue;
     }
     const score = Number(m[2]);
-    if (score <= 0) {
+    if (score < MIN_SCORE) {
       dropped++;
       continue;
     }
