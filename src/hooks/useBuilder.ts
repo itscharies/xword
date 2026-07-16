@@ -256,6 +256,26 @@ export function useBuilder() {
     return set;
   }, [wordSet, orderedStarts, numbered]);
 
+  // Cells of slots too short to ever fill: the word list has no 1- or
+  // 2-letter entries, so a 2-cell word makes the whole grid unfillable and
+  // autofill's definitive "no fill" verdict is usually this. Flagged in both
+  // modes so the layout error shows up while painting. A rebus square counts
+  // its full string — two cells spelling 3+ letters are a legitimate word.
+  const shortSlotCells = useMemo<Set<string>>(() => {
+    const set = new Set<string>();
+    for (const s of orderedStarts) {
+      if (s.len >= 3) continue;
+      const cells = slotCells(s);
+      const letters = cells.reduce(
+        (n, p) =>
+          n + Math.max(1, (numbered[p.row][p.col].solution ?? "").length),
+        0,
+      );
+      if (letters < 3) for (const p of cells) set.add(keyOf(p.row, p.col));
+    }
+    return set;
+  }, [orderedStarts, numbered]);
+
   // Background fill search + the ghost proposal overlay it produces.
   const autofill = useAutofill({ numbered, orderedStarts, gridRef, setGrid });
 
@@ -972,6 +992,7 @@ export function useBuilder() {
     activePattern,
     activeProps,
     unknownCells,
+    shortSlotCells,
     autofill,
     acrossStarts,
     downStarts,

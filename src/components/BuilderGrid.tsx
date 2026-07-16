@@ -246,6 +246,7 @@ export function BuilderGrid({ b }: { b: Builder }) {
             cell.black ? "black" : "",
             cell.shaded ? "shaded" : "",
             b.unknownCells.has(k) ? "unknown" : "",
+            b.shortSlotCells.has(k) ? "short-slot" : "",
             isActive
               ? "active"
               : isSelected
