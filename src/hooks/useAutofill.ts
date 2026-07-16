@@ -37,24 +37,23 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
   const [nodes, setNodes] = useState(0);
   const [exhausted, setExhausted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Cells whose letter differs somewhere across the found fills — the grid
-  // marks these on the ghost so the author can see where the fill branches
-  // (an unmarked ghost letter is the same in every option found so far).
-  const [branchCells, setBranchCells] = useState<Set<string>>(new Set());
+  // How many distinct letters each cell takes across the found fills — the
+  // grid badges a ghost cell that varies with its count, so the author can
+  // see at a glance where the fill branches and by how much (a count of 1,
+  // not shown, means the letter is the same in every option found so far).
+  const [variants, setVariants] = useState<Map<string, number>>(new Map());
 
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef(0);
   const statusRef = useRef(status);
   statusRef.current = status;
-  // Incremental branch tracking: the first letter each cell was seen with,
-  // and the cells already known to vary. O(cells) per streamed solution.
-  const firstLetterRef = useRef(new Map<string, string>());
-  const branchRef = useRef(new Set<string>());
+  // The distinct letters seen per cell. Republished as counts only when a
+  // new letter appears, which dries up fast — O(cells) per streamed solution.
+  const lettersRef = useRef(new Map<string, Set<string>>());
 
-  const clearBranches = useCallback(() => {
-    firstLetterRef.current = new Map();
-    branchRef.current = new Set();
-    setBranchCells(new Set());
+  const clearVariants = useCallback(() => {
+    lettersRef.current = new Map();
+    setVariants(new Map());
   }, []);
 
   const ensureWorker = () => {
@@ -70,15 +69,19 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
         } else if (msg.type === "solution") {
           let grew = false;
           for (const [k, letter] of Object.entries(msg.solution)) {
-            if (branchRef.current.has(k)) continue;
-            const first = firstLetterRef.current.get(k);
-            if (first === undefined) firstLetterRef.current.set(k, letter);
-            else if (first !== letter) {
-              branchRef.current.add(k);
+            let seen = lettersRef.current.get(k);
+            if (!seen) lettersRef.current.set(k, (seen = new Set()));
+            if (!seen.has(letter)) {
+              seen.add(letter);
               grew = true;
             }
           }
-          if (grew) setBranchCells(new Set(branchRef.current));
+          if (grew)
+            setVariants(
+              new Map(
+                [...lettersRef.current].map(([k, s]) => [k, s.size]),
+              ),
+            );
           // Append without touching index: the author may be mid-cycle.
           setOptions((prev) => [...prev, msg.solution]);
           setNodes(msg.nodes);
@@ -120,7 +123,7 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
     setNodes(0);
     setError(null);
     setExhausted(false);
-    clearBranches();
+    clearVariants();
     const req: FillRequest = {
       type: "fill",
       runId: runIdRef.current,
@@ -130,7 +133,7 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
       seed: Math.floor(Math.random() * 0x7fffffff),
     };
     ensureWorker().postMessage(req);
-  }, [orderedStarts, numbered, clearBranches]);
+  }, [orderedStarts, numbered, clearVariants]);
 
   // Cancels a running search and drops any proposal (also the Cancel button).
   const dismiss = useCallback(() => {
@@ -141,8 +144,8 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
     setOptions([]);
     setIndex(0);
     setError(null);
-    clearBranches();
-  }, [clearBranches]);
+    clearVariants();
+  }, [clearVariants]);
 
   const cycle = useCallback(
     (delta: number) =>
@@ -150,23 +153,6 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
         options.length ? (i + delta + options.length) % options.length : 0,
       ),
     [options.length],
-  );
-
-  // Jump to the next option that fills any of `cellKeys` differently — the
-  // "show me another word here" cycle for the slot under the cursor.
-  const cycleAt = useCallback(
-    (cellKeys: string[]) => {
-      const cur = options[index];
-      if (!cur) return;
-      for (let step = 1; step < options.length; step++) {
-        const j = (index + step) % options.length;
-        if (cellKeys.some((k) => options[j][k] !== cur[k])) {
-          setIndex(j);
-          return;
-        }
-      }
-    },
-    [options, index],
   );
 
   // Write the displayed proposal into the grid for real.
@@ -188,9 +174,9 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
     setStatus("idle");
     setOptions([]);
     setIndex(0);
-    clearBranches();
+    clearVariants();
     setGrid(g);
-  }, [options, index, gridRef, setGrid, clearBranches]);
+  }, [options, index, gridRef, setGrid, clearVariants]);
 
   // Grid edits invalidate the search/proposal (skip the mount-time run).
   const mounted = useRef(false);
@@ -217,12 +203,11 @@ export function useAutofill({ numbered, orderedStarts, gridRef, setGrid }: Autof
     exhausted,
     error,
     proposal,
-    branchCells,
+    variants,
     canStart,
     start,
     dismiss,
     cycle,
-    cycleAt,
     accept,
   };
 }
