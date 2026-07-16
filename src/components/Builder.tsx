@@ -14,6 +14,7 @@ import { BuilderAutofill } from "./BuilderAutofill.tsx";
 import { MobileKeyboard } from "./MobileKeyboard.tsx";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { Modal } from "./Modal.tsx";
+import { Tip } from "./Tip.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
 import { Logo } from "./Logo.tsx";
 import {
@@ -338,15 +339,15 @@ export function Builder({
                 Cryptic
               </button>
             </div>
-            <span
-              className="builder-info"
-              tabIndex={0}
-              role="img"
-              aria-label="About the puzzle style setting"
-              title="Cryptic puzzles offer the anagram helper and show clue length enumerations like (3,4). Regular (American-style) puzzles do neither. Saved into the exported file as cryptic: true/false."
+            {/* tip-up: the settings row sits at the page's bottom edge, so a
+                downward panel would fall below the fold. */}
+            <Tip
+              className="tip-up"
+              label="About the puzzle style setting"
+              tip="Cryptic puzzles offer the anagram helper and show clue length enumerations like (3,4). Regular (American-style) puzzles do neither. Saved into the exported file as cryptic: true/false."
             >
-              ⓘ
-            </span>
+              <span className="builder-info">ⓘ</span>
+            </Tip>
           </div>
 
           <div className="builder-setting">
@@ -358,15 +359,13 @@ export function Builder({
             >
               (#) {b.autoEnumerate ? "On" : "Off"}
             </button>
-            <span
-              className="builder-info"
-              tabIndex={0}
-              role="img"
-              aria-label="About the clue lengths setting"
-              title="On export, sets each clue's length enumeration like (3,4), split at any bars within the word. Switching to Cryptic turns this on; Regular turns it off."
+            <Tip
+              className="tip-up"
+              label="About the clue lengths setting"
+              tip="On export, sets each clue's length enumeration like (3,4), split at any bars within the word. Switching to Cryptic turns this on; Regular turns it off."
             >
-              ⓘ
-            </span>
+              <span className="builder-info">ⓘ</span>
+            </Tip>
           </div>
         </div>
 

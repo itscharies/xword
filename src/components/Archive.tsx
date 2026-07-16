@@ -10,6 +10,7 @@ import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons
 import { ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
+import { useFlyout } from "../hooks/useFlyout.ts";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
@@ -415,10 +416,13 @@ export function Archive({
 
 /** Mutuals who've started this puzzle, as a tiny stacked-avatar strip in
  *  the tile's corner — the same data the solver page's flyout shows,
- *  projected onto the feed query so it costs no extra request. Details
- *  live in the tooltip; the tile is already a button, so this stays
- *  non-interactive. */
+ *  projected onto the feed query so it costs no extra request. Hover (mouse)
+ *  or tap (touch) opens a per-mutual flyout; the tap stops propagation so it
+ *  doesn't also open the puzzle. The tile is already a button, so the stack
+ *  can't be a focusable control of its own — keyboard/screen-reader users
+ *  get the same detail from the aria-label instead. */
 function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
+  const { open, setOpen, wrapRef, hoverProps } = useFlyout<HTMLSpanElement>();
   const started = mutuals.filter((m) => m.completed || m.filled > 0);
   if (started.length === 0) return null;
   // Same 99% cap as the tile's own badge: filled isn't solved.
@@ -434,7 +438,16 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
   const finished = shown.filter((m) => m.completed);
   const partial = shown.filter((m) => !m.completed);
   return (
-    <span className="ai-mutuals" title={label} aria-label={label}>
+    <span
+      ref={wrapRef}
+      className={`ai-mutuals tip tip-up tip-right ${open ? "open" : ""}`}
+      aria-label={label}
+      {...hoverProps}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
+    >
       {finished.length > 0 && (
         <span className="ai-mutual">
           <AvatarStack people={finished} />
@@ -450,6 +463,23 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
         </span>
       ))}
       {started.length > 3 && <span className="ai-mutual-pct">+{started.length - 3}</span>}
+      {/* Same row layout as the solver page's solves-panel, spans instead of
+          divs because we're inside the tile's <button>. */}
+      <span className="tip-panel" role="tooltip">
+        {started.map((m) => (
+          <span className="solves-row" key={m.user_id}>
+            <Avatar username={m.username} displayName={m.display_name} size={20} />
+            <span className="solves-row-name">{m.display_name}</span>
+            {m.completed ? (
+              <span className="solves-row-done">
+                <CheckIcon />
+              </span>
+            ) : (
+              <span className="solves-row-pct">{pctOf(m)}%</span>
+            )}
+          </span>
+        ))}
+      </span>
     </span>
   );
 }

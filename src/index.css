@@ -242,6 +242,60 @@ button { font: inherit; cursor: pointer; color: inherit; }
   color: var(--muted);
 }
 
+/* Generic hover-or-tap tooltip flyout (the Tip component, plus the archive
+   tiles' mutual stacks) — same behavior as the solves flyout above: hover
+   opens on mouse, tap toggles on touch. Used wherever a native title=
+   tooltip would be the only way to reach the text, since those never show
+   on mobile. */
+.tip {
+  position: relative;
+  display: inline-flex;
+}
+.tip-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+/* Plain-text triggers advertise themselves the way the solves trigger does. */
+.tip-text .tip-trigger {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.tip-panel {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 180px;
+  max-width: 280px;
+  width: max-content;
+  padding: 8px 10px;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+.tip.open .tip-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Flip which way the panel opens, for triggers near an edge (the archive
+   tiles' bottom-right corner stacks open up-and-left). */
+.tip-up .tip-panel {
+  top: auto;
+  bottom: 100%;
+}
+.tip-right .tip-panel {
+  left: auto;
+  right: 0;
+}
+
 /* Account/My-puzzles pages use this same h1 as an actual page heading, not a
    puzzle byline — bigger and full-contrast so it reads as one. */
 .account-page .title-block h1 {
@@ -331,7 +385,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
-.save-status-error { color: var(--fg); font-weight: 700; cursor: help; }
+.save-status-error { color: var(--fg); font-weight: 700; }
 
 /* Shared plain text input look (also used by .ana-input, .builder-field
    input) — surface fill, thick border, no browser chrome. */
@@ -1716,8 +1770,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 
 /* Mutuals on this puzzle — stacked mini avatars in the tile's bottom-right
-   corner (who/at-what-% lives in the tooltip). Same .solves-avatar tiles as
-   the solver page's flyout trigger. */
+   corner (who/at-what-% lives in its .tip-panel flyout, reusing .solves-row).
+   Same .solves-avatar tiles as the solver page's flyout trigger. Position
+   stays absolute despite the .tip base class: this rule comes later, so it
+   wins, and the panel anchors to the absolutely-positioned stack just the
+   same. */
 .ai-mutuals {
   position: absolute;
   right: 7px;
@@ -1820,10 +1877,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 12px;
   font-weight: 800;
   color: var(--muted);
-  cursor: help;
 }
+/* Focus lands on the Tip trigger wrapping the ⓘ, not the ⓘ itself. */
 .builder-info:hover,
-.builder-info:focus-visible { background: var(--surface-2); color: var(--fg); }
+.tip-trigger:focus-visible .builder-info { background: var(--surface-2); color: var(--fg); }
 
 /* Builder grid: anchor the marquee overlay; crosshair cursor while painting. */
 .builder-grid { position: relative; }

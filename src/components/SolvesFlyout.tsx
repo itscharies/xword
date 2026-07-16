@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import type { MutualProgress } from "../lib/puzzles.ts";
+import { useFlyout } from "../hooks/useFlyout.ts";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
 import { CheckIcon } from "./icons.tsx";
@@ -21,19 +21,7 @@ export function SolvesFlyout({
    *  byline already showed it. */
   completions?: number;
 }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLSpanElement>(null);
-
-  // Tap-elsewhere dismissal — blur is no good for it (iOS never focuses
-  // buttons on tap), so watch the document while open.
-  useEffect(() => {
-    if (!open) return;
-    const onDocDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", onDocDown);
-    return () => document.removeEventListener("pointerdown", onDocDown);
-  }, [open]);
+  const { open, setOpen, wrapRef, hoverProps } = useFlyout<HTMLSpanElement>();
 
   // Only mutuals who've actually started — a row whose grid is still empty
   // (opened, typed nothing) would just read as noise.
@@ -60,20 +48,12 @@ export function SolvesFlyout({
   // "2 people solved this" over a one-name list doesn't read as a bug.
   const others = completions != null ? completions - started.filter((m) => m.completed).length : 0;
 
-  // Hover open/close is mouse-only: a tap fires synthetic mouse events too,
-  // and letting those open the panel would make the tap's click toggle it
-  // straight back shut. Touch drives open purely through the click toggle.
   return (
     <div className="solves-line">
       <span
         ref={wrapRef}
         className={`solves-flyout ${open ? "open" : ""}`}
-        onPointerEnter={(e) => {
-          if (e.pointerType === "mouse") setOpen(true);
-        }}
-        onPointerLeave={(e) => {
-          if (e.pointerType === "mouse") setOpen(false);
-        }}
+        {...hoverProps}
       >
         <button
           className="solves-trigger"

@@ -44,6 +44,7 @@ import { Toolbar } from "./components/Toolbar.tsx";
 import { MobileKeyboard } from "./components/MobileKeyboard.tsx";
 import { CompletionModal } from "./components/CompletionModal.tsx";
 import { SolvesFlyout } from "./components/SolvesFlyout.tsx";
+import { Tip } from "./components/Tip.tsx";
 import { ThemeControls } from "./components/ThemeControls.tsx";
 import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
@@ -670,16 +671,20 @@ function Solver({
               By {puzzle.author || "Anonymous"}
               {puzzle.editor ? ` · Edited by ${puzzle.editor}` : ""}
               {saveStatus && (
-                <span
-                  className={`save-status save-status-${saveStatus}`}
-                  title={saveStatus === "error" ? "Couldn't reach the server — check your connection." : undefined}
-                >
+                <span className={`save-status save-status-${saveStatus}`}>
                   {" · "}
-                  {saveStatus === "saving"
-                    ? "Saving…"
-                    : saveStatus === "saved"
-                      ? "Saved ✓"
-                      : "Sync failed ⚠"}
+                  {saveStatus === "saving" ? (
+                    "Saving…"
+                  ) : saveStatus === "saved" ? (
+                    "Saved ✓"
+                  ) : (
+                    <Tip
+                      className="tip-text"
+                      tip="Couldn't reach the server — check your connection."
+                    >
+                      Sync failed ⚠
+                    </Tip>
+                  )}
                 </span>
               )}
             </div>
