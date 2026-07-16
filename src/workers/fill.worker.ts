@@ -15,6 +15,8 @@
 // between them: one unlucky early word choice can bury the search in a dead
 // subtree for the entire budget, so each empty-handed slice reshuffles the
 // candidate order and starts over from a different corner of the space.
+// Restarts walk the same state space in a different order, so subtrees a
+// previous attempt proved fill-less are remembered and skipped outright.
 
 import { parseWordlist, type Suggestion } from "../lib/wordlist.ts";
 import type {
@@ -143,6 +145,42 @@ async function search(
     return arr;
   };
 
+  // Per (position, letter) views of each ordered bucket, so a slot with any
+  // known letter only tests words sharing it instead of the whole length
+  // bucket. Built with (and cleared with) the ordered buckets, whose order
+  // the views inherit.
+  const byPosLetter = new Map<number, Map<number, Suggestion[]>>();
+  const indexOf = (len: number): Map<number, Suggestion[]> => {
+    let idx = byPosLetter.get(len);
+    if (!idx) {
+      idx = new Map();
+      for (const s of bucketOf(len)) {
+        for (let i = 0; i < s.word.length; i++) {
+          const k = i * 26 + (s.word.charCodeAt(i) - 65);
+          let arr = idx.get(k);
+          if (!arr) idx.set(k, (arr = []));
+          arr.push(s);
+        }
+      }
+      byPosLetter.set(len, idx);
+    }
+    return idx;
+  };
+
+  const NONE: Suggestion[] = [];
+  /** Words worth testing against a slot: the smallest per-letter view among
+   *  its known positions, or the whole bucket when every cell is open. */
+  const candidatesFor = (slot: Slot, pat: string): Suggestion[] => {
+    let best: Suggestion[] | null = null;
+    for (let i = 0; i < pat.length; i++) {
+      const code = pat.charCodeAt(i) - 65;
+      if (code < 0 || code >= 26) continue; // "." — open position
+      const arr = indexOf(slot.len).get(i * 26 + code) ?? NONE;
+      if (!best || arr.length < best.length) best = arr;
+    }
+    return best ?? bucketOf(slot.len);
+  };
+
   const assign = new Map<string, string>();
   // Candidate counts per pattern string. Deliberately ignores the used-words
   // set, so entries stay valid as words bind and unbind while backtracking
@@ -172,12 +210,11 @@ async function search(
     return true;
   };
 
-  const countFor = (slot: Slot): number => {
-    const pat = patternOf(slot);
+  const countFor = (slot: Slot, pat: string): number => {
     const hit = counts.get(pat);
     if (hit !== undefined) return hit;
     let n = 0;
-    for (const s of bucketOf(slot.len)) {
+    for (const s of candidatesFor(slot, pat)) {
       if (matches(slot, s.word) && ++n >= COUNT_CAP) break;
     }
     if (counts.size > 60_000) counts.clear();
@@ -185,14 +222,31 @@ async function search(
     return n;
   };
 
+  // Assignments proven to admit no fill, keyed by the concatenated slot
+  // patterns (a canonical form of the whole grid state). Restarts revisit
+  // exactly the states an earlier attempt saw — only the order differs — so
+  // a subtree one attempt exhausted never needs searching again. Sound
+  // because equal assignments imply equal used-word sets: the slot filled at
+  // each state is a deterministic function of the state.
+  const deadStates = new Set<string>();
+  // Subtrees cheaper than this many nodes aren't worth a cache slot — they
+  // cost less to re-derive than to remember.
+  const DEAD_MIN_NODES = 64;
+
   /** "sol": a fill was streamed from somewhere below (unwind to the root
    *  choice); "dead": this subtree holds no fill; "stop": budget/cancel. */
   const dfs = async (depth: number): Promise<"sol" | "dead" | "stop"> => {
     // Pick the open slot with the fewest candidates; a slot completed by
     // crossing words must itself be a real word or the branch dies here.
+    // The loop also concatenates every slot's pattern into the state key
+    // for the dead-subtree cache.
     let best: Slot | null = null;
+    let bestPat = "";
     let bestCount = Infinity;
+    let key = "";
     for (const slot of model) {
+      const pat = patternOf(slot);
+      key += pat;
       let open = false;
       for (const k of slot.cells) {
         if (!assign.has(k)) {
@@ -201,14 +255,15 @@ async function search(
         }
       }
       if (!open) {
-        if (!words.has(patternOf(slot))) return "dead";
+        if (!words.has(pat)) return "dead";
         continue;
       }
-      const n = countFor(slot);
+      const n = countFor(slot, pat);
       if (n === 0) return "dead";
       if (n < bestCount) {
         bestCount = n;
         best = slot;
+        bestPat = pat;
       }
     }
     if (!best) {
@@ -221,8 +276,10 @@ async function search(
       });
       return "sol";
     }
+    if (deadStates.has(key)) return "dead";
 
-    for (const s of bucketOf(best.len)) {
+    const entered = nodes;
+    for (const s of candidatesFor(best, bestPat)) {
       if (used.has(s.word) || !matches(best, s.word)) continue;
       if (++nodes >= nodeLimit()) return "stop";
       if (nodes % YIELD_EVERY === 0) {
@@ -248,6 +305,10 @@ async function search(
       // "sol": unwind to the root, where the next word is the next option.
       if (r === "sol" && depth > 0) return "sol";
     }
+    if (nodes - entered >= DEAD_MIN_NODES) {
+      if (deadStates.size > 50_000) deadStates.clear();
+      deadStates.add(key);
+    }
     return "dead";
   };
 
@@ -262,6 +323,7 @@ async function search(
       break;
     orderSeed = (req.seed ^ Math.imul(attempt, 0x9e3779b9)) >>> 0;
     ordered.clear();
+    byPosLetter.clear();
   }
   return { exhausted: r !== "stop", nodes };
 }
