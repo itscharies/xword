@@ -5,11 +5,6 @@ import { appendRefs, refLabel, splitGeneratedRefs, stripRefs } from "../lib/clue
 import { splitEnumeration } from "../lib/enumeration.ts";
 import { loadWordSet } from "../lib/wordlist.ts";
 import { useAutofill } from "./useAutofill.ts";
-import {
-  clearBuilderDraft,
-  loadBuilderDraft,
-  saveBuilderDraft,
-} from "../lib/storage.ts";
 
 export type BuilderMode = "paint" | "fill";
 
@@ -71,45 +66,38 @@ const DEFAULT_SIZE = 15;
  * the mutable state so synchronous key bursts read fresh values.
  */
 export function useBuilder() {
-  // Restore an autosaved draft (once), so a reload or revisit resumes editing.
-  const [draft] = useState(loadBuilderDraft);
-  const draftGridOk =
-    draft?.grid?.length === draft?.height &&
-    draft?.grid?.[0]?.length === draft?.width;
-
-  const [width, setWidthState] = useState(draft?.width ?? DEFAULT_SIZE);
-  const [height, setHeightState] = useState(draft?.height ?? DEFAULT_SIZE);
-  const [linked, setLinked] = useState(draft?.linked ?? true);
-  const [symmetry, setSymmetry] = useState(draft?.symmetry ?? true);
+  // Nothing is persisted locally: work lives in memory until it's saved as a
+  // server draft or published, and the `dirty` flag below drives the
+  // leave-page warnings that stand in for the old localStorage autosave.
+  const [width, setWidthState] = useState(DEFAULT_SIZE);
+  const [height, setHeightState] = useState(DEFAULT_SIZE);
+  const [linked, setLinked] = useState(true);
+  const [symmetry, setSymmetry] = useState(true);
   // Cryptic puzzles offer the anagram helper and carry clue enumerations.
-  const [cryptic, setCryptic] = useState(draft?.cryptic ?? false);
+  const [cryptic, setCryptic] = useState(false);
   // Set a "(3,4)" length enumeration on each clue on export (cryptic style).
-  const [autoEnumerate, setAutoEnumerate] = useState(draft?.autoEnumerate ?? false);
+  const [autoEnumerate, setAutoEnumerate] = useState(false);
 
   const [grid, setGridState] = useState<Cell[][]>(() =>
-    draft && draftGridOk ? draft.grid : makeGrid(draft?.width ?? DEFAULT_SIZE, draft?.height ?? DEFAULT_SIZE),
+    makeGrid(DEFAULT_SIZE, DEFAULT_SIZE),
   );
-  const [active, setActiveState] = useState<Pos>(draft?.active ?? { row: 0, col: 0 });
-  const [direction, setDirectionState] = useState<Direction>(draft?.direction ?? "across");
-  const [mode, setModeState] = useState<BuilderMode>(draft?.mode ?? "paint");
+  const [active, setActiveState] = useState<Pos>({ row: 0, col: 0 });
+  const [direction, setDirectionState] = useState<Direction>("across");
+  const [mode, setModeState] = useState<BuilderMode>("paint");
   const [rebus, setRebusState] = useState(false);
   // Multi-select cells (shift-click / marquee). Group typing & delete apply to
-  // every cell in here; empty means normal single-cell editing. Not persisted.
+  // every cell in here; empty means normal single-cell editing.
   const [selected, setSelectedState] = useState<Set<string>>(() => new Set());
-  const [clueText, setClueText] = useState<Map<string, string>>(
-    () => new Map(draft?.clueText ?? []),
-  );
+  const [clueText, setClueText] = useState<Map<string, string>>(() => new Map());
   // Cross-references: source slot key -> target slot keys it links to. Keyed by
   // slot (row,col,direction), so links survive renumbering like clue text does.
-  const [links, setLinks] = useState<Map<string, string[]>>(
-    () => new Map(draft?.links ?? []),
-  );
+  const [links, setLinks] = useState<Map<string, string[]>>(() => new Map());
 
   // Metadata for export.
-  const [title, setTitle] = useState(draft?.title ?? "Untitled");
-  const [author, setAuthor] = useState(draft?.author ?? "");
-  const [editor, setEditor] = useState(draft?.editor ?? "");
-  const [date, setDate] = useState(draft?.date ?? "");
+  const [title, setTitle] = useState("Untitled");
+  const [author, setAuthor] = useState("");
+  const [editor, setEditor] = useState("");
+  const [date, setDate] = useState("");
 
   const gridRef = useRef(grid);
   const activeRef = useRef(active);
@@ -801,7 +789,7 @@ export function useBuilder() {
     // The refs are already baked into the clue text above for solvers; this
     // structured copy, pruned to slots the exported grid still has, is what
     // importPuzzle restores so the links stay editable across a draft
-    // round-trip. Same shape as the localStorage draft's `links`.
+    // round-trip.
     const exportLinks = [...links]
       .map(([source, targets]) =>
         [source, targets.filter((t) => byKey.has(t))] as [string, string[]])
@@ -825,41 +813,69 @@ export function useBuilder() {
     };
   }, [grid, clueText, links, date, title, author, editor, width, height, autoEnumerate, cryptic]);
 
-  // Autosave the whole editable state on every change.
+  // Unsaved-changes flag, driving the leave-page warnings in Builder.tsx.
+  // Any content edit sets it (cursor, mode and selection moves don't count);
+  // saving a draft/fix or publishing marks the state clean again, and
+  // importPuzzle/clearDraft pre-arm a skip so their own writes don't count.
+  // Comparing dep identities against the last run makes StrictMode's
+  // re-invoked effects (same references) a no-op instead of a false dirty.
+  const [dirty, setDirty] = useState(false);
+  const skipDirtyRef = useRef(false);
+  const lastContentRef = useRef<unknown[] | null>(null);
   useEffect(() => {
-    saveBuilderDraft({
-      width,
-      height,
-      linked,
-      symmetry,
-      cryptic,
-      autoEnumerate,
-      grid,
-      clueText: [...clueText],
-      links: [...links],
-      active,
-      direction,
-      mode,
-      title,
-      author,
-      editor,
-      date,
-    });
+    const content = [
+      width, height, cryptic, autoEnumerate, grid, clueText, links,
+      title, author, editor, date,
+    ];
+    if (lastContentRef.current) {
+      if (content.every((v, i) => Object.is(v, lastContentRef.current![i])))
+        return;
+      lastContentRef.current = content;
+      if (skipDirtyRef.current) skipDirtyRef.current = false;
+      else setDirty(true);
+    } else {
+      lastContentRef.current = content; // mount, not an edit
+    }
   }, [
-    width, height, linked, symmetry, cryptic, autoEnumerate, grid, clueText,
-    links, active, direction, mode, title, author, editor, date,
+    width, height, cryptic, autoEnumerate, grid, clueText, links,
+    title, author, editor, date,
   ]);
 
-  // Discard the saved draft and start fresh (reload re-inits to defaults).
+  /** The current state is safe on the server (draft saved / published). */
+  const markClean = useCallback(() => setDirty(false), []);
+
+  // Reset to a blank builder (the "New / Clear" button). Nothing is stored
+  // anywhere, so this is a plain in-place state reset.
   const clearDraft = useCallback(() => {
-    clearBuilderDraft();
-    window.location.reload();
+    skipDirtyRef.current = true;
+    setWidthState(DEFAULT_SIZE);
+    setHeightState(DEFAULT_SIZE);
+    setLinked(true);
+    symmetryRef.current = true;
+    setSymmetry(true);
+    setCryptic(false);
+    setAutoEnumerate(false);
+    setGrid(makeGrid(DEFAULT_SIZE, DEFAULT_SIZE));
+    setActive({ row: 0, col: 0 });
+    setDirection("across");
+    setMode("paint");
+    setRebus(false);
+    setSelected(new Set());
+    setClueText(new Map());
+    setLinks(new Map());
+    setTitle("Untitled");
+    setAuthor("");
+    setEditor("");
+    setDate("");
+    setDirty(false);
   }, []);
 
   // Load an already-parsed Puzzle (a Supabase draft being continued, or a
   // syndicated one an admin is fixing) into the editing state, replacing
-  // whatever draft was here.
+  // whatever was being edited. Loading isn't an edit: the state starts clean.
   const importPuzzle = useCallback((puzzle: Puzzle) => {
+    skipDirtyRef.current = true;
+    setDirty(false);
     setWidthState(puzzle.width);
     setHeightState(puzzle.height);
     setLinked(puzzle.width === puzzle.height);
@@ -940,6 +956,9 @@ export function useBuilder() {
     toggleCryptic,
     toggleAutoEnumerate,
     clearDraft,
+    // Unsaved-changes tracking (nothing persists locally).
+    dirty,
+    markClean,
     // grid + render state
     grid: numbered,
     active,

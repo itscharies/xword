@@ -19,6 +19,7 @@ export function PublishDialog({
   onClose,
   existingId,
   republish,
+  onPublished,
 }: {
   puzzle: Puzzle;
   onClose: () => void;
@@ -28,6 +29,8 @@ export function PublishDialog({
   /** Set when this is already a published (non-draft) puzzle being
    *  re-saved, not a first publish — only changes the wording. */
   republish?: boolean;
+  /** Fires once the row is live, with its id. */
+  onPublished?: (id: string) => void;
 }) {
   const { user } = useAuth();
   const title = puzzle.title.trim() || "Untitled puzzle";
@@ -50,7 +53,10 @@ export function PublishDialog({
       : await publishPuzzle(user.id, title, finalPuzzle, visibility);
     setPublishing(false);
     if (error) setError(error);
-    else setPublishedId(id);
+    else {
+      setPublishedId(id);
+      if (id) onPublished?.(id);
+    }
   };
 
   if (publishedId) {

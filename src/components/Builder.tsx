@@ -5,6 +5,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { getProfile } from "../lib/profile.ts";
 import { localIsoDate, publishPuzzle, updatePuzzle, type Visibility } from "../lib/puzzles.ts";
 import { saveSyndicatedPuzzle } from "../lib/syndicated.ts";
+import { setLeaveGuard } from "../lib/navGuard.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { BuilderGrid } from "./BuilderGrid.tsx";
@@ -95,6 +96,25 @@ export function Builder({
     }
   }, [editing, draftPuzzle, b]);
 
+  // Nothing is autosaved, so warn before the work would be lost: the native
+  // dialog for reload/tab-close, and a confirm for in-app navigation (the
+  // logo, back/forward) via the router's leave guard.
+  useEffect(() => {
+    if (!b.dirty) return;
+    setLeaveGuard(() =>
+      window.confirm("Leave the builder? Your unsaved changes will be lost."),
+    );
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ""; // legacy engines want a returnValue set
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      setLeaveGuard(null);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [b.dirty]);
+
   // Physical keyboard → builder, unless a text field (clue / metadata) is
   // focused, so typing into inputs doesn't leak into the grid.
   useEffect(() => {
@@ -114,7 +134,10 @@ export function Builder({
     const { error } = await saveSyndicatedPuzzle(editing.source, editing.date, b.buildPuzzle());
     setSaving(false);
     if (error) setSaveError(error);
-    else setSaved(true);
+    else {
+      setSaved(true);
+      b.markClean();
+    }
   };
 
   const saveDraft = async () => {
@@ -132,6 +155,7 @@ export function Builder({
     else {
       if (id) setDraftId(id);
       setDraftSaved(true);
+      b.markClean();
     }
   };
 
@@ -160,7 +184,7 @@ export function Builder({
             <div className="byline">
               {editing
                 ? "Correct the grid or clues, then save the fix"
-                : "Lay out a grid, fill it in · autosaved"}
+                : "Lay out a grid, fill it in, save it as a draft"}
             </div>
           </div>
         </div>
@@ -168,10 +192,10 @@ export function Builder({
           <button
             className="btn"
             onClick={() => {
-              if (window.confirm("Discard this draft and start a blank grid?"))
+              if (!b.dirty || window.confirm("Discard your changes and start a blank grid?"))
                 b.clearDraft();
             }}
-            title="Discard the saved draft and start fresh"
+            title="Start over with a blank grid"
           >
             New / Clear
           </button>
@@ -417,6 +441,12 @@ export function Builder({
               onClose={() => setShowPublish(false)}
               existingId={draftId}
               republish={isEditingPublished}
+              onPublished={(id) => {
+                // Remember the row so a later re-publish updates it instead
+                // of inserting a duplicate, and the leave warnings stand down.
+                setDraftId(id);
+                b.markClean();
+              }}
             />
           )}
         </Modal>

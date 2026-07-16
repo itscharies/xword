@@ -3,6 +3,7 @@ import type { Puzzle } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
+import { confirmLeave } from "./lib/navGuard.ts";
 import { useCrossword } from "./hooks/useCrossword.ts";
 import { useAnagramHelperStore, useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
@@ -88,11 +89,18 @@ const readRoute = () => {
   return p.replace(/^\/+|\/+$/g, "");
 };
 
-/** Navigate with real URLs (History API) rather than a hash fragment. Flushes
- *  any debounced progress write first — otherwise it just sits on a timer in
- *  the background, which is harmless (the SPA keeps running) but leaves the
- *  save indicator, and the actual server write, lagging behind the nav. */
+/** Set by goTo for the popstate it dispatches itself, so the leave guard
+ *  (already consulted in goTo) isn't asked a second time by onPop. */
+let navApproved = false;
+
+/** Navigate with real URLs (History API) rather than a hash fragment. Asks
+ *  the current view's leave guard first (the builder holds unsaved work).
+ *  Flushes any debounced progress write — otherwise it just sits on a timer
+ *  in the background, which is harmless (the SPA keeps running) but leaves
+ *  the actual server write lagging behind the nav. */
 const goTo = (route: string) => {
+  if (!confirmLeave()) return;
+  navApproved = true;
   flushPendingPushes();
   window.history.pushState(null, "", BASE + route);
   window.dispatchEvent(new PopStateEvent("popstate"));
@@ -129,12 +137,22 @@ export default function App() {
 
 function AppRoutes() {
   const [route, setRoute] = useState(readRoute);
+  const routeRef = useRef(route);
+  routeRef.current = route;
 
   useEffect(() => {
     // Covers the browser back/forward buttons — goTo() flushes for in-app
     // links, but the history API itself fires popstate for those too, so
     // this only does real work for back/forward.
     const onPop = () => {
+      if (navApproved) {
+        navApproved = false; // goTo already asked the leave guard
+      } else if (!confirmLeave()) {
+        // Back/forward already moved the URL — put the current view's URL
+        // back and stay (this drops the forward stack; best effort).
+        window.history.pushState(null, "", BASE + routeRef.current);
+        return;
+      }
       flushPendingPushes();
       setRoute(readRoute());
     };
