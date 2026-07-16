@@ -2308,15 +2308,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
+    /* Bleed past .app's 14px side padding, like .actionbar/.mobile-bar do,
+       so the pan/zoom viewport gets the full screen width. No padding put
+       back: the canvas clamps its own edges (FIT_PAD in GridCanvas.tsx).
+       On .main, not .board: the anagram overlay anchors to .main (its
+       nearest positioned ancestor), so if .board alone bled wider, the
+       canvas would peek out from under the overlay in a strip each side. */
+    width: calc(100% + 28px);
+    margin: 0 -14px;
   }
   [data-grid-fit="canvas"] .solve-body .board {
     flex: 1 1 auto;
     min-height: 0;
-    /* Bleed past .app's 14px side padding, like .actionbar/.mobile-bar do,
-       so the pan/zoom viewport gets the full screen width. No padding put
-       back: the canvas clamps its own edges (FIT_PAD in GridCanvas.tsx). */
-    width: calc(100% + 28px);
-    margin: 0 -14px;
   }
 }
 
