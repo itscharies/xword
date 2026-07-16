@@ -10,6 +10,11 @@
 // list or the node budget runs out — so the options differ in a whole word
 // choice rather than in one corner cell, and the list grows as long as the
 // search keeps producing.
+//
+// Until the first fill is found the budget is spent in slices with a restart
+// between them: one unlucky early word choice can bury the search in a dead
+// subtree for the entire budget, so each empty-handed slice reshuffles the
+// candidate order and starts over from a different corner of the space.
 
 import { parseWordlist, type Suggestion } from "../lib/wordlist.ts";
 import type {
@@ -121,15 +126,17 @@ async function search(
   const { buckets, words } = await ensureWordlist(req.wordlistUrl);
   const { model, used } = compile(req.slots);
 
-  // Candidate order for this run: best score first, seeded shuffle within a
-  // score band. Views are built lazily per length actually searched.
+  // Candidate order for the current attempt: best score first, seeded shuffle
+  // within a score band. Views are built lazily per length actually searched,
+  // and rebuilt under a new sub-seed on every restart.
+  let orderSeed = req.seed;
   const ordered = new Map<number, Suggestion[]>();
   const bucketOf = (len: number): Suggestion[] => {
     let arr = ordered.get(len);
     if (!arr) {
       arr = [...(buckets.get(len) ?? [])].sort(
         (a, b) =>
-          b.score - a.score || wordHash(a.word, req.seed) - wordHash(b.word, req.seed),
+          b.score - a.score || wordHash(a.word, orderSeed) - wordHash(b.word, orderSeed),
       );
       ordered.set(len, arr);
     }
@@ -142,6 +149,13 @@ async function search(
   // (a count of 0 is then a safe prune: no word fits, used or not).
   const counts = new Map<string, number>();
   let nodes = 0;
+  let solutions = 0;
+  // While no fill has been found, each attempt only gets a slice of the
+  // budget before a restart; after the first fill the run keeps its shuffle
+  // and the full budget, enumerating options exactly as before.
+  const slice = Math.max(1, req.nodeBudget >> 3);
+  let sliceEnd = 0;
+  const nodeLimit = () => (solutions > 0 ? req.nodeBudget : sliceEnd);
 
   const patternOf = (slot: Slot): string => {
     let p = "";
@@ -198,6 +212,7 @@ async function search(
       }
     }
     if (!best) {
+      solutions++;
       ctx.postMessage({
         type: "solution",
         runId: req.runId,
@@ -209,7 +224,7 @@ async function search(
 
     for (const s of bucketOf(best.len)) {
       if (used.has(s.word) || !matches(best, s.word)) continue;
-      if (++nodes >= req.nodeBudget) return "stop";
+      if (++nodes >= nodeLimit()) return "stop";
       if (nodes % YIELD_EVERY === 0) {
         ctx.postMessage({ type: "progress", runId: req.runId, nodes });
         await tick();
@@ -236,7 +251,18 @@ async function search(
     return "dead";
   };
 
-  const r = await dfs(0);
+  // Restart loop. Every dfs unwind restores assign/used completely (cleanup
+  // precedes each early return), so an attempt can start fresh by just
+  // reshuffling; the pattern-count cache is order-independent and kept.
+  let r: "sol" | "dead" | "stop";
+  for (let attempt = 1; ; attempt++) {
+    sliceEnd = Math.min(nodes + slice, req.nodeBudget);
+    r = await dfs(0);
+    if (r !== "stop" || token.cancelled || solutions > 0 || nodes >= req.nodeBudget)
+      break;
+    orderSeed = (req.seed ^ Math.imul(attempt, 0x9e3779b9)) >>> 0;
+    ordered.clear();
+  }
   return { exhausted: r !== "stop", nodes };
 }
 

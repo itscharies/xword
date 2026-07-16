@@ -23,7 +23,8 @@ export interface FillRequest {
   nodeBudget: number;
   /** Tie-break seed: words of equal score are tried in a per-run shuffled
    *  order (STWL scores are coarse bands, so a stable sort would otherwise
-   *  walk ties alphabetically and every fill would start with AA-words). */
+   *  walk ties alphabetically and every fill would start with AA-words).
+   *  Restarts inside a run reshuffle under sub-seeds derived from this. */
   seed: number;
 }
 
