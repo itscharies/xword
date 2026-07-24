@@ -6,6 +6,7 @@
 //
 // Run: npm run fetch:guardian [days]   (default 14 days back)
 import { parseGuardian } from "./parse-guardian.ts";
+import { runMain, sleep } from "./util.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
@@ -21,8 +22,6 @@ const TYPES: Array<{ source: PuzzleSource; slug: string }> = [
 
 const DAYS = Number(process.argv[2]) || 14;
 const MAX_PER_TYPE = DAYS + 5; // safety cap on how far back to walk
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -97,7 +96,4 @@ async function main(): Promise<void> {
   console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

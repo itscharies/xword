@@ -1,13 +1,7 @@
 import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function weekdayFromIso(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
+import { isoFromYymmdd, weekdayFromIso } from "./dates.ts";
 
 /**
  * Parse the classic AcrossLite `.puz` binary format (as served by Arkadium's
@@ -101,7 +95,7 @@ export function parsePuz(buf: Buffer, source: PuzzleSource, date: string): Puzzl
     }
   }
 
-  const iso = `20${date.slice(0, 2)}-${date.slice(2, 4)}-${date.slice(4, 6)}`;
+  const iso = isoFromYymmdd(date);
   return {
     source,
     date,

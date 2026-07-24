@@ -9,6 +9,7 @@
 //
 // Run: npx tsx scripts/migrate-puzzles-to-supabase.ts
 import { readdir, readFile } from "node:fs/promises";
+import { runMain } from "./util.ts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Puzzle } from "../src/types.ts";
@@ -61,7 +62,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

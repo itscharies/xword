@@ -4,13 +4,12 @@
 //
 // Run: npm run fetch
 import { parsePuzzle } from "./parse.ts";
+import { runMain, sleep } from "./util.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 
 const BASE =
   "https://nytsyn.pzzl.com/nytsyn-crossword-mh/nytsyncrossword?date=";
 const LIST_URL = `${BASE}list&get=archivecurrent`;
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // The source is served as Windows-1252 (e.g. "soupçon", "50¢"), not UTF-8,
 // so decode the raw bytes explicitly to preserve accents and punctuation.
@@ -86,7 +85,4 @@ async function main(): Promise<void> {
   console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

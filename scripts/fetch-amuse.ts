@@ -8,13 +8,12 @@
 //
 // Run: npm run fetch:amuse [days]   (default 21 days back)
 import { parseAmuse, extractRawc, decodeRawc } from "./parse-amuse.ts";
+import { runMain, sleep } from "./util.ts";
 import { ensureDescrambler } from "./amuse-heal.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 
 const HOST = "https://seattletimes.amuselabs.com/puzzleme/crossword";
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -152,7 +151,4 @@ async function main(): Promise<void> {
   console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

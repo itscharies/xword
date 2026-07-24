@@ -1,18 +1,7 @@
 import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-/** YYYYMMDD -> "YYYY-MM-DD". */
-function isoFromYmd(ymd: string): string {
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
-}
-
-function weekdayFromIso(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
+import { isoFromYmd, weekdayFromIso } from "./dates.ts";
 
 /**
  * AmuseLabs scrambles the base64 `rawc` payload by reversing fixed-size

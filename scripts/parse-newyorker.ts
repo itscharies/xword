@@ -2,16 +2,7 @@ import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
 import { numberGrid, type WordStart } from "../src/lib/numbering.ts";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function isoFromYmd(ymd: string): string {
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
-}
-function weekdayFromIso(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
+import { isoFromYmd, weekdayFromIso } from "./dates.ts";
 
 /** Body of a `## <name>` section in the New Yorker's markdown puzzle format. */
 function section(data: string, name: string): string {

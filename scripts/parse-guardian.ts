@@ -2,13 +2,7 @@ import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
 import { splitEnumeration } from "../src/lib/enumeration.ts";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function weekdayFromIso(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
+import { isoFromYmd, weekdayFromIso } from "./dates.ts";
 
 interface GuardianEntry {
   number: number;
@@ -120,7 +114,7 @@ export function parseGuardian(jsonText: string, source: PuzzleSource): Puzzle {
   // matches the UK publication day without timezone drift.
   const pdfYmd = cw.pdf?.match(/\.(\d{8})\.pdf/)?.[1];
   const ymd = pdfYmd ?? new Date(cw.date ?? 0).toISOString().slice(0, 10).replace(/-/g, "");
-  const iso = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+  const iso = isoFromYmd(ymd);
 
   return {
     source,

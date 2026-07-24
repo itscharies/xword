@@ -1,16 +1,7 @@
 import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
 import { SOURCES } from "../src/lib/sources.ts";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function isoFromYmd(ymd: string): string {
-  return `20${ymd.slice(0, 2)}-${ymd.slice(2, 4)}-${ymd.slice(4, 6)}`;
-}
-function weekdayFromIso(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-}
+import { isoFromYymmdd, weekdayFromIso } from "./dates.ts";
 
 function attr(tag: string, name: string): string | undefined {
   return tag.match(new RegExp(`${name}="([^"]*)"`))?.[1];
@@ -130,7 +121,7 @@ export function parseIndependent(xml: string, source: PuzzleSource, date: string
   across.sort((a, b) => a.number - b.number);
   down.sort((a, b) => a.number - b.number);
 
-  const iso = isoFromYmd(date);
+  const iso = isoFromYymmdd(date);
   return {
     source,
     date,

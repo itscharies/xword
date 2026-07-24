@@ -1,26 +1,11 @@
 import type { Cell, Clue, Puzzle } from "../src/types.ts";
 import { numberGrid, readWord } from "../src/lib/numbering.ts";
+import { isoFromYymmdd, weekdayFromIso } from "./dates.ts";
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
-
-/** Convert a YYMMDD source date into an ISO date string (assumes 20YY). */
-export function dateToIso(date: string): string {
-  const yy = date.slice(0, 2);
-  const mm = date.slice(2, 4);
-  const dd = date.slice(4, 6);
-  return `20${yy}-${mm}-${dd}`;
-}
-
-function weekdayFromIso(iso: string): string {
-  // Parse as UTC to avoid timezone drift on the weekday.
-  const [y, m, d] = iso.split("-").map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return WEEKDAYS[dow];
-}
 
 /** Try to read the title from the puzzle payload, else synthesize one. */
 function titleFromIso(iso: string): string {
@@ -58,14 +43,14 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
   if (tokens[i] === "ARCHIVE") i++;
   if (/^\d+$/.test(tokens[i])) i++; // edition id
 
-  const title = tokens[i++] ?? titleFromIso(dateToIso(date));
+  const title = tokens[i++] ?? titleFromIso(isoFromYymmdd(date));
 
   // The source returns the latest available puzzle (HTTP 200) for any date that
   // isn't published yet, rather than a 404. Reject a payload whose own title
   // date disagrees with the date we asked for, so we never save a duplicate of
   // the newest puzzle under a future date.
   const titleIso = isoFromTitle(title);
-  if (titleIso && titleIso !== dateToIso(date)) {
+  if (titleIso && titleIso !== isoFromYymmdd(date)) {
     throw new Error(
       `${date}: payload is for ${titleIso} (not yet published) — skipping`,
     );
@@ -187,7 +172,7 @@ export function parsePuzzle(raw: string, date: string): Puzzle {
   const across = acrossStarts.map((s, idx) => toClue(s, acrossClueText[idx]));
   const down = downStarts.map((s, idx) => toClue(s, downClueText[idx]));
 
-  const iso = dateToIso(date);
+  const iso = isoFromYymmdd(date);
   return {
     source: "nyt",
     date,

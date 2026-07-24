@@ -16,11 +16,10 @@
 //
 // Run: npm run fetch:independent [days]   (default 35 days back)
 import { parseIndependent } from "./parse-independent.ts";
+import { runMain, sleep } from "./util.ts";
 import { parsePuz } from "./parse-puz.ts";
 import { existingDates, saveSyndicatedPuzzle } from "./puzzleStore.ts";
 import type { PuzzleSource } from "../src/lib/sources.ts";
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, {
@@ -124,7 +123,4 @@ async function main(): Promise<void> {
   console.log(`Done. ${added} new puzzle(s) added.`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);

@@ -3,6 +3,7 @@
 // Re-running is safe — clues already split (no trailing enumeration) are left
 // alone. Run: tsx scripts/migrate-enumeration.ts
 import { readFile, writeFile, readdir } from "node:fs/promises";
+import { runMain } from "./util.ts";
 import { join } from "node:path";
 import { splitEnumeration } from "../src/lib/enumeration.ts";
 import type { Puzzle } from "../src/types.ts";
@@ -51,7 +52,4 @@ async function main(): Promise<void> {
   console.log(`Scanned ${files} Guardian puzzle(s); updated ${changed}.`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+runMain(main);
