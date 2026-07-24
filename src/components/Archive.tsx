@@ -450,7 +450,7 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
   return (
     <span
       ref={wrapRef}
-      className={`ai-mutuals tip tip-up tip-right ${open ? "open" : ""}`}
+      className={`ai-mutuals tip tip-right ${open ? "open" : ""}`}
       aria-label={label}
       {...hoverProps}
       onClick={(e) => {

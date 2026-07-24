@@ -193,7 +193,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .solves-panel {
   display: none;
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   left: 0;
   z-index: 40;
   min-width: 180px;
@@ -201,6 +201,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: var(--bw) solid var(--line);
   background: var(--surface);
   color: var(--fg);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
 }
 .solves-flyout.open .solves-panel {
   display: flex;
@@ -264,7 +265,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .tip-panel {
   display: none;
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   left: 0;
   z-index: 40;
   min-width: 180px;
@@ -279,17 +280,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
   line-height: 1.45;
   text-align: left;
   white-space: normal;
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
 }
 .tip.open .tip-panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-/* Flip which way the panel opens, for triggers near an edge (the archive
-   tiles' bottom-right corner stacks open up-and-left). */
+/* Flip which way the panel opens, for triggers near an edge (same 5px gap
+   as the below-by-default position). */
 .tip-up .tip-panel {
   top: auto;
-  bottom: 100%;
+  bottom: calc(100% + 5px);
 }
 .tip-right .tip-panel {
   left: auto;
@@ -1055,6 +1057,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 0 16px;
   font-size: 20px;
   font-weight: 800;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .clue-banner .text {
   padding: 10px 14px;
