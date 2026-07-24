@@ -1219,7 +1219,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   position: relative;
   background: var(--surface);
   border: var(--bw) solid var(--line);
-  box-shadow: 10px 10px 0 var(--shadow-col);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
   padding: 28px 30px;
   text-align: center;
   width: min(92vw, 400px);
