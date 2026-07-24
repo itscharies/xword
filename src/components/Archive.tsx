@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
 import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
@@ -212,7 +212,7 @@ export function Archive({
   }, [includeFollowing, includeMine, user]);
 
   const loadingMoreRef = useRef(false);
-  const loadMore = useCallback(() => {
+  const loadMore = () => {
     if (loadingMoreRef.current || !hasMore || cursor === null) return;
     loadingMoreRef.current = true;
     listArchivePage({ cursor, includeFollowing, includeMine }).then(({ items: page, nextCursor }) => {
@@ -221,7 +221,7 @@ export function Archive({
       setHasMore(nextCursor !== null);
       loadingMoreRef.current = false;
     });
-  }, [cursor, hasMore, includeFollowing, includeMine]);
+  };
 
   // The progress filter applies to every item, community or syndicated —
   // they just look their status up from a different store (keyed by puzzle
@@ -229,12 +229,23 @@ export function Archive({
   const matchesProgress = (prog: Progress | null) =>
     progress.length === 0 || progress.includes(progressStatus(prog));
 
+  // The fixed page size can cut the oldest fetched day in half, so hold that
+  // day back until the next page (or the feed's end) confirms it's complete —
+  // Show more then always reveals whole days. If a page is somehow a single
+  // day, show it anyway rather than nothing.
+  const settledItems = useMemo(() => {
+    if (!hasMore || items.length === 0) return items;
+    const partialIso = items[items.length - 1].isoDate;
+    const settled = items.filter((it) => it.isoDate !== partialIso);
+    return settled.length > 0 ? settled : items;
+  }, [items, hasMore]);
+
   // The Sources row covers both worlds: paper chips match syndicated
   // puzzles, the Following/Your puzzles chips match community ones. Type
   // still describes syndicated sources only, so it drops community puzzles
   // once active.
   const filteredItems = useMemo(() => {
-    return items.filter((it) => {
+    return settledItems.filter((it) => {
       if (it.kind === "syndicated") {
         const meta = SOURCES[it.source!];
         if (papers.length > 0 && !papers.includes(meta.paper)) return false;
@@ -248,7 +259,7 @@ export function Archive({
       }
       return matchesProgress(loadCommunityProgress(it.id));
     });
-  }, [items, papers, types, progress, user]);
+  }, [settledItems, papers, types, progress, user]);
 
   // Group by date — items arrive from the server already sorted newest-day
   // first, community-before-syndicated within a day, so insertion order into
@@ -262,23 +273,6 @@ export function Archive({
     }
     return [...byDate.entries()];
   }, [filteredItems]);
-
-  // Load the next page when a sentinel near the bottom scrolls into view.
-  const io = useRef<IntersectionObserver | null>(null);
-  const sentinelRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      io.current?.disconnect();
-      if (!node) return;
-      io.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) loadMore();
-        },
-        { rootMargin: "1200px" },
-      );
-      io.current.observe(node);
-    },
-    [loadMore],
-  );
 
   const filterCount = papers.length + types.length + progress.length;
 
@@ -360,9 +354,6 @@ export function Archive({
 
       {!loading && hasMore && (
         <div className="archive-more">
-          {/* Auto-loads as it nears view (real browsers); the button is a
-              reliable fallback / manual control. */}
-          <div ref={sentinelRef} aria-hidden style={{ height: 1 }} />
           <button className="btn" onClick={loadMore}>
             Show more
           </button>
