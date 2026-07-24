@@ -22,8 +22,11 @@ export function Modal({
 
   return (
     <div className="overlay" onClick={onClose}>
+      {/* The wrapper (not the panel) is the dialog, so the close button —
+          floated outside the panel — still lives inside the aria-modal
+          boundary for screen readers. */}
       <div
-        className="modal"
+        className="modal-wrap"
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -32,8 +35,10 @@ export function Modal({
         <button className="modal-close" onClick={onClose} aria-label="Close">
           ×
         </button>
-        {title && <h2 className="modal-title">{title}</h2>}
-        {children}
+        <div className="modal">
+          {title && <h2 className="modal-title">{title}</h2>}
+          {children}
+        </div>
       </div>
     </div>
   );

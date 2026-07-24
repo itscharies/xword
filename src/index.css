@@ -1398,19 +1398,31 @@ button { font: inherit; cursor: pointer; color: inherit; }
 }
 .modal-title { margin: 0 0 10px; font-size: 24px; font-weight: 800; }
 .modal p { color: var(--muted); margin: 4px 0; }
+/* Sizes to the panel; the close button hangs outside it. */
+.modal-wrap { position: relative; max-width: 100%; }
 .modal-close {
   position: absolute;
   top: 0;
-  right: 0;
+  left: calc(100% + 10px);
   width: 38px;
   height: 38px;
   background: var(--surface);
-  border: 0;
-  border-left: var(--bw) solid var(--line);
-  border-bottom: var(--bw) solid var(--line);
+  color: var(--fg);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
   font-size: 22px;
   font-weight: 700;
   line-height: 1;
+}
+/* Too narrow to hang off the side — float above the top-right corner
+   instead, same gap. */
+@media (max-width: 520px) {
+  .modal-close {
+    left: auto;
+    right: 0;
+    top: auto;
+    bottom: calc(100% + 10px);
+  }
 }
 @media (hover: hover) {
   .modal-close:hover { background: var(--accent-2); color: #000; }
