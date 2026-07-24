@@ -8,6 +8,7 @@ import { supabase } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "./sources.ts";
 import type { MutualProgress } from "./puzzles.ts";
+import { applyEnumerationBars } from "./enumeration.ts";
 
 export async function getSyndicatedPuzzle(
   source: PuzzleSource,
@@ -20,7 +21,9 @@ export async function getSyndicatedPuzzle(
     .eq("source", source)
     .eq("puzzle_date", date)
     .maybeSingle();
-  return data?.data ?? null;
+  const puzzle: Puzzle | null = data?.data ?? null;
+  if (puzzle) applyEnumerationBars(puzzle);
+  return puzzle;
 }
 
 /** The solver-page variant of getSyndicatedPuzzle: the viewer's mutuals'
@@ -42,6 +45,7 @@ export async function getSyndicatedWithSolves(
   }
   if (!data) return null;
   const row = data as { puzzle: Puzzle; mutual_progress: MutualProgress[] };
+  applyEnumerationBars(row.puzzle);
   return { puzzle: row.puzzle, mutualProgress: row.mutual_progress ?? [] };
 }
 
