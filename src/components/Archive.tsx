@@ -370,6 +370,7 @@ export function Archive({
       )}
 
       <footer className="archive-footer">
+        <p>made with ❤️ by Caleb</p>
         <p>
           An independent project, unaffiliated with the papers whose puzzles
           appear here. All puzzles remain © their publishers and authors.
