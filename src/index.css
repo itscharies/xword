@@ -1665,6 +1665,27 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* One section per date. */
 .archive-day { margin-bottom: 22px; }
 .archive-more { display: flex; justify-content: center; padding: 8px 0 28px; }
+
+/* Source/affiliation notice at the foot of the archive; the full statement
+   lives in the "About the puzzles" modal. */
+.archive-footer {
+  padding: 20px 0 28px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.archive-footer p { margin: 0 0 6px; }
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-btn:hover { color: var(--fg); }
 .archive-day-head {
   margin: 0 0 10px;
   font-size: 14px;

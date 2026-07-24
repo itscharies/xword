@@ -6,6 +6,7 @@ import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
+import { AboutPuzzles } from "./AboutPuzzles.tsx";
 import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
 import { ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
@@ -110,6 +111,7 @@ export function Archive({
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const profile = useProfile();
@@ -365,6 +367,22 @@ export function Archive({
             Show more
           </button>
         </div>
+      )}
+
+      <footer className="archive-footer">
+        <p>
+          An independent project, unaffiliated with the papers whose puzzles
+          appear here. All puzzles remain © their publishers and authors.
+        </p>
+        <button className="link-btn" onClick={() => setShowAbout(true)}>
+          About the puzzles
+        </button>
+      </footer>
+
+      {showAbout && (
+        <Modal title="About the puzzles" onClose={() => setShowAbout(false)}>
+          <AboutPuzzles />
+        </Modal>
       )}
 
       {showSettings && (
