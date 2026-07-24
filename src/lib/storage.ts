@@ -121,21 +121,3 @@ export function saveCommunityProgress(puzzleId: string, progress: Progress): voi
   }
 }
 
-const LAST_DATE_KEY = "xword:lastDate";
-
-export function loadLastDate(): string | null {
-  try {
-    return localStorage.getItem(LAST_DATE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function saveLastDate(date: string): void {
-  try {
-    localStorage.setItem(LAST_DATE_KEY, date);
-  } catch {
-    /* ignore */
-  }
-}
-

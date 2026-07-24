@@ -73,13 +73,3 @@ export interface Puzzle {
    * fall back to inferring it from their source's type. */
   cryptic?: boolean;
 }
-
-/** One entry in public/puzzles/index.json. */
-export interface PuzzleIndexEntry {
-  source: PuzzleSource;
-  date: string;
-  isoDate: string;
-  weekday: string;
-  title: string;
-  author: string;
-}
