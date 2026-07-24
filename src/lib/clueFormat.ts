@@ -1,16 +1,20 @@
 // Some sources (notably the Guardian) embed inline HTML in clue text — e.g.
 // `<i>Lion King</i><span> baddie</span> (4)`. Keep a small whitelist of inline
 // formatting tags and strip everything else (including all attributes), so the
-// result is safe to drop into dangerouslySetInnerHTML.
+// result is safe to drop into dangerouslySetInnerHTML. The New Yorker instead
+// marks italics as `{/…/}` in its markdown payload — mapped to <i> here, ahead
+// of the sanitising pass.
 
 const ALLOWED = new Set(["i", "b", "em", "strong", "sub", "sup", "u"]);
 
 export function formatClue(html: string): string {
-  return html.replace(/<\/?([a-zA-Z][\w-]*)\b[^>]*>/g, (m, tag: string) => {
-    const t = tag.toLowerCase();
-    if (!ALLOWED.has(t)) return ""; // drop span/script/img/anchor/etc. entirely
-    return m.startsWith("</") ? `</${t}>` : `<${t}>`; // keep tag, drop attributes
-  });
+  return html
+    .replace(/\{\/(.*?)\/\}/g, "<i>$1</i>")
+    .replace(/<\/?([a-zA-Z][\w-]*)\b[^>]*>/g, (m, tag: string) => {
+      const t = tag.toLowerCase();
+      if (!ALLOWED.has(t)) return ""; // drop span/script/img/anchor/etc. entirely
+      return m.startsWith("</") ? `</${t}>` : `<${t}>`; // keep tag, drop attributes
+    });
 }
 
 /** Word-length enumeration for a clue — the source's own comma-separated
