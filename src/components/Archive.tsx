@@ -8,7 +8,7 @@ import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { AboutPuzzles } from "./AboutPuzzles.tsx";
 import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
-import { ArchiveSkeleton, Sk } from "./Skeleton.tsx";
+import { ArchiveDaySkeleton, ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useFlyout } from "../hooks/useFlyout.ts";
@@ -36,6 +36,21 @@ function themeName(title: string): string | null {
 }
 
 const PROGRESS_STATUSES = ["Complete", "In progress", "Not started"] as const;
+
+/** Days revealed per page — the archive loads and shows a week at a time. */
+const DAYS_PER_PAGE = 7;
+/** Rows per backend request: comfortably a week of ~11-puzzle days, so a
+ *  week's page usually costs a single round-trip. */
+const FETCH_PAGE_SIZE = 90;
+
+/** Distinct days in a fetched batch that are provably complete: while more
+ *  rows may follow, the oldest day could still be cut by the row-based page
+ *  boundary, so it doesn't count until a row from an older day (or the
+ *  feed's end) confirms it. */
+function completeDayCount(list: ArchiveFeedItem[], more: boolean): number {
+  const dates = new Set(list.map((it) => it.isoDate));
+  return more && dates.size > 0 ? dates.size - 1 : dates.size;
+}
 
 /** The community entries in the Sources filter row — they sit beside the
  *  paper names and behave the same way (multi-select include; an empty
@@ -191,35 +206,68 @@ export function Archive({
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [visibleDays, setVisibleDays] = useState(DAYS_PER_PAGE);
+
+  /** Fetch pages until `target` complete days are buffered (or the feed
+   *  ends), returning the accumulated state — the caller decides whether to
+   *  commit it, so a reload that starts mid-fetch can drop the stale run. */
+  const fetchDays = async (
+    target: number,
+    from: { items: ArchiveFeedItem[]; cursor: string | null; hasMore: boolean },
+  ) => {
+    let { items: acc, cursor: cur, hasMore: more } = from;
+    while (more && completeDayCount(acc, more) < target) {
+      const { items: page, nextCursor } = await listArchivePage({
+        cursor: cur,
+        pageSize: FETCH_PAGE_SIZE,
+        includeFollowing,
+        includeMine,
+      });
+      acc = [...acc, ...page];
+      cur = nextCursor;
+      more = nextCursor !== null;
+      if (page.length === 0) break; // a bad page must not spin the loop forever
+    }
+    return { items: acc, cursor: cur, hasMore: more };
+  };
 
   // (Re)load from the top whenever sign-in state or the Following/Your
   // puzzles chips change — all of these affect which rows the backend even
   // returns, so a client-side re-filter of already-loaded pages isn't
-  // enough.
+  // enough. The generation counter also invalidates any in-flight Show more.
+  const genRef = useRef(0);
   useEffect(() => {
-    let cancelled = false;
+    const gen = ++genRef.current;
     setLoading(true);
-    listArchivePage({ includeFollowing, includeMine }).then(({ items: page, nextCursor }) => {
-      if (cancelled) return;
-      setItems(page);
-      setCursor(nextCursor);
-      setHasMore(nextCursor !== null);
+    setVisibleDays(DAYS_PER_PAGE);
+    fetchDays(DAYS_PER_PAGE, { items: [], cursor: null, hasMore: true }).then((next) => {
+      if (genRef.current !== gen) return;
+      setItems(next.items);
+      setCursor(next.cursor);
+      setHasMore(next.hasMore);
       setLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeFollowing, includeMine, user]);
 
+  // The ref guards against double-clicks synchronously; the state drives the
+  // in-flight placeholder.
   const loadingMoreRef = useRef(false);
   const loadMore = () => {
-    if (loadingMoreRef.current || !hasMore || cursor === null) return;
+    if (loadingMoreRef.current || loading) return;
+    const target = visibleDays + DAYS_PER_PAGE;
+    const gen = genRef.current;
     loadingMoreRef.current = true;
-    listArchivePage({ cursor, includeFollowing, includeMine }).then(({ items: page, nextCursor }) => {
-      setItems((prev) => [...prev, ...page]);
-      setCursor(nextCursor);
-      setHasMore(nextCursor !== null);
+    setLoadingMore(true);
+    fetchDays(target, { items, cursor, hasMore }).then((next) => {
       loadingMoreRef.current = false;
+      if (genRef.current !== gen) return;
+      setItems(next.items);
+      setCursor(next.cursor);
+      setHasMore(next.hasMore);
+      setVisibleDays(target);
+      setLoadingMore(false);
     });
   };
 
@@ -229,10 +277,10 @@ export function Archive({
   const matchesProgress = (prog: Progress | null) =>
     progress.length === 0 || progress.includes(progressStatus(prog));
 
-  // The fixed page size can cut the oldest fetched day in half, so hold that
-  // day back until the next page (or the feed's end) confirms it's complete —
-  // Show more then always reveals whole days. If a page is somehow a single
-  // day, show it anyway rather than nothing.
+  // The row-based fetch can cut the oldest buffered day in half, so hold
+  // that day back until a later page (or the feed's end) confirms it's
+  // complete — a day never renders with only some of its puzzles. If the
+  // buffer is somehow a single day, show it anyway rather than nothing.
   const settledItems = useMemo(() => {
     if (!hasMore || items.length === 0) return items;
     const partialIso = items[items.length - 1].isoDate;
@@ -240,12 +288,37 @@ export function Archive({
     return settled.length > 0 ? settled : items;
   }, [items, hasMore]);
 
+  // Reveal only the first `visibleDays` days of the settled buffer — a
+  // fetch may overshoot the week, and the surplus stays banked for the next
+  // Show more (which then reveals it without a network round-trip).
+  const visibleItems = useMemo(() => {
+    let seen = 0;
+    let prevIso: string | null = null;
+    const out: ArchiveFeedItem[] = [];
+    for (const it of settledItems) {
+      if (it.isoDate !== prevIso) {
+        if (seen === visibleDays) break; // items arrive date-ordered
+        seen++;
+        prevIso = it.isoDate;
+      }
+      out.push(it);
+    }
+    return out;
+  }, [settledItems, visibleDays]);
+
+  // Whether Show more has anything left to reveal: unrevealed banked days,
+  // or more rows behind the cursor.
+  const settledDayCount = useMemo(
+    () => new Set(settledItems.map((it) => it.isoDate)).size,
+    [settledItems],
+  );
+
   // The Sources row covers both worlds: paper chips match syndicated
   // puzzles, the Following/Your puzzles chips match community ones. Type
   // still describes syndicated sources only, so it drops community puzzles
   // once active.
   const filteredItems = useMemo(() => {
-    return settledItems.filter((it) => {
+    return visibleItems.filter((it) => {
       if (it.kind === "syndicated") {
         const meta = SOURCES[it.source!];
         if (papers.length > 0 && !papers.includes(meta.paper)) return false;
@@ -259,7 +332,7 @@ export function Archive({
       }
       return matchesProgress(loadCommunityProgress(it.id));
     });
-  }, [settledItems, papers, types, progress, user]);
+  }, [visibleItems, papers, types, progress, user]);
 
   // Group by date — items arrive from the server already sorted newest-day
   // first, community-before-syndicated within a day, so insertion order into
@@ -352,7 +425,11 @@ export function Archive({
         </>
       )}
 
-      {!loading && hasMore && (
+      {/* While the next week is in flight, a day-shaped placeholder stands
+          where its content will land, sized like the last rendered day. */}
+      {loadingMore && <ArchiveDaySkeleton count={days[days.length - 1]?.[1].length ?? 4} />}
+
+      {!loading && !loadingMore && (hasMore || settledDayCount > visibleDays) && (
         <div className="archive-more">
           <button className="btn" onClick={loadMore}>
             Show more

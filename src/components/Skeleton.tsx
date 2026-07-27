@@ -33,27 +33,34 @@ function SkAvatar({ size = 36 }: { size?: number }) {
   return <Sk w={size} h={size} className="sk-avatar" />;
 }
 
-/** Archive feed: a couple of day sections of puzzle tiles. Line widths vary
- *  per tile so the page doesn't read as a repeated stamp. */
+/** One archive day section of shimmering puzzle tiles. Line widths vary per
+ *  tile so the section doesn't read as a repeated stamp. Also shown on its
+ *  own below the feed while Show more's next page is in flight. */
+export function ArchiveDaySkeleton({ count }: { count: number }) {
+  return (
+    <section className="archive-day" aria-busy="true" aria-label="Loading puzzles">
+      <h2 className="archive-day-head">
+        <Sk w={150} h={14} />
+      </h2>
+      <ul className="archive-list">
+        {Array.from({ length: count }, (_, i) => (
+          <li className="archive-item sk-tile" key={i}>
+            <Sk w={`${52 + ((i * 17) % 30)}%`} h={16} />
+            <Sk w={`${68 + ((i * 23) % 24)}%`} h={14} />
+            <Sk w={`${34 + ((i * 11) % 18)}%`} h={13} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Archive feed: a couple of day sections of puzzle tiles. */
 export function ArchiveSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading puzzles">
-      {[4, 3].map((count, day) => (
-        <section className="archive-day" key={day}>
-          <h2 className="archive-day-head">
-            <Sk w={150} h={14} />
-          </h2>
-          <ul className="archive-list">
-            {Array.from({ length: count }, (_, i) => (
-              <li className="archive-item sk-tile" key={i}>
-                <Sk w={`${52 + ((i * 17) % 30)}%`} h={16} />
-                <Sk w={`${68 + ((i * 23) % 24)}%`} h={14} />
-                <Sk w={`${34 + ((i * 11) % 18)}%`} h={13} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <ArchiveDaySkeleton count={4} />
+      <ArchiveDaySkeleton count={3} />
     </div>
   );
 }
