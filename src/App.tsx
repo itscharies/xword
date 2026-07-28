@@ -1158,7 +1158,11 @@ function Solver({
       )}
 
       {showInvite && sApi && (
-        <SessionInviteDialog url={sApi.inviteUrl} onClose={() => setShowInvite(false)} />
+        <SessionInviteDialog
+          url={sApi.inviteUrl}
+          title={puzzle.title}
+          onClose={() => setShowInvite(false)}
+        />
       )}
 
       {showCoopStart && !session && (
