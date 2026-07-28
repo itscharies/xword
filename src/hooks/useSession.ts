@@ -48,6 +48,17 @@ export interface RemoteCursor {
   letter: string;
 }
 
+/** The clue a remote cursor is sitting on. The sender normalizes direction
+ *  to a word that runs through their cell, but fall back to the cross word
+ *  rather than trust that blindly. Shared by the grid (word tint) and the
+ *  clue list (row highlight) so both agree on what a peer "has selected". */
+export function cursorClue(xw: Crossword, cur: RemoteCursor) {
+  return (
+    xw.clueAt(cur.row, cur.col, cur.direction) ??
+    xw.clueAt(cur.row, cur.col, cur.direction === "across" ? "down" : "across")
+  );
+}
+
 export interface SessionNotice {
   id: number;
   text: string;

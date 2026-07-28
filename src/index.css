@@ -2430,6 +2430,29 @@ button { font: inherit; cursor: pointer; color: inherit; }
   right: 0;
 }
 
+/* A peer's selected clue in the sidebar: the row is tinted with their
+   accent (inline inset shadow, matching the grid cells) and carries their
+   initial-letter chip(s) — two players on the same clue show two chips. */
+.clue-col li .clue-rc {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  align-self: flex-start;
+}
+.rc-badge-inline {
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  color: #000;
+}
+
 /* Join/leave notices — a small self-expiring stack under the actionbar.
    There's no global toast system; this is deliberately feature-local. */
 .session-notices {

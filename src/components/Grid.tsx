@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
-import type { RemoteCursor } from "../hooks/useSession.ts";
+import { cursorClue, type RemoteCursor } from "../hooks/useSession.ts";
 
 const keyOf = (r: number, c: number) => `${r},${c}`;
 
@@ -35,12 +35,7 @@ export function Grid({
       const ringList = rings.get(k) ?? [];
       if (ringList.length < 2) ringList.push(cur);
       rings.set(k, ringList);
-      // The sender normalizes direction to a word that runs through their
-      // cell, but fall back to the cross word (then the bare cell) rather
-      // than trust that blindly.
-      const clue =
-        xw.clueAt(cur.row, cur.col, cur.direction) ??
-        xw.clueAt(cur.row, cur.col, cur.direction === "across" ? "down" : "across");
+      const clue = cursorClue(xw, cur);
       const cells = clue
         ? Array.from({ length: clue.len }, (_, i) =>
             keyOf(

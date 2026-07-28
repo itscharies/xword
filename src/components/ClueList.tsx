@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
+import { cursorClue, type RemoteCursor } from "../hooks/useSession.ts";
 import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
 
 function Column({
@@ -8,11 +9,15 @@ function Column({
   direction,
   clues,
   xw,
+  remote,
 }: {
   title: string;
   direction: Direction;
   clues: Clue[];
   xw: Crossword;
+  /** Co-op: "across-12" / "down-3" -> the peers whose cursor sits on that
+   *  clue (at most two rendered). */
+  remote: Map<string, RemoteCursor[]> | null;
 }) {
   const activeNumber =
     xw.activeClue?.direction === direction ? xw.activeClue.number : null;
@@ -51,6 +56,7 @@ function Column({
           const active = clue.number === activeNumber;
           const crossing = clue.number === crossNumber;
           const linked = xw.linkedNumbers[direction].has(clue.number);
+          const remoteHere = remote?.get(`${direction}-${clue.number}`);
           return (
             <li
               key={clue.number}
@@ -63,6 +69,21 @@ function Column({
               ]
                 .filter(Boolean)
                 .join(" ")}
+              // A peer on this clue tints the row with their accent — an
+              // inset shadow so it composites over active/crossing/hover
+              // backgrounds instead of replacing them (matching the grid).
+              style={
+                remoteHere
+                  ? {
+                      boxShadow: remoteHere
+                        .map(
+                          (p) =>
+                            `inset 0 0 0 999px color-mix(in srgb, ${p.color} 18%, transparent)`,
+                        )
+                        .join(", "),
+                    }
+                  : undefined
+              }
               onClick={() => xw.selectClue({ ...clue, direction })}
             >
               <span className="cn">{clue.number}</span>
@@ -70,6 +91,20 @@ function Column({
                 <span dangerouslySetInnerHTML={{ __html: formatClue(clue.clue) }} />
                 <span className="enum"> ({clueEnumeration(clue)})</span>
               </span>
+              {remoteHere && (
+                <span className="clue-rc" aria-hidden>
+                  {remoteHere.map((p) => (
+                    <span
+                      key={p.sid}
+                      className="rc-badge-inline"
+                      style={{ background: p.color }}
+                      title={p.displayName}
+                    >
+                      {p.letter}
+                    </span>
+                  ))}
+                </span>
+              )}
             </li>
           );
         })}
@@ -78,11 +113,48 @@ function Column({
   );
 }
 
-export function ClueList({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
+export function ClueList({
+  puzzle,
+  xw,
+  remoteCursors,
+}: {
+  puzzle: Puzzle;
+  xw: Crossword;
+  /** Co-op sessions: peers' cursors — their selected clue gets a row tint
+   *  in their accent plus an initial-letter badge, like the grid cells. */
+  remoteCursors?: RemoteCursor[];
+}) {
+  const remoteByClue = useMemo(() => {
+    if (!remoteCursors || remoteCursors.length === 0) return null;
+    const map = new Map<string, RemoteCursor[]>();
+    for (const cur of remoteCursors) {
+      const clue = cursorClue(xw, cur);
+      if (!clue) continue;
+      const k = `${clue.direction}-${clue.number}`;
+      const list = map.get(k) ?? [];
+      if (list.length < 2) list.push(cur);
+      map.set(k, list);
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteCursors, xw.clueAt]);
+
   return (
     <div className="clues">
-      <Column title="Across" direction="across" clues={puzzle.clues.across} xw={xw} />
-      <Column title="Down" direction="down" clues={puzzle.clues.down} xw={xw} />
+      <Column
+        title="Across"
+        direction="across"
+        clues={puzzle.clues.across}
+        xw={xw}
+        remote={remoteByClue}
+      />
+      <Column
+        title="Down"
+        direction="down"
+        clues={puzzle.clues.down}
+        xw={xw}
+        remote={remoteByClue}
+      />
     </div>
   );
 }

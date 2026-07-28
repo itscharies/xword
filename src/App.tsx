@@ -1076,7 +1076,7 @@ function Solver({
               </div>
             )}
           </div>
-          <ClueList puzzle={puzzle} xw={xw} />
+          <ClueList puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
           {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
         </div>
 
