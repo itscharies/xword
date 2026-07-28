@@ -70,6 +70,16 @@ export const UserMinusIcon = () => (
   </svg>
 );
 
+// Solve together: two people (Feather "users").
+export const PeopleIcon = () => (
+  <svg {...base}>
+    <circle cx="9" cy="8" r="4" />
+    <path d="M2 21a7 7 0 0 1 14 0" />
+    <path d="M16 4.5a4 4 0 0 1 0 7" />
+    <path d="M18.5 14.5a7 7 0 0 1 3.5 6" />
+  </svg>
+);
+
 // Edit: a pencil (Feather "edit-2").
 export const EditIcon = () => (
   <svg {...base}>

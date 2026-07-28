@@ -6,3 +6,7 @@ dist/
 npm-debug.log*
 .claude/
 *.tsbuildinfo
+
+# Supabase CLI local-stack state
+supabase/.temp/
+supabase/.branches/

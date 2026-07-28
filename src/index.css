@@ -2396,3 +2396,125 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: 1px solid var(--line);
   padding: 2px 4px;
 }
+
+/* ---- multiplayer co-op sessions ------------------------------------------ */
+
+/* A peer's cursor renders as an inset ring in their avatar-accent colour on
+   their exact cell plus a translucent tint of the same colour across their
+   whole selected word — both drawn as inline inset box-shadows (see
+   Grid.tsx), so they composite over any cell background (.active, .word,
+   .shaded) rather than replacing it. The initial-letter badge below keeps
+   two players who hash to the same accent tellable apart. */
+/* The badge takes over the corner the clue number lives in. */
+.cell.remote .num {
+  display: none;
+}
+.cell .rc-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: max(7px, calc(30cqw / var(--cols)));
+  height: max(7px, calc(30cqw / var(--cols)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: max(5px, calc(20cqw / var(--cols)));
+  font-weight: 800;
+  line-height: 1;
+  color: #000;
+  pointer-events: none;
+  z-index: 4;
+}
+.cell .rc-badge-2 {
+  left: auto;
+  right: 0;
+}
+
+/* Join/leave notices — a small self-expiring stack under the actionbar.
+   There's no global toast system; this is deliberately feature-local. */
+.session-notices {
+  position: relative;
+  z-index: 20;
+  height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.session-notice {
+  margin-top: 4px;
+  padding: 4px 12px;
+  background: var(--bg);
+  border: 2px solid var(--line);
+  box-shadow: 3px 3px 0 var(--shadow-col);
+  font-size: 12px;
+  font-weight: 600;
+  animation: session-notice-in 0.15s ease-out;
+}
+@keyframes session-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Online dot in the session roster flyout. */
+.session-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: auto;
+  background: color-mix(in srgb, currentColor 25%, transparent);
+}
+.session-dot.on {
+  background: #22c55e;
+}
+.session-invite-row {
+  /* Button reset — reads as another .solves-row entry. */
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+.session-invite-row:hover .solves-row-name {
+  text-decoration: underline;
+}
+.session-invite-icon {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+}
+.session-invite-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The join flow's pre-Solver states (sign-in gate, claim profile, warnings,
+   ended notice). */
+.session-gate {
+  max-width: 440px;
+  margin: 24px auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  box-shadow: 4px 4px 0 var(--shadow-col);
+}
+.session-gate p {
+  margin: 0;
+}
+.session-gate-people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}

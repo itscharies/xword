@@ -37,5 +37,16 @@ export const supabase: SupabaseClient | null = mockMode
   : supabaseEnabled
     ? createClient(url, publishableKey, {
         global: { fetch: (input, init) => fetch(input, { ...init, keepalive: leaving }) },
+        // Co-op sessions ride Realtime broadcast; supabase-js's default
+        // client-side rate limit (10 messages/s) silently drops sends, and
+        // fast typing plus a cursor stream can brush past it.
+        realtime: { params: { eventsPerSecond: 20 } },
       })
     : null;
+
+// Dev-only console handle — lets local testing drive auth flows the UI
+// doesn't offer (e.g. email sign-in against `supabase start`, which has no
+// Google provider configured). Never present in production builds.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  (window as { __supabase?: SupabaseClient | null }).__supabase = supabase;
+}

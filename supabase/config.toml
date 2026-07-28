@@ -1,1 +1,18 @@
 project_id = "pnqzbdsizsbsmhmvnoti"
+
+# The heavyweight optional services stay off for `supabase start` — local
+# verification only needs db + auth + rest + realtime (co-op sessions).
+[analytics]
+enabled = false
+
+[studio]
+enabled = false
+
+[inbucket]
+enabled = false
+
+[storage]
+enabled = false
+
+[edge_runtime]
+enabled = false

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type ReactElement } from "react";
 import type { Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
+import type { RemoteCursor } from "../hooks/useSession.ts";
 import { Grid } from "./Grid.tsx";
 
 /** Breathing room (px) between the grid and the viewport edge whenever the
@@ -58,7 +59,15 @@ interface View {
   ty: number;
 }
 
-export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
+export function GridCanvas({
+  puzzle,
+  xw,
+  remoteCursors,
+}: {
+  puzzle: Puzzle;
+  xw: Crossword;
+  remoteCursors?: RemoteCursor[];
+}) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const minimapRef = useRef<HTMLDivElement | null>(null);
@@ -486,7 +495,7 @@ export function GridCanvas({ puzzle, xw }: { puzzle: Puzzle; xw: Crossword }) {
       }}
     >
       <div ref={contentRef} className="canvas-content">
-        <Grid puzzle={puzzle} xw={xw} />
+        <Grid puzzle={puzzle} xw={xw} remoteCursors={remoteCursors} />
       </div>
       <div
         ref={minimapRef}
