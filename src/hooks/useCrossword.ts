@@ -12,6 +12,38 @@ export interface Pos {
   col: number;
 }
 
+/** One cell's worth of a local edit, as reported to a co-op session. */
+export interface CellCommitDelta {
+  row: number;
+  col: number;
+  value: string;
+  revealed: boolean;
+}
+
+export type CellCommitCause = "type" | "delete" | "reveal" | "fill";
+
+/** One cell's check verdict — `expect` is the value that was standing when
+ *  the check ran, so a receiver can ignore the mark if the cell has since
+ *  been edited out from under it. */
+export interface MarkCommitDelta {
+  row: number;
+  col: number;
+  expect: string;
+  wrong: boolean;
+}
+
+/** Co-op session hooks. The engine stays protocol-ignorant: it reports
+ *  every local mutation through these callbacks (never for remote applies)
+ *  and takes already-merged remote state through applyRemoteCells/-Marks. */
+export interface CoopOptions {
+  onCellsCommitted?: (commit: { cells: CellCommitDelta[]; cause: CellCommitCause }) => void;
+  onMarksCommitted?: (commit: { marks: MarkCommitDelta[] }) => void;
+  /** Revealed cells become read-only instead of unlockable-by-typing —
+   *  required for convergence, since the sync protocol treats a reveal as
+   *  terminal. */
+  readOnlyRevealed?: boolean;
+}
+
 const keyOf = (r: number, c: number) => `${r},${c}`;
 const otherDir = (d: Direction): Direction =>
   d === "across" ? "down" : "across";
@@ -38,8 +70,13 @@ function clueCells(clue: DirClue): Pos[] {
  * the up-to-date value instead of a stale render closure. React state mirrors
  * the refs purely to trigger re-renders.
  */
-export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
+export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: CoopOptions) {
   const { grid, width, height, clues } = puzzle;
+
+  // Read through a ref so the mutating callbacks below stay stable while
+  // always seeing the caller's latest handlers.
+  const coopRef = useRef(coop);
+  coopRef.current = coop;
 
   // (row,col) -> the across/down clue covering it.
   const lookup = useMemo(() => {
@@ -403,21 +440,43 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     clearRevealedAt(r, c);
   };
 
+  /** Co-op: a revealed cell can't be edited (solo mode lets typing unlock
+   *  it — see clearRevealedAt — but the sync protocol needs reveals to be
+   *  terminal, or two players fighting over a revealed square would
+   *  oscillate forever). */
+  const lockedRevealed = (r: number, c: number) =>
+    !!coopRef.current?.readOnlyRevealed && revealedRef.current.has(keyOf(r, c));
+
+  /** Report a local mutation to the co-op layer. Remote applies never come
+   *  through here — applyRemoteCells writes state directly. */
+  const emitCells = (cells: CellCommitDelta[], cause: CellCommitCause) => {
+    if (cells.length > 0) coopRef.current?.onCellsCommitted?.({ cells, cause });
+  };
+
   const typeLetter = useCallback(
     (ch: string) => {
       if (completedRef.current) return;
       const { row, col } = activeRef.current;
       if (!isOpen(row, col)) return;
+      if (lockedRevealed(row, col)) {
+        // Skip the letter but keep the cursor moving, so typing across a
+        // word with a revealed square in it isn't interrupted.
+        if (!rebusRef.current) advanceInWord();
+        return;
+      }
       if (rebusRef.current) {
         // Accumulate letters in the cell; stay put so a word can be entered.
-        writeCell(row, col, entriesRef.current[row][col] + ch.toUpperCase());
+        const next = entriesRef.current[row][col] + ch.toUpperCase();
+        writeCell(row, col, next);
         clearWrongAt(row, col);
         clearRevealedAt(row, col);
+        emitCells([{ row, col, value: next, revealed: false }], "type");
         return;
       }
       writeCell(row, col, ch.toUpperCase());
       clearWrongAt(row, col);
       clearRevealedAt(row, col);
+      emitCells([{ row, col, value: ch.toUpperCase(), revealed: false }], "type");
       advanceInWord();
     },
     [isOpen, advanceInWord],
@@ -429,15 +488,19 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     const cur = entriesRef.current[row][col];
     // In rebus mode, peel one letter off a multi-letter cell.
     if (rebusRef.current && cur.length > 1) {
-      writeCell(row, col, cur.slice(0, -1));
+      if (lockedRevealed(row, col)) return;
+      const next = cur.slice(0, -1);
+      writeCell(row, col, next);
       clearWrongAt(row, col);
+      emitCells([{ row, col, value: next, revealed: false }], "delete");
       return;
     }
-    if (cur) {
+    if (cur && !lockedRevealed(row, col)) {
       clearAt(row, col);
+      emitCells([{ row, col, value: "", revealed: false }], "delete");
       return;
     }
-    // Empty cell: step back within the word and clear that one.
+    // Empty (or locked) cell: step back within the word and clear that one.
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
     const cells = clueCells(clue);
@@ -445,14 +508,18 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     if (i > 0) {
       const prev = cells[i - 1];
       setActive(prev);
+      if (lockedRevealed(prev.row, prev.col)) return;
       clearAt(prev.row, prev.col);
+      emitCells([{ row: prev.row, col: prev.col, value: "", revealed: false }], "delete");
     }
   }, [clueThrough]);
 
   const deleteCell = useCallback(() => {
     if (completedRef.current) return;
     const { row, col } = activeRef.current;
+    if (lockedRevealed(row, col)) return;
     clearAt(row, col);
+    emitCells([{ row, col, value: "", revealed: false }], "delete");
   }, []);
 
   // ---- check / reveal -----------------------------------------------------
@@ -477,13 +544,21 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     (scope: RevealScope) => {
       const cells = scopeCells(scope);
       const next = new Set(wrongRef.current);
+      const marks: MarkCommitDelta[] = [];
       for (const { row, col } of cells) {
         const entry = entriesRef.current[row][col];
         const sol = grid[row][col].solution;
-        if (entry && sol && entry !== sol) next.add(keyOf(row, col));
-        else next.delete(keyOf(row, col));
+        const k = keyOf(row, col);
+        if (entry && sol && entry !== sol) {
+          if (!next.has(k)) marks.push({ row, col, expect: entry, wrong: true });
+          next.add(k);
+        } else {
+          if (next.has(k)) marks.push({ row, col, expect: entry, wrong: false });
+          next.delete(k);
+        }
       }
       setWrong(next);
+      if (marks.length > 0) coopRef.current?.onMarksCommitted?.({ marks });
     },
     [scopeCells, grid],
   );
@@ -495,6 +570,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       const g = entriesRef.current.map((row) => row.slice());
       const rev = new Set(revealedRef.current);
       const wr = new Set(wrongRef.current);
+      const deltas: CellCommitDelta[] = [];
       for (const { row, col } of cells) {
         const sol = grid[row][col].solution;
         if (!sol) continue;
@@ -504,10 +580,12 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
         g[row][col] = sol;
         rev.add(keyOf(row, col));
         wr.delete(keyOf(row, col));
+        deltas.push({ row, col, value: sol, revealed: true });
       }
       setEntries(g);
       setRevealed(rev);
       setWrong(wr);
+      emitCells(deltas, "reveal");
     },
     [scopeCells, grid],
   );
@@ -544,18 +622,66 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
       const g = entriesRef.current.map((row) => row.slice());
       const wr = new Set(wrongRef.current);
       const rev = new Set(revealedRef.current);
+      const deltas: CellCommitDelta[] = [];
       clueCells(clue).forEach((p, i) => {
         if (i < letters.length) {
+          if (lockedRevealed(p.row, p.col)) return;
           g[p.row][p.col] = letters[i];
           wr.delete(keyOf(p.row, p.col));
           rev.delete(keyOf(p.row, p.col));
+          deltas.push({ row: p.row, col: p.col, value: letters[i], revealed: false });
         }
       });
       setEntries(g);
       setWrong(wr);
       setRevealed(rev);
+      emitCells(deltas, "fill");
     },
     [clueThrough],
+  );
+
+  // ---- remote applies (co-op) ----------------------------------------------
+
+  /** Apply already-merge-approved remote cell ops in one batch: one clone,
+   *  one render, cursor untouched, no onCellsCommitted. Deliberately not
+   *  gated on completedRef — that lock guards accidental *input*; the co-op
+   *  layer stops calling this once the session is done. */
+  const applyRemoteCells = useCallback(
+    (ops: CellCommitDelta[]) => {
+      const g = entriesRef.current.map((row) => row.slice());
+      const rev = new Set(revealedRef.current);
+      const wr = new Set(wrongRef.current);
+      let any = false;
+      for (const { row, col, value, revealed: isRev } of ops) {
+        if (row < 0 || col < 0 || row >= height || col >= width) continue;
+        any = true;
+        g[row][col] = value;
+        const k = keyOf(row, col);
+        if (isRev) rev.add(k);
+        else rev.delete(k);
+        // A value change invalidates any standing wrong mark, same as solo.
+        wr.delete(k);
+      }
+      if (!any) return;
+      setEntries(g);
+      setRevealed(rev);
+      setWrong(wr);
+    },
+    [height, width],
+  );
+
+  /** Apply remote check verdicts (already expect-guarded by the co-op layer). */
+  const applyRemoteMarks = useCallback(
+    (marks: { row: number; col: number; wrong: boolean }[]) => {
+      if (marks.length === 0) return;
+      const wr = new Set(wrongRef.current);
+      for (const { row, col, wrong: isWrong } of marks) {
+        if (isWrong) wr.add(keyOf(row, col));
+        else wr.delete(keyOf(row, col));
+      }
+      setWrong(wr);
+    },
+    [],
   );
 
   // Cryptic puzzles get the anagram helper instead of the rebus toggle. An
@@ -677,6 +803,8 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null) {
     reset,
     fillWord,
     loadExternal,
+    applyRemoteCells,
+    applyRemoteMarks,
   };
 }
 
