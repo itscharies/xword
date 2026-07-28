@@ -2399,19 +2399,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* ---- multiplayer co-op sessions ------------------------------------------ */
 
-/* A peer's cursor: an inset ring in their avatar-accent colour (composes
-   with the local .active background rather than replacing it), plus an
-   initial-letter badge in the top-left so two players who hash to the same
-   accent stay tellable apart. Up to two cursors render per cell; the second
-   gets a nested ring and a top-right badge. */
-.cell.remote {
-  box-shadow: inset 0 0 0 3px var(--rc);
-}
-.cell.remote.remote-2 {
-  box-shadow:
-    inset 0 0 0 3px var(--rc),
-    inset 0 0 0 6px var(--rc2);
-}
+/* A peer's cursor renders as an inset ring in their avatar-accent colour on
+   their exact cell plus a translucent tint of the same colour across their
+   whole selected word — both drawn as inline inset box-shadows (see
+   Grid.tsx), so they composite over any cell background (.active, .word,
+   .shaded) rather than replacing it. The initial-letter badge below keeps
+   two players who hash to the same accent tellable apart. */
 /* The badge takes over the corner the clue number lives in. */
 .cell.remote .num {
   display: none;

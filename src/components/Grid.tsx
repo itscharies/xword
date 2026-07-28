@@ -21,18 +21,42 @@ export function Grid({
 }) {
   const { grid, width, height } = puzzle;
 
-  // Cell key -> the (at most two rendered) cursors sitting on it.
-  const cursorsByCell = useMemo(() => {
+  // Remote cursors project two layers onto the grid: a ring + badge on the
+  // exact cell each peer is on (`rings`), and a translucent tint of their
+  // accent across their whole selected word (`fills`) — so you can see not
+  // just where they are but which answer they're working, like your own
+  // word highlight. Both capped at two per cell; more is unreadable.
+  const cursorLayers = useMemo(() => {
     if (!remoteCursors || remoteCursors.length === 0) return null;
-    const map = new Map<string, RemoteCursor[]>();
+    const rings = new Map<string, RemoteCursor[]>();
+    const fills = new Map<string, string[]>();
     for (const cur of remoteCursors) {
       const k = keyOf(cur.row, cur.col);
-      const list = map.get(k) ?? [];
-      if (list.length < 2) list.push(cur);
-      map.set(k, list);
+      const ringList = rings.get(k) ?? [];
+      if (ringList.length < 2) ringList.push(cur);
+      rings.set(k, ringList);
+      // The sender normalizes direction to a word that runs through their
+      // cell, but fall back to the cross word (then the bare cell) rather
+      // than trust that blindly.
+      const clue =
+        xw.clueAt(cur.row, cur.col, cur.direction) ??
+        xw.clueAt(cur.row, cur.col, cur.direction === "across" ? "down" : "across");
+      const cells = clue
+        ? Array.from({ length: clue.len }, (_, i) =>
+            keyOf(
+              clue.direction === "down" ? clue.row + i : clue.row,
+              clue.direction === "across" ? clue.col + i : clue.col,
+            ),
+          )
+        : [k];
+      for (const ck of cells) {
+        const fillList = fills.get(ck) ?? [];
+        if (fillList.length < 2 && !fillList.includes(cur.color)) fillList.push(cur.color);
+        fills.set(ck, fillList);
+      }
     }
-    return map;
-  }, [remoteCursors]);
+    return { rings, fills };
+  }, [remoteCursors, xw.clueAt]);
 
   return (
     <div
@@ -63,7 +87,8 @@ export function Grid({
           const isLinked = xw.linked.has(k);
           const entry = xw.entries[r][c];
           const afterBar = c > 0 && grid[r][c - 1].barRight;
-          const remote = cursorsByCell?.get(k);
+          const remote = cursorLayers?.rings.get(k);
+          const remoteFills = cursorLayers?.fills.get(k);
           const cls = [
             "cell",
             cell.shaded ? "shaded" : "",
@@ -76,15 +101,20 @@ export function Grid({
             cell.barBottom ? "bar-b" : "",
             afterBar ? "after-bar-r" : "",
             remote ? "remote" : "",
-            remote && remote.length > 1 ? "remote-2" : "",
           ]
             .filter(Boolean)
             .join(" ");
-          const remoteStyle = remote
-            ? ({
-                "--rc": remote[0].color,
-                ...(remote[1] ? { "--rc2": remote[1].color } : {}),
-              } as React.CSSProperties)
+          // Rings sit outermost, then the word tints flood the rest of the
+          // cell (a giant inset shadow composites over any background —
+          // shaded, highlighted, active — without fighting it).
+          const shadows: string[] = [];
+          if (remote?.[0]) shadows.push(`inset 0 0 0 3px ${remote[0].color}`);
+          if (remote?.[1]) shadows.push(`inset 0 0 0 6px ${remote[1].color}`);
+          for (const color of remoteFills ?? []) {
+            shadows.push(`inset 0 0 0 999px color-mix(in srgb, ${color} 24%, transparent)`);
+          }
+          const remoteStyle = shadows.length
+            ? ({ boxShadow: shadows.join(", ") } as React.CSSProperties)
             : undefined;
           return (
             <div

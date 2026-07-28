@@ -28,6 +28,7 @@ import {
   type SessionStatus,
 } from "../lib/session.ts";
 import { computeAvatarPattern } from "../lib/avatar.ts";
+import type { Direction } from "../types.ts";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -38,6 +39,8 @@ export interface RemoteCursor {
   displayName: string;
   row: number;
   col: number;
+  /** Which way they're solving — the grid tints their whole selected word. */
+  direction: Direction;
   /** The user's avatar accent — "the colour of their profile picture". */
   color: string;
   /** First letter of their display name, badged on the cursor cell so two
@@ -172,6 +175,7 @@ export function useSession(
               displayName,
               row: cursor.r,
               col: cursor.c,
+              direction: cursor.d,
               color: computeAvatarPattern(username, displayName).accent.swatch,
               letter: (displayName.trim()[0] ?? "?").toUpperCase(),
             });
