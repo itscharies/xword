@@ -4,7 +4,17 @@ import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
 import { initTheme, updateFavicon } from "./lib/theme.ts";
 import { confirmLeave } from "./lib/navGuard.ts";
-import { useCrossword } from "./hooks/useCrossword.ts";
+import { useCrossword, type CoopOptions } from "./hooks/useCrossword.ts";
+import { useSession, type CoopBridge } from "./hooks/useSession.ts";
+import { progressFromSessionState, stateFromProgress } from "./lib/coop.ts";
+import {
+  createSession,
+  getSessionPreview,
+  joinSession,
+  sessionsEnabled,
+  type JoinResult,
+  type SessionPreview,
+} from "./lib/session.ts";
 import { useAnagramHelperStore, useAnagramPool } from "./hooks/useAnagramPool.ts";
 import { formatTime, useTimer } from "./hooks/useTimer.ts";
 import {
@@ -39,6 +49,10 @@ import { useStuck } from "./hooks/useStuck.ts";
 import { useWakeLock } from "./hooks/useWakeLock.ts";
 import { Grid } from "./components/Grid.tsx";
 import { GridCanvas } from "./components/GridCanvas.tsx";
+import { SessionBar } from "./components/SessionBar.tsx";
+import { SessionInviteDialog } from "./components/SessionInviteDialog.tsx";
+import { ClaimProfileForm } from "./components/ClaimProfileForm.tsx";
+import { AvatarStack } from "./components/AvatarStack.tsx";
 import { ClueList } from "./components/ClueList.tsx";
 import { ClueBanner } from "./components/ClueBanner.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
@@ -61,6 +75,7 @@ import {
   FullscreenExitIcon,
   FullscreenIcon,
   PauseIcon,
+  PeopleIcon,
   PlayIcon,
   SettingsIcon,
 } from "./components/icons.tsx";
@@ -186,6 +201,15 @@ function AppRoutes() {
         onOpenPuzzle={(id) => goTo(`p/${id}`)}
         onOpenDraft={(id) => goTo(`draft/${id}`)}
       />
+    );
+  }
+
+  // Multiplayer co-op session — invite link, keyed by the session's uuid.
+  // ("s" can never collide with the <source>/<date> branch below: it isn't
+  // a valid PuzzleSource.)
+  if (route.startsWith("s/")) {
+    return (
+      <SessionView key={route} id={route.slice(2)} onOpenArchive={() => goTo("")} />
     );
   }
 
@@ -379,6 +403,198 @@ function CommunityPuzzleView({
   );
 }
 
+/** Bare page shell for the session join flow's pre-Solver states (sign-in
+ *  gate, claim-profile, warnings, ended notice). */
+function SessionGate({
+  onOpenArchive,
+  title,
+  children,
+}: {
+  onOpenArchive: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="header-left">
+          <Logo onClick={onOpenArchive} />
+          <div className="title-block">
+            <h1>{title}</h1>
+          </div>
+        </div>
+      </header>
+      <div className="session-gate">{children}</div>
+    </div>
+  );
+}
+
+/** A multiplayer co-op session, reached via its invite link (/s/<uuid>).
+ *  Walks the visitor through whatever stands between them and the grid:
+ *  sign-in, claiming a profile, and a warning when joining would replace
+ *  their existing solo progress on the puzzle — then joins and mounts the
+ *  Solver in session mode. */
+function SessionView({
+  id,
+  onOpenArchive,
+}: {
+  id: string;
+  onOpenArchive: () => void;
+}) {
+  const { status: authStatus, user, signInWithGoogle } = useAuth();
+  const profile = useProfile();
+  const [preview, setPreview] = useState<SessionPreview | null | "loading">("loading");
+  const [join, setJoin] = useState<JoinResult | null>(null);
+  const [joinFailed, setJoinFailed] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (!sessionsEnabled) return;
+    let cancelled = false;
+    setPreview("loading");
+    setJoin(null);
+    setJoinFailed(false);
+    getSessionPreview(id).then((p) => {
+      if (!cancelled) setPreview(p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const ready = preview !== "loading" && preview !== null;
+
+  // Joining adopts the session's shared grid as this puzzle's progress —
+  // warn first when there's solo progress here that would be replaced.
+  // Existing participants (rejoins, refreshes) already crossed that bridge.
+  const needsWarning = useMemo(() => {
+    if (!ready || preview.is_participant) return false;
+    const local = preview.puzzle_id
+      ? loadCommunityProgress(preview.puzzle_id)
+      : preview.source && preview.puzzle_date
+        ? loadProgress(preview.source, preview.puzzle_date)
+        : null;
+    if (!local) return false;
+    return local.completed || local.entries.some((row) => row.some(Boolean));
+  }, [ready, preview]);
+
+  const shouldJoin =
+    sessionsEnabled &&
+    ready &&
+    preview.status !== "ended" &&
+    !!user &&
+    profile !== "loading" &&
+    !!profile &&
+    (!needsWarning || confirmed);
+
+  useEffect(() => {
+    if (!shouldJoin || join) return;
+    let cancelled = false;
+    joinSession(id).then((res) => {
+      if (cancelled) return;
+      if (res) setJoin(res);
+      else setJoinFailed(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldJoin, id]);
+
+  if (!sessionsEnabled) {
+    return (
+      <SessionGate onOpenArchive={onOpenArchive} title="Solve together">
+        <p>Solving together isn't available here.</p>
+      </SessionGate>
+    );
+  }
+  if (join) {
+    return (
+      <Solver
+        puzzle={join.puzzle}
+        onOpenArchive={onOpenArchive}
+        communityId={join.session.puzzle_id ?? undefined}
+        session={join}
+      />
+    );
+  }
+  if (joinFailed || preview === null) {
+    return <div className="error">Session not found.</div>;
+  }
+  if (preview === "loading" || authStatus === "loading") {
+    return <SolverSkeleton onOpenArchive={onOpenArchive} />;
+  }
+
+  const title = preview.title ?? "Crossword";
+  const soloRoute = preview.puzzle_id
+    ? `p/${preview.puzzle_id}`
+    : `${preview.source}/${preview.puzzle_date}`;
+
+  if (preview.status === "ended") {
+    return (
+      <SessionGate onOpenArchive={onOpenArchive} title={title}>
+        <p>This session has ended.</p>
+        <button className="btn btn-accent" onClick={() => goTo(soloRoute)}>
+          Solve it yourself
+        </button>
+      </SessionGate>
+    );
+  }
+  if (!user) {
+    const names = preview.participants.map((p) => p.display_name);
+    return (
+      <SessionGate onOpenArchive={onOpenArchive} title={title}>
+        <div className="session-gate-people">
+          <AvatarStack people={preview.participants.slice(0, 4)} />
+          <span>
+            {names.length > 0
+              ? `${names.slice(0, 2).join(" and ")}${names.length > 2 ? ` and ${names.length - 2} more` : ""} invited you to solve this together.`
+              : "You've been invited to solve this together."}
+          </span>
+        </div>
+        <p>Sign in to join the session.</p>
+        <button
+          className="btn btn-accent"
+          onClick={() => void signInWithGoogle()}
+        >
+          Sign in with Google
+        </button>
+      </SessionGate>
+    );
+  }
+  if (profile === "loading") {
+    return <SolverSkeleton onOpenArchive={onOpenArchive} />;
+  }
+  if (!profile) {
+    return (
+      <SessionGate onOpenArchive={onOpenArchive} title={title}>
+        <p>Pick a username so the others can see who's solving with them.</p>
+        <ClaimProfileForm userId={user.id} />
+      </SessionGate>
+    );
+  }
+  if (needsWarning && !confirmed) {
+    return (
+      <SessionGate onOpenArchive={onOpenArchive} title={title}>
+        <p>
+          You've already started this puzzle on your own. Joining the session
+          replaces that progress with the group's shared grid.
+        </p>
+        <div className="modal-actions">
+          <button className="btn" onClick={() => goTo(soloRoute)}>
+            Keep solving solo
+          </button>
+          <button className="btn btn-accent" onClick={() => setConfirmed(true)}>
+            Join the session
+          </button>
+        </div>
+      </SessionGate>
+    );
+  }
+  // Join in flight.
+  return <SolverSkeleton onOpenArchive={onOpenArchive} />;
+}
+
 /** Continue an unpublished draft from My Puzzles — loads it back into the
  *  Builder rather than the Solver. */
 function DraftPuzzleView({
@@ -462,6 +678,7 @@ function Solver({
   authorId,
   completions,
   mutualProgress = [],
+  session,
 }: {
   puzzle: Puzzle;
   onOpenArchive: () => void;
@@ -477,16 +694,43 @@ function Solver({
    *  the *_with_solves RPCs, so the solves segment needs no fetch of its
    *  own. */
   mutualProgress?: MutualProgress[];
+  /** Set when solving inside a multiplayer co-op session (/s/<id>): the
+   *  grid is shared and live-synced, the timer is the session's wall clock,
+   *  and the solo-only affordances (pause, reset, the cross-device conflict
+   *  poller) go away. */
+  session?: JoinResult;
 }) {
   // Only syndicated puzzles (no communityId) hit the `source`-keyed branches
   // below — those always carry a source, unlike community/authored puzzles.
   const source = puzzle.source as PuzzleSource;
   const saved = useMemo(
-    () => (communityId ? loadCommunityProgress(communityId) : loadProgress(source, puzzle.date)),
-    [communityId, source, puzzle.date],
+    () =>
+      session
+        ? progressFromSessionState(session.session.state ?? {}, puzzle)
+        : communityId
+          ? loadCommunityProgress(communityId)
+          : loadProgress(source, puzzle.date),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session?.session.id, communityId, source, puzzle.date],
   );
-  const xw = useCrossword(puzzle, saved);
+  // Local edits flow to the session through this ref (useSession fills the
+  // handlers in once its channel client exists) — a ref rather than props
+  // because the engine and the session hook need each other.
+  const coopBridge = useRef<CoopBridge>({});
+  const coopOptions = useMemo<CoopOptions | undefined>(
+    () =>
+      session
+        ? {
+            onCellsCommitted: (c) => coopBridge.current.onCells?.(c),
+            onMarksCommitted: (m) => coopBridge.current.onMarks?.(m),
+            readOnlyRevealed: true,
+          }
+        : undefined,
+    [session],
+  );
+  const xw = useCrossword(puzzle, saved, coopOptions);
   const { user } = useAuth();
+  const sApi = useSession(session ?? null, xw, user, coopBridge);
   const profile = useProfile();
   const isAdmin = profile !== "loading" && !!profile?.is_admin;
   const isOwner = !!communityId && !!user && authorId === user.id;
@@ -510,16 +754,28 @@ function Solver({
     if (pausedRef.current) setPaused(false);
   };
 
-  const { elapsed, setElapsed } = useTimer(
-    !xw.completed && !paused,
+  // In session mode the personal stopwatch is idle — the session's shared
+  // wall clock (below) is what everyone sees, and it doesn't pause.
+  const { elapsed: soloElapsed, setElapsed } = useTimer(
+    !session && !xw.completed && !paused,
     saved?.elapsed ?? 0,
   );
+  const elapsed = session ? (sApi?.elapsed ?? 0) : soloElapsed;
 
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [showAnagram, setShowAnagram] = useState(false);
-  const [celebrated, setCelebrated] = useState(saved?.completed ?? false);
+  const [showInvite, setShowInvite] = useState(
+    // The "lobby": a creator landing in their fresh session gets the invite
+    // link front and centre while they wait — the grid stays usable behind.
+    () => !!session && session.session.created_by === user?.id && session.participants.length === 1,
+  );
+  const [showCoopStart, setShowCoopStart] = useState(false);
+  const [endedDismissed, setEndedDismissed] = useState(false);
+  const [celebrated, setCelebrated] = useState(
+    (saved?.completed ?? false) || session?.session.status === "completed",
+  );
   const [rating, setRating] = useState(saved?.rating ?? 0);
   // Progress fetched from another tab/device that's newer than anything we've
   // pushed or seen ourselves — see the sync-check effect below.
@@ -532,9 +788,13 @@ function Solver({
   const anagramPool = useAnagramPool(showAnagram && isMobile);
   const anagramHelperStore = useAnagramHelperStore();
 
+  const sessionEnded = !!sApi?.ended && !endedDismissed;
+
   // Any open dialog (including the anagram overlay) takes over keyboard input —
   // the overlay routes keys into its own answer entry rather than the grid.
-  const modalOpen = showModal || showSettings || showReset || showAnagram || !!conflict;
+  const modalOpen =
+    showModal || showSettings || showReset || showAnagram || !!conflict ||
+    showInvite || showCoopStart || sessionEnded;
 
   // The updatedAt of the newest version of this puzzle's progress we've
   // already pushed or accounted for — anything newer we see from Supabase
@@ -605,7 +865,10 @@ function Solver({
   // its own, so there's nothing left to reconcile and no reason to keep
   // polling.
   useEffect(() => {
-    if (!user || xw.completed) return;
+    // Session mode replaces this wholesale: the realtime channel is the
+    // sync, and `acceptRemote`'s loadExternal would clobber the merged
+    // shared grid (worse: our own pushes from a second tab would trip it).
+    if (!user || xw.completed || session) return;
     const check = async () => {
       const remote = communityId
         ? await pullCommunityProgress(user.id, communityId)
@@ -624,7 +887,7 @@ function Solver({
       window.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
     };
-  }, [user, communityId, source, puzzle.date, xw.completed]);
+  }, [user, communityId, source, puzzle.date, xw.completed, session]);
 
   // "Load latest": adopt the other tab/device's answers.
   const acceptRemote = () => {
@@ -697,10 +960,18 @@ function Solver({
                 </span>
               )}
             </div>
-            <SolvesFlyout
-              mutuals={mutualProgress}
-              completions={communityId && isOwner ? completions : undefined}
-            />
+            {session && sApi ? (
+              <SessionBar
+                session={sApi}
+                userId={user?.id ?? null}
+                onInvite={() => setShowInvite(true)}
+              />
+            ) : (
+              <SolvesFlyout
+                mutuals={mutualProgress}
+                completions={communityId && isOwner ? completions : undefined}
+              />
+            )}
           </div>
         </div>
       </header>
@@ -714,21 +985,34 @@ function Solver({
             xw={xw}
             onRequestReset={() => setShowReset(true)}
             onAnagram={() => setShowAnagram(true)}
+            hideReset={!!session}
           />
           <div className="actionbar-controls">
             <div className="timer-group">
-              <button
-                className="btn icon-btn"
-                onClick={() => setPaused(!paused)}
-                aria-label={paused ? "Resume timer" : "Pause timer"}
-                title={paused ? "Resume" : "Pause"}
-              >
-                {paused ? <PlayIcon /> : <PauseIcon />}
-              </button>
+              {!session && (
+                <button
+                  className="btn icon-btn"
+                  onClick={() => setPaused(!paused)}
+                  aria-label={paused ? "Resume timer" : "Pause timer"}
+                  title={paused ? "Resume" : "Pause"}
+                >
+                  {paused ? <PlayIcon /> : <PauseIcon />}
+                </button>
+              )}
               <div className={`timer ${paused ? "paused" : ""}`}>
                 {formatTime(elapsed)}
               </div>
             </div>
+            {!session && sessionsEnabled && (
+              <button
+                className="btn icon-btn"
+                onClick={() => setShowCoopStart(true)}
+                aria-label="Solve together"
+                title="Solve together"
+              >
+                <PeopleIcon />
+              </button>
+            )}
             <button
               className="btn icon-btn desktop-only"
               onClick={toggleFullscreen}
@@ -760,6 +1044,16 @@ function Solver({
           </div>
         </div>
 
+        {sApi && sApi.notices.length > 0 && (
+          <div className="session-notices" aria-live="polite">
+            {sApi.notices.map((n) => (
+              <div className="session-notice" key={n.id}>
+                {n.text}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div
           className={`main ${showAnagram && isMobile ? "ana-open" : ""}`}
           onPointerDown={resume}
@@ -775,10 +1069,10 @@ function Solver({
                 fullscreen it's the size container the grid measures its
                 available height against. */}
             {gridFit === "canvas" ? (
-              <GridCanvas puzzle={puzzle} xw={xw} />
+              <GridCanvas puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
             ) : (
               <div className="grid-fit">
-                <Grid puzzle={puzzle} xw={xw} />
+                <Grid puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
               </div>
             )}
           </div>
@@ -862,6 +1156,118 @@ function Solver({
           </div>
         </Modal>
       )}
+
+      {showInvite && sApi && (
+        <SessionInviteDialog url={sApi.inviteUrl} onClose={() => setShowInvite(false)} />
+      )}
+
+      {showCoopStart && !session && (
+        <CoopStartDialog
+          source={source}
+          date={puzzle.date}
+          communityId={communityId}
+          onClose={() => setShowCoopStart(false)}
+        />
+      )}
+
+      {sessionEnded && (
+        <Modal title="Session ended" onClose={() => setEndedDismissed(true)}>
+          <p>
+            This session wound down after 30 minutes without activity. The
+            grid is saved as your own progress — keep going solo whenever you
+            like.
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setEndedDismissed(true)}>
+              Close
+            </button>
+            <button
+              className="btn btn-accent"
+              onClick={() =>
+                goTo(communityId ? `p/${communityId}` : `${source}/${puzzle.date}`)
+              }
+            >
+              Keep solving solo
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
+  );
+}
+
+/** The "Solve together" entry point, from a solo Solver's actionbar: walks
+ *  through sign-in and profile-claim if needed, then creates the session
+ *  (seeded from the current grid) and navigates into it. */
+function CoopStartDialog({
+  source,
+  date,
+  communityId,
+  onClose,
+}: {
+  source: PuzzleSource;
+  date: string;
+  communityId?: string;
+  onClose: () => void;
+}) {
+  const { user, signInWithGoogle } = useAuth();
+  const profile = useProfile();
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const start = async () => {
+    if (!user || creating) return;
+    setCreating(true);
+    setError(null);
+    const progress = communityId
+      ? loadCommunityProgress(communityId)
+      : loadProgress(source, date);
+    const { id, error } = await createSession(
+      communityId ? { puzzleId: communityId } : { source, date },
+      stateFromProgress(progress, user.id),
+    );
+    if (id) {
+      goTo(`s/${id}`);
+      return;
+    }
+    setCreating(false);
+    setError(error ?? "Couldn't create the session.");
+  };
+
+  return (
+    <Modal title="Solve together" onClose={onClose}>
+      {!user ? (
+        <div className="setting-row">
+          <p>Sign in to start a shared session and invite a friend.</p>
+          <button className="btn btn-accent" onClick={() => void signInWithGoogle()}>
+            Sign in with Google
+          </button>
+        </div>
+      ) : profile === "loading" ? (
+        <p>Loading…</p>
+      ) : !profile ? (
+        <div className="setting-row">
+          <p>Pick a username first, so friends can see who's solving with them.</p>
+          <ClaimProfileForm userId={user.id} />
+        </div>
+      ) : (
+        <div className="setting-row">
+          <p>
+            Start a live session from your current grid and invite anyone with
+            a link. You'll all solve the same puzzle together — and it becomes
+            your progress on this puzzle from here on.
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button className="btn btn-accent" onClick={() => void start()} disabled={creating}>
+              {creating ? "Starting…" : "Start session"}
+            </button>
+          </div>
+          {error && <span className="savedata-status">{error}</span>}
+        </div>
+      )}
+    </Modal>
   );
 }

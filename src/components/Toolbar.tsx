@@ -61,10 +61,14 @@ export function Toolbar({
   xw,
   onRequestReset,
   onAnagram,
+  hideReset,
 }: {
   xw: Crossword;
   onRequestReset: () => void;
   onAnagram: () => void;
+  /** Co-op sessions: reset would blow away everyone's shared grid (and the
+   *  sync protocol has no way to express it), so the button goes away. */
+  hideReset?: boolean;
 }) {
   return (
     <div className="toolbar">
@@ -92,12 +96,14 @@ export function Toolbar({
           <RebusIcon />
         </button>
       )}
-      <button className="btn" onClick={onRequestReset} aria-label="Reset">
-        <span className="btn-icon">
-          <ResetIcon />
-        </span>
-        <span className="btn-label">Reset</span>
-      </button>
+      {!hideReset && (
+        <button className="btn" onClick={onRequestReset} aria-label="Reset">
+          <span className="btn-icon">
+            <ResetIcon />
+          </span>
+          <span className="btn-label">Reset</span>
+        </button>
+      )}
     </div>
   );
 }
