@@ -43,3 +43,10 @@ export const supabase: SupabaseClient | null = mockMode
         realtime: { params: { eventsPerSecond: 20 } },
       })
     : null;
+
+// Dev-only console handle — lets local testing drive auth flows the UI
+// doesn't offer (e.g. email sign-in against `supabase start`, which has no
+// Google provider configured). Never present in production builds.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  (window as { __supabase?: SupabaseClient | null }).__supabase = supabase;
+}
