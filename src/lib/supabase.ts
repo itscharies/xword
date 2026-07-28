@@ -37,5 +37,9 @@ export const supabase: SupabaseClient | null = mockMode
   : supabaseEnabled
     ? createClient(url, publishableKey, {
         global: { fetch: (input, init) => fetch(input, { ...init, keepalive: leaving }) },
+        // Co-op sessions ride Realtime broadcast; supabase-js's default
+        // client-side rate limit (10 messages/s) silently drops sends, and
+        // fast typing plus a cursor stream can brush past it.
+        realtime: { params: { eventsPerSecond: 20 } },
       })
     : null;
