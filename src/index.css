@@ -405,6 +405,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border-top: 2px solid var(--line);
 }
 .savedata-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* A button sharing a row with a flat text input goes flat too — a shadowed
+   button beside a shadowless input reads as mismatched siblings. */
+.savedata-actions {
+  --nested-shadow: none;
+  --nested-press: none;
+}
 /* A text input sharing the row with a button (share link + Copy, username
    search + Search) stretches to fill the space instead of sitting at its
    default intrinsic width. */
@@ -419,8 +425,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--surface);
   color: var(--fg);
   border: var(--bw) solid var(--line);
-  padding: 8px 10px;
+  /* Same border, vertical padding, and font metrics as .btn, so an input
+     and a button sharing a row (search, copy-link, join) are the same
+     height. */
+  padding: 9px 10px;
   font: inherit;
+  font-size: 14px;
   font-weight: 600;
 }
 .text-input:focus-visible {
