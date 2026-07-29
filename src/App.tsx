@@ -274,6 +274,7 @@ function AppRoutes() {
       onPick={(source, d) => goTo(`${source}/${d}`)}
       onOpenAccount={() => goTo("account")}
       onOpenPuzzle={(id) => goTo(`p/${id}`)}
+      onJoinSession={(id) => goTo(`s/${id}`)}
     />
   );
 }

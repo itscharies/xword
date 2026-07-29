@@ -7,7 +7,9 @@ import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { AboutPuzzles } from "./AboutPuzzles.tsx";
-import { CheckIcon, FilterIcon, InfoIcon, SettingsIcon, UserIcon } from "./icons.tsx";
+import { CheckIcon, FilterIcon, InfoIcon, PeopleIcon, SettingsIcon, UserIcon } from "./icons.tsx";
+import { JoinSessionDialog } from "./JoinSessionDialog.tsx";
+import { sessionsEnabled } from "../lib/session.ts";
 import { ArchiveDaySkeleton, ArchiveSkeleton, Sk } from "./Skeleton.tsx";
 import { loadCommunityProgress, loadProgress, type Progress } from "../lib/storage.ts";
 import { useAuth } from "../hooks/useAuthContext.tsx";
@@ -119,15 +121,18 @@ export function Archive({
   onPick,
   onOpenAccount,
   onOpenPuzzle,
+  onJoinSession,
 }: {
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenAccount: () => void;
   onOpenPuzzle: (id: string) => void;
+  onJoinSession: (sessionId: string) => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
   const { user } = useAuth();
   const profile = useProfile();
   useDocumentTitle("");
@@ -354,6 +359,16 @@ export function Archive({
       <header className="header">
         <h1 className="archive-heading brand">The Daily Grid</h1>
         <div className="header-right">
+          {sessionsEnabled && (
+            <button
+              className="btn icon-btn cog-btn"
+              onClick={() => setShowJoin(true)}
+              aria-label="Join a session"
+              title="Join a session"
+            >
+              <PeopleIcon />
+            </button>
+          )}
           <button
             className="btn icon-btn cog-btn"
             onClick={() => setShowInfo(true)}
@@ -452,6 +467,16 @@ export function Archive({
         <Modal title="About the puzzles" onClose={() => setShowAbout(false)}>
           <AboutPuzzles />
         </Modal>
+      )}
+
+      {showJoin && (
+        <JoinSessionDialog
+          onJoin={(id) => {
+            setShowJoin(false);
+            onJoinSession(id);
+          }}
+          onClose={() => setShowJoin(false)}
+        />
       )}
 
       {showSettings && (
