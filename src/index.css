@@ -130,7 +130,13 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .app {
   max-width: 1140px;
   margin: 0 auto;
-  padding: 18px;
+  /* env() insets on every side at every breakpoint: the desktop layout is
+     also what a landscape phone gets (it's wider than the mobile breakpoint),
+     where the notch sits on the left/right edge. Zero outside a PWA. */
+  padding: calc(18px + env(safe-area-inset-top, 0px))
+    calc(18px + env(safe-area-inset-right, 0px))
+    calc(18px + env(safe-area-inset-bottom, 0px))
+    calc(18px + env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -1245,10 +1251,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: center;
   z-index: 50;
   /* env() insets keep dialogs (and the × that floats beside/above them)
-     clear of the status bar and home indicator in an installed PWA
-     (viewport-fit=cover); zero in a regular browser tab. */
-  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px
-    calc(20px + env(safe-area-inset-bottom, 0px));
+     clear of the status bar, home indicator, and landscape notch in an
+     installed PWA (viewport-fit=cover); zero in a regular browser tab. */
+  padding: calc(20px + env(safe-area-inset-top, 0px))
+    calc(20px + env(safe-area-inset-right, 0px))
+    calc(20px + env(safe-area-inset-bottom, 0px))
+    calc(20px + env(safe-area-inset-left, 0px));
 }
 .modal {
   position: relative;
@@ -1500,7 +1508,16 @@ button { font: inherit; cursor: pointer; color: inherit; }
   border: var(--bw) solid var(--line);
 }
 
-.loading, .error { padding: 40px; text-align: center; color: var(--muted); }
+/* Bare full-page notices render outside .app, so they carry their own
+   safe-area padding. */
+.loading, .error {
+  padding: calc(40px + env(safe-area-inset-top, 0px))
+    calc(40px + env(safe-area-inset-right, 0px))
+    calc(40px + env(safe-area-inset-bottom, 0px))
+    calc(40px + env(safe-area-inset-left, 0px));
+  text-align: center;
+  color: var(--muted);
+}
 
 /* ---- Skeleton loading states -------------------------------------------
    Shimmering stand-ins (components/Skeleton.tsx) shaped like the content
@@ -2282,10 +2299,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
      screen edges when installed to the home screen (viewport-fit=cover). */
   .app {
     padding: calc(14px + env(safe-area-inset-top, 0px))
-      calc(14px + env(safe-area-inset-right, 0px)) 0
+      calc(14px + env(safe-area-inset-right, 0px))
+      env(safe-area-inset-bottom, 0px)
       calc(14px + env(safe-area-inset-left, 0px));
     gap: 12px;
   }
+  /* Pages whose bottom edge is a sticky bar (solver/builder keyboard bar)
+     hand the inset to the bar instead — it pads for the home indicator
+     itself, and app-level bottom padding would open a gap beneath it. */
+  .app:has(.mobile-bar) { padding-bottom: 0; }
   .main { grid-template-columns: 1fr; }
   .board { width: 100%; align-items: stretch; }
   .grid { width: 100%; gap: 1px; }
@@ -2442,8 +2464,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
    "signed in as" state — see MockAuthSwitcher.tsx. */
 .mock-auth-switcher {
   position: fixed;
-  left: 10px;
-  bottom: 10px;
+  left: calc(10px + env(safe-area-inset-left, 0px));
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 100;
   display: flex;
   align-items: center;
