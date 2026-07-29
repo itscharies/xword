@@ -66,7 +66,7 @@ import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
 import { Logo } from "./components/Logo.tsx";
-import { SolverSkeleton } from "./components/Skeleton.tsx";
+import { Sk, SolverSkeleton } from "./components/Skeleton.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
@@ -1249,7 +1249,20 @@ function CoopStartDialog({
           </button>
         </div>
       ) : profile === "loading" ? (
-        <p>Loading…</p>
+        // Shaped like the loaded body below (intro paragraph + two action
+        // buttons), so the dialog doesn't grow when the profile arrives.
+        <div className="setting-row" aria-busy="true" aria-label="Loading">
+          <p aria-hidden>
+            <Sk w="100%" h={13} lh={20} />
+            <Sk w="97%" h={13} lh={20} />
+            <Sk w="94%" h={13} lh={20} />
+            <Sk w="55%" h={13} lh={20} />
+          </p>
+          <div className="modal-actions">
+            <Sk w={88} h={42} />
+            <Sk w={130} h={42} />
+          </div>
+        </div>
       ) : !profile ? (
         <div className="setting-row">
           <p>Pick a username first, so friends can see who's solving with them.</p>

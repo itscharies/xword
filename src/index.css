@@ -102,6 +102,29 @@ button { font: inherit; cursor: pointer; color: inherit; }
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
 }
 
+/* One card, one shadow: a surface that already casts the hard offset shadow
+   flattens any shadow-bearing control nested inside it — a shadowed button
+   sitting on a shadowed card reads as clutter. These containers set the two
+   properties; nested controls consume them with their normal shadow (and
+   press-translate, which trades on that shadow) as the fallback. Inset
+   affordances like the theme segmented control are untouched on purpose. */
+.box,
+.modal,
+.account-summary,
+.archive-item,
+.session-gate,
+.session-notice,
+.solves-panel,
+.tip-panel,
+.menu,
+.clue-banner,
+.builder-autofill,
+.builder-suggest,
+.def-popover {
+  --nested-shadow: none;
+  --nested-press: none;
+}
+
 /* ---- layout ------------------------------------------------------------- */
 
 .app {
@@ -591,15 +614,19 @@ button { font: inherit; cursor: pointer; color: inherit; }
   height: 32px;
   border: var(--bw) solid var(--line);
   padding: 0;
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   transition: transform 0.08s, box-shadow 0.08s;
 }
 /* Selected swatch reads as pressed: it sits down into where its shadow was. */
 .swatch.active,
 .swatch:active {
-  transform: translate(var(--sh), var(--sh));
-  box-shadow: 0 0 0 var(--shadow-col);
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }
+/* Flat contexts (the settings modal — the only place swatches render) lose
+   that sit-down cue, so the selected swatch marks itself with an inset ring
+   instead, cut into the colour like the segmented control's pressed face. */
+.swatch.active { box-shadow: inset 0 0 0 3px var(--bg); }
 
 /* A group of check-rows acting as a single-select (e.g. publish visibility)
    instead of independent toggles. */
@@ -628,7 +655,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   justify-content: center;
   border: var(--bw) solid var(--line);
   background: var(--surface);
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .checkbox svg { width: 16px; height: 16px; }
@@ -638,8 +665,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   color: #000;
 }
 .check-row:active .checkbox {
-  transform: translate(var(--sh), var(--sh));
-  box-shadow: 0 0 0 var(--shadow-col);
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }
 
 /* ---- buttons ------------------------------------------------------------ */
@@ -666,7 +693,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--surface);
   color: var(--fg);
   border: var(--bw) solid var(--line);
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   padding: 9px 16px;
   font-size: 14px;
   font-weight: 700;
@@ -685,8 +712,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .btn:active {
   background: var(--accent);
   color: #000;
-  transform: translate(var(--sh), var(--sh));
-  box-shadow: 0 0 0 var(--shadow-col);
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }
 
 /* The 2x2 "AB/CD" rebus glyph, a touch smaller than the surrounding text. */
@@ -1217,7 +1244,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   align-items: center;
   justify-content: center;
   z-index: 50;
-  padding: 20px;
+  /* env() insets keep dialogs (and the × that floats beside/above them)
+     clear of the status bar and home indicator in an installed PWA
+     (viewport-fit=cover); zero in a regular browser tab. */
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px
+    calc(20px + env(safe-area-inset-bottom, 0px));
 }
 .modal {
   position: relative;
@@ -1227,7 +1258,12 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 28px 30px;
   text-align: center;
   width: min(92vw, 400px);
-  max-height: 85vh;
+  /* Never taller than the overlay's padded box, so a long dialog scrolls
+     inside itself instead of pushing past the safe areas. */
+  max-height: min(
+    85vh,
+    calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+  );
   overflow-y: auto;
 }
 
@@ -1271,14 +1307,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 22px;
   background: var(--surface);
   border: var(--bw) solid var(--line);
-  box-shadow: 3px 3px 0 var(--shadow-col);
+  box-shadow: var(--nested-shadow, 3px 3px 0 var(--shadow-col));
 }
 /* Locked (click, or double-tap on touch, to toggle): pinned in place through
-   shuffles and drags — the accent border/shadow and badge mark it as such. */
+   shuffles and drags — the accent border and badge mark it as such (the
+   accent shadow only where the tile isn't flattened by its container). */
 .ana-tile.ana-locked {
   cursor: pointer;
   border-color: var(--accent);
-  box-shadow: 3px 3px 0 var(--accent);
+  box-shadow: var(--nested-shadow, 3px 3px 0 var(--accent));
 }
 .ana-lock-badge {
   position: absolute;
@@ -1419,13 +1456,24 @@ button { font: inherit; cursor: pointer; color: inherit; }
   line-height: 1;
 }
 /* Too narrow to hang off the side — float above the top-right corner
-   instead, same gap. */
+   instead, same gap. The wrap reserves the button's row (38px + 10px gap)
+   inside its own box, so the flex-centred dialog — × included — always
+   lands within the overlay's safe-area padding instead of the × poking
+   above it into the status bar. */
 @media (max-width: 520px) {
+  .modal-wrap { padding-top: 48px; }
   .modal-close {
     left: auto;
     right: 0;
-    top: auto;
-    bottom: calc(100% + 10px);
+    top: 0;
+    bottom: auto;
+  }
+  /* The reserved × row eats into the height available to the panel. */
+  .modal {
+    max-height: min(
+      85vh,
+      calc(100dvh - 88px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+    );
   }
 }
 @media (hover: hover) {
@@ -1489,12 +1537,20 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .sk-avatar { border: 1px solid var(--line); }
 
 /* Non-interactive tile placeholders: keep .archive-item's box but drop its
-   hover/active affordances. */
+   hover/active affordances. Line spacing comes from each bar's lh prop
+   (matching the real text line boxes), not blanket margins. */
 .sk-tile { pointer-events: none; }
-.sk-tile .skeleton { margin: 2px 0; }
+
+/* Line-box wrapper for text-line stand-ins: centres the bar in the height
+   the real text line will occupy. */
+.sk-line { display: flex; align-items: center; flex: none; }
 
 .sk-stack { display: flex; flex-direction: column; gap: 6px; }
 .sk-btn-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Account-page skeleton wrapper: the real summary/sections are direct flex
+   children of .account-body, so the stand-ins need its column gap too. */
+.sk-account-body { display: flex; flex-direction: column; gap: 26px; }
 
 /* Puzzle-grid-shaped shimmer: same box as .grid (border, hard shadow,
    footprint), with faint 15×15 cell lines drawn in an overlay so it reads
@@ -1516,8 +1572,18 @@ button { font: inherit; cursor: pointer; color: inherit; }
     repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px calc(100% / 15));
 }
 
-/* Suggestion-chip placeholders in the builder side panel. */
-.sk-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+/* Suggestion-chip placeholders in the builder side panel — same grid,
+   padding, and max-height as .builder-suggest-list so the loaded chips land
+   in place. The chip count overshoots and the cap crops it, since a typical
+   pattern fills the list to its max-height at any column count. */
+.sk-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 4px;
+  padding: 6px;
+  max-height: 220px;
+  overflow: hidden;
+}
 
 /* ---- clickable title (opens the archive) ------------------------------- */
 
@@ -1650,7 +1716,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--surface);
   color: var(--fg);
   border: var(--bw) solid var(--line);
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   padding: 5px 12px;
   font: inherit;
   font-size: 13px;
@@ -1663,8 +1729,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .filter-chip.on {
   background: var(--accent);
   color: #000;
-  transform: translate(var(--sh), var(--sh));
-  box-shadow: 0 0 0 var(--shadow-col);
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }
 
 /* Shown when the Paper/Type filters exclude everything. */

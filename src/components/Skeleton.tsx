@@ -11,14 +11,27 @@ import { useStuck } from "../hooks/useStuck.ts";
 export function Sk({
   w,
   h = 12,
+  lh,
   style,
   className = "",
 }: {
   w: number | string;
   h?: number;
+  /** Line-box height the bar stands in for. The bar stays `h` tall but sits
+   *  centred in an `lh`-tall box, so the real text line lands with no shift.
+   *  (A wrapper, not margins — block margins would collapse out of plain
+   *  block parents like headings and shift the box.) */
+  lh?: number;
   style?: React.CSSProperties;
   className?: string;
 }) {
+  if (lh !== undefined) {
+    return (
+      <span className="sk-line" style={{ width: w, height: lh, ...style }} aria-hidden>
+        <span className={`skeleton ${className}`} style={{ width: "100%", height: h }} />
+      </span>
+    );
+  }
   return (
     <span
       className={`skeleton ${className}`}
@@ -34,20 +47,24 @@ function SkAvatar({ size = 36 }: { size?: number }) {
 }
 
 /** One archive day section of shimmering puzzle tiles. Line widths vary per
- *  tile so the section doesn't read as a repeated stamp. Also shown on its
- *  own below the feed while Show more's next page is in flight. */
+ *  tile so the section doesn't read as a repeated stamp, and every third
+ *  tile drops its middle line — real days mix 2-line (source + author) and
+ *  3-line (with a title) tiles, so a uniform stack would guess the feed's
+ *  height wrong in one direction every time. Also shown on its own below
+ *  the feed while Show more's next page is in flight. The lh values match
+ *  the real tiles' 16/14/13px text line boxes. */
 export function ArchiveDaySkeleton({ count }: { count: number }) {
   return (
     <section className="archive-day" aria-busy="true" aria-label="Loading puzzles">
       <h2 className="archive-day-head">
-        <Sk w={150} h={14} />
+        <Sk w={150} h={14} lh={18} />
       </h2>
       <ul className="archive-list">
         {Array.from({ length: count }, (_, i) => (
           <li className="archive-item sk-tile" key={i}>
-            <Sk w={`${52 + ((i * 17) % 30)}%`} h={16} />
-            <Sk w={`${68 + ((i * 23) % 24)}%`} h={14} />
-            <Sk w={`${34 + ((i * 11) % 18)}%`} h={13} />
+            <Sk w={`${52 + ((i * 17) % 30)}%`} h={16} lh={21} />
+            {i % 3 !== 1 && <Sk w={`${68 + ((i * 23) % 24)}%`} h={14} lh={18} />}
+            <Sk w={`${34 + ((i * 11) % 18)}%`} h={13} lh={17} />
           </li>
         ))}
       </ul>
@@ -148,14 +165,14 @@ export function TileListSkeleton({
             <div className="ai-row">
               <SkAvatar />
               <div className="ai-row-text">
-                <Sk w={90 + ((i * 37) % 60)} h={16} />
-                <Sk w={70 + ((i * 21) % 40)} h={13} />
+                <Sk w={90 + ((i * 37) % 60)} h={16} lh={21} />
+                <Sk w={70 + ((i * 21) % 40)} h={13} lh={17} />
               </div>
             </div>
           ) : (
             <>
-              <Sk w={`${46 + ((i * 29) % 34)}%`} h={16} />
-              <Sk w={`${30 + ((i * 13) % 22)}%`} h={13} />
+              <Sk w={`${46 + ((i * 29) % 34)}%`} h={16} lh={21} />
+              <Sk w={`${30 + ((i * 13) % 22)}%`} h={13} lh={17} />
             </>
           )}
         </li>
@@ -166,20 +183,26 @@ export function TileListSkeleton({
 
 /** Whole account body while the profile row itself is still loading —
  *  summary card plus one section, so the claimed-profile layout lands in
- *  place. */
+ *  place. The wrapper mirrors .account-body's column gap, since the real
+ *  summary/sections sit as direct flex children there. */
 export function AccountPageSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading account">
+    <div className="sk-account-body" aria-busy="true" aria-label="Loading account">
       <div className="account-summary">
         <SkAvatar size={48} />
-        <div className="account-identity sk-stack">
-          <Sk w={140} h={18} />
-          <Sk w={100} h={13} />
+        <div className="account-identity">
+          {/* Display name (16px line) over @username (13px line), no gap. */}
+          <Sk w={140} h={16} lh={21} />
+          <Sk w={100} h={13} lh={16} />
         </div>
+        {/* Sign out button. */}
+        <Sk w={92} h={42} />
       </div>
       <section className="account-section">
         <div className="account-section-head">
-          <Sk w={120} h={20} />
+          {/* Section title line + the "+ New" button that shares the head. */}
+          <Sk w={91} h={14} lh={18} />
+          <Sk w={79} h={42} />
         </div>
         <TileListSkeleton rows={2} />
       </section>

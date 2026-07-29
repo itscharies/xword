@@ -130,10 +130,12 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
         )}
       </div>
       {state === "loading" && (
-        // Chip-shaped shimmers where the suggestions will appear.
+        // Chip-shaped shimmers in the same grid the suggestion list uses, so
+        // the loaded chips land in place; each stand-in matches a chip's
+        // 31px box, and .sk-chips crops the overshoot at the list's height.
         <div className="sk-chips" aria-busy="true" aria-label="Loading word list">
-          {[64, 48, 76, 56, 68, 44, 60, 52].map((w, i) => (
-            <Sk key={i} w={w} h={28} />
+          {Array.from({ length: 24 }, (_, i) => (
+            <Sk key={i} w="100%" h={31} />
           ))}
         </div>
       )}
@@ -179,11 +181,22 @@ export function BuilderSuggestions({ b }: { b: Builder }) {
           onPointerLeave={scheduleClose}
         >
           {def.loading ? (
-            // Title + two extract lines, where the definition will land.
-            <div className="sk-stack" aria-busy="true" aria-label={`Looking up ${hover.word}`}>
-              <Sk w={110} h={15} />
-              <Sk w="100%" h={12} />
-              <Sk w="72%" h={12} />
+            // Mirrors the loaded markup (title, extract, source/link foot)
+            // with its real classes, so the definition lands without the
+            // popover changing shape around the pointer.
+            <div aria-busy="true" aria-label={`Looking up ${hover.word}`}>
+              <div className="def-title">
+                <Sk w={110} h={13} lh={18} />
+              </div>
+              <p className="def-extract">
+                <Sk w="100%" h={12} lh={18} />
+                <Sk w="86%" h={12} lh={18} />
+                <Sk w="60%" h={12} lh={18} />
+              </p>
+              <div className="def-foot">
+                <Sk w={70} h={9} lh={15} />
+                <Sk w={62} h={9} lh={15} />
+              </div>
             </div>
           ) : def.data ? (
             <>
