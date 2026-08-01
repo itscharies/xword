@@ -97,7 +97,7 @@ export function AnagramHelper({
         <label className="ana-row">
           <span className="ana-label">Letters</span>
           <input
-            className="ana-input"
+            className="text-input ana-input"
             value={pool}
             onChange={(e) => setLetters(e.target.value)}
             autoCapitalize="characters"
@@ -141,7 +141,7 @@ export function AnagramHelper({
 
         <div className="ana-row">
           <input
-            className="ana-input"
+            className="text-input ana-input"
             value={answer}
             onChange={(e) =>
               setAnswer(e.target.value.toUpperCase().replace(/[^A-Z]/g, ""))

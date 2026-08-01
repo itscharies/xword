@@ -25,15 +25,18 @@ export function Grid({
   // exact cell each peer is on (`rings`), and a translucent tint of their
   // accent across their whole selected word (`fills`) — so you can see not
   // just where they are but which answer they're working, like your own
-  // word highlight. Both capped at two per cell; more is unreadable.
+  // word highlight. Rings nest up to four per cell, each badge inset to sit
+  // on its own ring; a fifth peer doesn't render. Tints never blend: the
+  // first peer claims the cell, and the local player's own word highlight
+  // always beats a remote tint (see the render below).
   const cursorLayers = useMemo(() => {
     if (!remoteCursors || remoteCursors.length === 0) return null;
     const rings = new Map<string, RemoteCursor[]>();
-    const fills = new Map<string, string[]>();
+    const fills = new Map<string, string>();
     for (const cur of remoteCursors) {
       const k = keyOf(cur.row, cur.col);
       const ringList = rings.get(k) ?? [];
-      if (ringList.length < 2) ringList.push(cur);
+      if (ringList.length < 4) ringList.push(cur);
       rings.set(k, ringList);
       const clue = cursorClue(xw, cur);
       const cells = clue
@@ -45,9 +48,7 @@ export function Grid({
           )
         : [k];
       for (const ck of cells) {
-        const fillList = fills.get(ck) ?? [];
-        if (fillList.length < 2 && !fillList.includes(cur.color)) fillList.push(cur.color);
-        fills.set(ck, fillList);
+        if (!fills.has(ck)) fills.set(ck, cur.color);
       }
     }
     return { rings, fills };
@@ -99,14 +100,17 @@ export function Grid({
           ]
             .filter(Boolean)
             .join(" ");
-          // Rings sit outermost, then the word tints flood the rest of the
-          // cell (a giant inset shadow composites over any background —
-          // shaded, highlighted, active — without fighting it).
-          const shadows: string[] = [];
-          if (remote?.[0]) shadows.push(`inset 0 0 0 3px ${remote[0].color}`);
-          if (remote?.[1]) shadows.push(`inset 0 0 0 6px ${remote[1].color}`);
-          for (const color of remoteFills ?? []) {
-            shadows.push(`inset 0 0 0 999px color-mix(in srgb, ${color} 24%, transparent)`);
+          // Rings nest inward, 3px per peer, then a single word tint floods
+          // the rest of the cell (a giant inset shadow composites over any
+          // background). The local player renders on top: their own active
+          // cell and word keep their highlight untinted.
+          const shadows = (remote ?? []).map(
+            (cur, i) => `inset 0 0 0 ${(i + 1) * 3}px ${cur.color}`,
+          );
+          if (remoteFills && !isActive && !inWord) {
+            shadows.push(
+              `inset 0 0 0 999px color-mix(in srgb, ${remoteFills} 24%, transparent)`,
+            );
           }
           const remoteStyle = shadows.length
             ? ({ boxShadow: shadows.join(", ") } as React.CSSProperties)
@@ -126,24 +130,16 @@ export function Grid({
               {cell.barRight && <span className="sep sep-r" />}
               {cell.barBottom && <span className="sep sep-b" />}
               {entry && <span className="cell-letter">{entry}</span>}
-              {remote?.[0] && (
+              {remote?.map((cur, i) => (
                 <span
-                  className="rc-badge"
-                  style={{ background: remote[0].color }}
-                  title={remote[0].displayName}
+                  key={cur.sid}
+                  className={`rc-badge${i > 0 ? ` rc-badge-${i + 1}` : ""}`}
+                  style={{ background: cur.color }}
+                  title={cur.displayName}
                 >
-                  {remote[0].letter}
+                  {cur.letter}
                 </span>
-              )}
-              {remote?.[1] && (
-                <span
-                  className="rc-badge rc-badge-2"
-                  style={{ background: remote[1].color }}
-                  title={remote[1].displayName}
-                >
-                  {remote[1].letter}
-                </span>
-              )}
+              ))}
             </div>
           );
         }),

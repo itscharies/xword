@@ -61,19 +61,80 @@ export const Accents: Story = () => (
   </div>
 );
 
-export const Buttons: Story = () => (
-  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-    <button className="btn">Default</button>
-    <button className="btn active">Active</button>
-    <button className="btn btn-accent">Accent</button>
-    <button className="btn" disabled>
-      Disabled
-    </button>
-    <button className="btn icon-btn" aria-label="Settings">
-      <SettingsIcon />
-    </button>
+const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div>
+    <div className="setting-label" style={{ marginBottom: 8 }}>
+      {label}
+    </div>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+      {children}
+    </div>
   </div>
 );
+
+export const Buttons: Story = () => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <Row label="Primary — hard shadow, press to sit down">
+      <button className="btn">Default</button>
+      <button className="btn active">Active</button>
+      <button className="btn btn-accent">Accent</button>
+      <button className="btn" disabled>
+        Disabled
+      </button>
+      <button className="btn icon-btn" aria-label="Settings">
+        <SettingsIcon />
+      </button>
+    </Row>
+    <Row label="Secondary — .flat, shadowless (as inside modals and panels)">
+      <button className="btn flat">Default</button>
+      <button className="btn flat active">Active</button>
+      <button className="btn flat btn-accent">Accent</button>
+      <button className="btn flat" disabled>
+        Disabled
+      </button>
+      <button className="btn flat icon-btn" aria-label="Settings">
+        <SettingsIcon />
+      </button>
+    </Row>
+  </div>
+);
+
+export const Chips: Story = () => {
+  const [on, setOn] = useState(["Mon"]);
+  const toggle = (d: string) =>
+    setOn((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <Row label="Filter chips">
+        <div className="filter-chip-group">
+          {days.map((d) => (
+            <button
+              key={d}
+              className={`filter-chip ${on.includes(d) ? "on" : ""}`}
+              onClick={() => toggle(d)}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </Row>
+      <Row label="Secondary — .flat">
+        <div className="filter-chip-group flat">
+          {days.map((d) => (
+            <button
+              key={d}
+              className={`filter-chip ${on.includes(d) ? "on" : ""}`}
+              onClick={() => toggle(d)}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </Row>
+    </div>
+  );
+};
 
 export const SegmentedControl: Story = () => {
   const options = ["Cell", "Word", "Puzzle"];
@@ -93,13 +154,47 @@ export const SegmentedControl: Story = () => {
   );
 };
 
-export const TextInput: Story = () => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 420 }}>
-    <input className="text-input" placeholder="Paste an invite link" />
-    <div style={{ display: "flex", gap: 8 }}>
-      <input className="text-input" placeholder="Shares a row with a button" style={{ flex: 1 }} />
+export const Inputs: Story = () => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 480 }}>
+    <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
+      Every text input and select shares the .text-input base — same surface,
+      border, focus ring, and .btn-matched height. Specialized fields stack a
+      modifier on top.
+    </p>
+    <Row label="Base">
+      <input className="text-input" placeholder="Paste an invite link" style={{ flex: 1 }} />
+    </Row>
+    <Row label="Sharing a row with a button">
+      <input className="text-input" placeholder="https://…" style={{ flex: 1 }} />
       <button className="btn">Join</button>
-    </div>
+    </Row>
+    <Row label="Select, number, date — same base">
+      <select className="text-input" defaultValue="quick">
+        <option value="quick">Quick</option>
+        <option value="cryptic">Cryptic</option>
+      </select>
+      <input className="text-input" type="number" defaultValue={15} style={{ width: 72 }} />
+      <input className="text-input" type="date" defaultValue="2026-01-01" />
+    </Row>
+    <Row label=".ana-input — spaced uppercase letter entry">
+      <input
+        className="text-input ana-input"
+        defaultValue="LISTEN"
+        autoCapitalize="characters"
+        spellCheck={false}
+      />
+    </Row>
+    <Row label=".clue-input / .link-select — compact builder rows">
+      <input className="text-input clue-input" placeholder="Clue…" style={{ flex: 1 }} />
+      <select className="text-input link-select" defaultValue="">
+        <option value="">+ link…</option>
+        <option value="1a">1a</option>
+      </select>
+    </Row>
+    <Row label="States">
+      <input className="text-input" disabled placeholder="Disabled" />
+      <input className="text-input" readOnly value="Read-only" />
+    </Row>
   </div>
 );
 

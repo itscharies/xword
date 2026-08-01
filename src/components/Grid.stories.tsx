@@ -109,14 +109,14 @@ export const CoopStackedCursors: Story = () => {
   return (
     <>
       <Note>
-        Grace, Alan, and Edie all sit on the centre cell. Rings and badges cap
-        at two — the first two peers' rings nest, their badges share the top
-        corners, and Edie's presence only shows through her word tint.
+        Grace, Alan, Edie, and Kay all sit on the centre cell — the new max
+        of four. Rings nest 3px per peer and each badge is inset to sit flush
+        on its owner's ring, one corner each. A fifth peer wouldn't render.
       </Note>
       <Grid
         puzzle={MINI}
         xw={xw}
-        remoteCursors={[PEERS.grace, PEERS.alan, PEERS.edie]}
+        remoteCursors={[PEERS.grace, PEERS.alan, PEERS.edie, PEERS.kay]}
       />
     </>
   );
@@ -127,10 +127,24 @@ export const CoopCrossingWords: Story = () => {
   return (
     <>
       <Note>
-        Ada works an across, Ivy a down — their word tints overlap on the
-        shared cell, compositing both accents.
+        Ada works an across, Ivy a down. Tints no longer blend — on the
+        shared cell the first peer's colour wins outright.
       </Note>
       <Grid puzzle={MINI} xw={xw} remoteCursors={[PEERS.ada, PEERS.ivy]} />
+    </>
+  );
+};
+
+export const CoopLocalUserOnTop: Story = () => {
+  const xw = usePlayable(MINI);
+  return (
+    <>
+      <Note>
+        Ivy's word runs straight through the local player's selected word —
+        the local highlight stays untinted (the user always renders on top),
+        while Ivy's ring and badge still mark where she is.
+      </Note>
+      <Grid puzzle={MINI} xw={xw} remoteCursors={[PEERS.ivy]} />
     </>
   );
 };
@@ -147,7 +161,7 @@ export const CoopCrowd: Story<{ peers: number }> = ({ peers }) => {
     </>
   );
 };
-CoopCrowd.args = { peers: 4 };
+CoopCrowd.args = { peers: 5 };
 CoopCrowd.argTypes = {
   peers: { control: { type: "number", min: 0, max: PEER_POOL.length } },
 };

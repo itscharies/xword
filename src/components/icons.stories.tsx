@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { Story, StoryDefault } from "@ladle/react";
 import * as Icons from "./icons.tsx";
+import { RebusIcon } from "./RebusIcon.tsx";
 
 export default {
   title: "Primitives / Icons",
@@ -15,7 +16,11 @@ export const All: Story = () => (
       maxWidth: 720,
     }}
   >
-    {(Object.entries(Icons) as Array<[string, ComponentType]>).map(
+    {(
+      [...Object.entries(Icons), ["RebusIcon", RebusIcon]] as Array<
+        [string, ComponentType]
+      >
+    ).map(
       ([name, Icon]) => (
         <div
           key={name}

@@ -208,6 +208,7 @@ export function Builder({
           <label className="builder-field">
             <span>{sizeIsSquare ? "Size" : "Width"}</span>
             <input
+              className="text-input"
               type="number"
               min={1}
               max={40}
@@ -233,6 +234,7 @@ export function Builder({
             <label className="builder-field">
               <span>Height</span>
               <input
+                className="text-input"
                 type="number"
                 min={1}
                 max={40}
@@ -329,19 +331,19 @@ export function Builder({
       <div className="builder-meta" ref={formRef}>
         <label className="builder-field">
           <span>Title</span>
-          <input value={b.title} onChange={(e) => b.setTitle(e.target.value)} />
+          <input className="text-input" value={b.title} onChange={(e) => b.setTitle(e.target.value)} />
         </label>
         <label className="builder-field">
           <span>Author</span>
-          <input value={b.author} onChange={(e) => b.setAuthor(e.target.value)} />
+          <input className="text-input" value={b.author} onChange={(e) => b.setAuthor(e.target.value)} />
         </label>
         <label className="builder-field">
           <span>Editor</span>
-          <input value={b.editor} onChange={(e) => b.setEditor(e.target.value)} />
+          <input className="text-input" value={b.editor} onChange={(e) => b.setEditor(e.target.value)} />
         </label>
         <label className="builder-field">
           <span>Date</span>
-          <input type="date" value={b.date} onChange={(e) => b.setDate(e.target.value)} />
+          <input className="text-input" type="date" value={b.date} onChange={(e) => b.setDate(e.target.value)} />
         </label>
 
         <div className="builder-settings">

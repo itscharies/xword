@@ -44,6 +44,32 @@ const MINI_ROWS = ["#CAB#", "SOLVE", "ARENA", "GRIDS", "#AXE#"];
 /** A clean 5×5 mini for interaction and cursor stories. */
 export const MINI = makePuzzle(MINI_ROWS);
 
+/** The same mini flagged cryptic: clues gain enumerations, and the solver
+ *  chrome offers the anagram helper. */
+export const CRYPTIC_MINI = makePuzzle(MINI_ROWS, {
+  title: "Cryptic fixture",
+  cryptic: true,
+});
+
+/** A 40×40 monster so the pan/zoom canvas has something to actually pan.
+ *  Deterministic lattice of blocked squares (~1 in 11) and arbitrary letters
+ *  — the layout only needs to look crossword-shaped, not solve like one. */
+export const GIANT = (() => {
+  const size = 40;
+  const rows: string[] = [];
+  for (let r = 0; r < size; r++) {
+    let row = "";
+    for (let c = 0; c < size; c++) {
+      row +=
+        (r * 7 + c * 3) % 11 === 0
+          ? "#"
+          : String.fromCharCode(65 + ((r * 13 + c * 7) % 26));
+    }
+    rows.push(row);
+  }
+  return makePuzzle(rows, { title: "Giant fixture" });
+})();
+
 /** The same mini wearing every grid decoration at once: circles, shading,
  *  and word-separator bars. */
 export const KITCHEN_SINK: Puzzle = (() => {
@@ -101,8 +127,10 @@ export const PEERS = {
   grace: mkPeer("grace", "Grace", "#3b82ff", 2, 2, "down"),
   /** Also on (2,2), solving 5-across — stacks with Grace. */
   alan: mkPeer("alan", "Alan", "#22c55e", 2, 2, "across"),
-  /** Also on (2,2) — third in the stack, past the cap, so no ring renders. */
+  /** Also on (2,2) — third in the stack. */
   edie: mkPeer("edie", "Edie", "#ff7a00", 2, 2, "down"),
+  /** Also on (2,2) — fourth in the stack, the last that renders. */
+  kay: mkPeer("kay", "Kay", "#cf5cff", 2, 2, "across"),
   /** On (0,2), solving 2-down — crosses Ada's word at (2,2). */
   ivy: mkPeer("ivy", "Ivy", "#8a5cff", 0, 2, "down"),
   /** On (4,1), solving the bottom row (AXE). */
@@ -115,6 +143,40 @@ export const PEER_POOL: RemoteCursor[] = [
   PEERS.grace,
   PEERS.alan,
   PEERS.edie,
+  PEERS.kay,
   PEERS.ivy,
   PEERS.max,
 ];
+
+/** Peers spread across GIANT's open cells, so the pan/zoom canvas and its
+ *  minimap have players scattered beyond the local viewport. */
+export const GIANT_PEERS: RemoteCursor[] = [
+  mkPeer("ada", "Ada", "#ff2d8e", 2, 1, "across"),
+  mkPeer("grace", "Grace", "#3b82ff", 10, 30, "down"),
+  mkPeer("alan", "Alan", "#22c55e", 25, 5, "across"),
+  mkPeer("edie", "Edie", "#ff7a00", 35, 35, "down"),
+  mkPeer("ivy", "Ivy", "#8a5cff", 5, 20, "across"),
+];
+
+/** Co-op session roster matching the peer fixtures. */
+export const PARTICIPANTS = ["ada", "grace", "alan", "edie"].map((name) => ({
+  user_id: `user-${name}`,
+  username: name,
+  display_name: name.charAt(0).toUpperCase() + name.slice(1),
+  joined_at: "2026-01-01T09:00:00Z",
+}));
+
+/** Followed-solver progress rows for the solves flyout. */
+export const MUTUALS = [
+  { name: "ada", completed: true, filled: 21, total: 21 },
+  { name: "grace", completed: false, filled: 14, total: 21 },
+  { name: "alan", completed: false, filled: 3, total: 21 },
+].map(({ name, completed, filled, total }) => ({
+  user_id: `user-${name}`,
+  username: name,
+  display_name: name.charAt(0).toUpperCase() + name.slice(1),
+  completed,
+  filled,
+  total,
+  updated_at: "2026-01-01T10:30:00Z",
+}));

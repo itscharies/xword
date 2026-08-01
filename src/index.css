@@ -125,6 +125,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   --nested-press: none;
 }
 
+/* The same shadowless treatment as an explicit, per-control opt-in: the
+   secondary variant of any control that reads --nested-shadow (.btn,
+   .filter-chip, .swatch, .checkbox, .ana-tile). Works on the control itself
+   or on a wrapper. */
+.flat {
+  --nested-shadow: none;
+  --nested-press: none;
+}
+
 /* ---- layout ------------------------------------------------------------- */
 
 .app {
@@ -419,8 +428,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 .save-status-error { color: var(--fg); font-weight: 700; }
 
-/* Shared plain text input look (also used by .ana-input, .builder-field
-   input) — surface fill, thick border, no browser chrome. */
+/* The one base look for every text input and select — surface fill, thick
+   border, no browser chrome. Specialized fields stack a modifier on top:
+   .ana-input (uppercase letter entry), .clue-input (compact clue rows),
+   .link-select (compact link dropdown). */
 .text-input {
   background: var(--surface);
   color: var(--fg);
@@ -432,6 +443,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font: inherit;
   font-size: 14px;
   font-weight: 600;
+  /* Fields sit inside all-caps labels (.builder-field) — don't inherit
+     their styling into what the user types. */
+  text-transform: none;
+  letter-spacing: normal;
 }
 .text-input:focus-visible {
   outline: none;
@@ -1297,19 +1312,15 @@ button { font: inherit; cursor: pointer; color: inherit; }
   color: var(--muted);
   flex-shrink: 0;
 }
+/* Letter-entry variant of .text-input: spaced uppercase, page-size type. */
 .ana-input {
   flex: 1;
   min-width: 0;
-  background: var(--surface);
-  color: var(--fg);
-  border: var(--bw) solid var(--line);
-  padding: 8px 10px;
-  font: inherit;
+  font-size: inherit;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
 }
-.ana-input:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
 /* Tiles: shared look, laid out in a circle (absolute) or a grid (flex). */
 .ana-tiles { position: relative; display: flex; }
 .ana-tiles.ana-circle { height: 230px; }
@@ -1952,23 +1963,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.builder-field input,
-.builder-field select {
-  background: var(--surface);
-  color: var(--fg);
-  border: var(--bw) solid var(--line);
-  padding: 7px 9px;
-  font: inherit;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: normal;
-}
 .builder-field input[type="number"] { width: 64px; }
-.builder-field input:focus-visible,
-.builder-field select:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--accent);
-}
 
 /* Match the rebus glyph button to the height of the other control buttons
    (its solver-toolbar padding is shorter, which read as "shorted" here). */
@@ -2055,10 +2050,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
   flex: 1;
   min-width: 0;
 }
+/* Compact variant of .text-input for the clue rows. */
 .clue-input {
   width: 100%;
-  letter-spacing: normal;
-  text-transform: none;
   font-weight: 500;
   padding: 5px 8px;
 }
@@ -2090,14 +2084,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
   color: #000;
   border: 2px solid var(--line);
 }
+/* Compact variant of .text-input for the "+ link…" dropdown. */
 .link-select {
-  background: var(--surface);
-  color: var(--fg);
-  border: 2px solid var(--line);
   padding: 3px 6px;
-  font: inherit;
   font-size: 12px;
-  font-weight: 600;
 }
 
 /* ---- builder autofill ---------------------------------------------------- */
@@ -2523,9 +2513,23 @@ button { font: inherit; cursor: pointer; color: inherit; }
   pointer-events: none;
   z-index: 4;
 }
+/* Stacked peers: each badge steps 3px inward per ring, so the letter sits
+   flush on its owner's ring band — one badge per corner, four max. */
 .cell .rc-badge-2 {
+  top: 3px;
   left: auto;
-  right: 0;
+  right: 3px;
+}
+.cell .rc-badge-3 {
+  top: auto;
+  bottom: 6px;
+  left: 6px;
+}
+.cell .rc-badge-4 {
+  top: auto;
+  left: auto;
+  bottom: 9px;
+  right: 9px;
 }
 
 /* A peer's selected clue in the sidebar: the row is tinted with their

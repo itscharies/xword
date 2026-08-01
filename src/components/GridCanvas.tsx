@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, type ReactElement } from "react";
 import type { Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
-import type { RemoteCursor } from "../hooks/useSession.ts";
+import { cursorClue, type RemoteCursor } from "../hooks/useSession.ts";
 import { Grid } from "./Grid.tsx";
 
 /** Breathing room (px) between the grid and the viewport edge whenever the
@@ -458,6 +458,36 @@ export function GridCanvas({
     return rects;
   }, [puzzle]);
 
+  // Other players on the minimap, drawn exactly like the local selection:
+  // their selected word tinted in their accent, caret cell at full
+  // strength. First peer claims a cell (no blending, matching the grid),
+  // and the layer sits under the local word/caret so the local player
+  // always renders on top.
+  const mapPeers = useMemo(() => {
+    if (!remoteCursors || remoteCursors.length === 0) return null;
+    const claimed = new Set<string>();
+    const rects: ReactElement[] = [];
+    const push = (r: number, c: number, fill: string) => {
+      const k = `${r},${c}`;
+      if (claimed.has(k)) return;
+      claimed.add(k);
+      rects.push(<rect key={k} x={c} y={r} width={1} height={1} fill={fill} />);
+    };
+    for (const cur of remoteCursors) {
+      push(cur.row, cur.col, cur.color);
+      const clue = cursorClue(xw, cur);
+      if (!clue) continue;
+      for (let i = 0; i < clue.len; i++) {
+        push(
+          clue.direction === "down" ? clue.row + i : clue.row,
+          clue.direction === "across" ? clue.col + i : clue.col,
+          `color-mix(in srgb, ${cur.color} 55%, transparent)`,
+        );
+      }
+    }
+    return rects;
+  }, [remoteCursors, xw.clueAt]);
+
   // The active word on the minimap, caret cell at full strength.
   const mapWord = useMemo(() => {
     const rects: ReactElement[] = [];
@@ -511,6 +541,7 @@ export function GridCanvas({
           preserveAspectRatio="none"
         >
           <g>{mapCells}</g>
+          <g>{mapPeers}</g>
           <g>{mapWord}</g>
         </svg>
         <div ref={minimapViewRef} className="canvas-minimap-view" />

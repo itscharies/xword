@@ -30,12 +30,6 @@ export function MobileKeyboard({
   const backspace = () =>
     anagramPool ? anagramPool.backspace() : xw.backspace();
 
-  // Track the pressed key in state rather than relying on `:active`: iOS Safari
-  // withholds `:active` for taps near the bottom edge (home-indicator / toolbar
-  // zone), so the lower rows never flashed. Pointer events fire everywhere, and
-  // state survives the per-second timer re-renders that a raw class toggle
-  // would lose.
-  //
   // Track the held key in state rather than relying on `:active`: iOS Safari
   // withholds `:active` for taps near the bottom edge (home-indicator / toolbar
   // zone), so the lower rows never flashed. Pointer events fire everywhere, and

@@ -20,7 +20,11 @@ export function MockAuthSwitcher() {
     <div className="mock-auth-switcher">
       <label>
         Mock backend — signed in as:{" "}
-        <select value={current ?? ""} onChange={(e) => onChange(e.target.value)}>
+        <select
+          className="text-input"
+          value={current ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        >
           <option value="">Signed out</option>
           {MOCK_PROFILES.map((p) => (
             <option key={p.user_id} value={p.user_id}>
