@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:mock": "VITE_MOCK_BACKEND=1 vite",
+    "ladle": "ladle serve",
+    "ladle:build": "ladle build",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "migrate:puzzles": "tsx scripts/migrate-puzzles-to-supabase.ts",
@@ -27,6 +29,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@ladle/react": "^5.1.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^26.0.1",
     "@types/react": "^18.3.12",
