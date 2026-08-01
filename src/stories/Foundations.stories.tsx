@@ -164,9 +164,11 @@ export const Inputs: Story = () => (
     <Row label="Base">
       <input className="text-input" placeholder="Paste an invite link" style={{ flex: 1 }} />
     </Row>
-    <Row label="Sharing a row with a button">
-      <input className="text-input" placeholder="https://…" style={{ flex: 1 }} />
-      <button className="btn">Join</button>
+    <Row label="Sharing a row with a button — the row is .flat, so the button drops its shadow to match">
+      <div className="flat" style={{ display: "flex", gap: 8, flex: 1 }}>
+        <input className="text-input" placeholder="https://…" style={{ flex: 1 }} />
+        <button className="btn">Join</button>
+      </div>
     </Row>
     <Row label="Select, number, date — same base">
       <select className="text-input" defaultValue="quick">
@@ -184,9 +186,9 @@ export const Inputs: Story = () => (
         spellCheck={false}
       />
     </Row>
-    <Row label=".clue-input / .link-select — compact builder rows">
-      <input className="text-input clue-input" placeholder="Clue…" style={{ flex: 1 }} />
-      <select className="text-input link-select" defaultValue="">
+    <Row label=".compact — the same input, smaller, for dense rows">
+      <input className="text-input compact" placeholder="Clue…" style={{ flex: 1 }} />
+      <select className="text-input compact" defaultValue="">
         <option value="">+ link…</option>
         <option value="1a">1a</option>
       </select>

@@ -39,7 +39,7 @@ function LinkEditor({
         );
       })}
       <select
-        className="text-input link-select"
+        className="text-input compact"
         value=""
         onChange={(e) => e.target.value && b.linkClue(sourceKey, e.target.value)}
       >
@@ -92,7 +92,7 @@ function Column({
               <span className="cn">{s.number}</span>
               <div className="builder-clue-body">
                 <input
-                  className="text-input clue-input"
+                  className="text-input compact"
                   value={b.clueText.get(key) ?? ""}
                   placeholder="Clue…"
                   onChange={(e) => b.setClue(key, e.target.value)}

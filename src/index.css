@@ -86,6 +86,19 @@ body {
 
 button { font: inherit; cursor: pointer; color: inherit; }
 
+/* Anyone asking the OS for less motion gets none: every CSS transition and
+   animation collapses to instant (0.01ms rather than 0 so transitionend
+   events still fire for anything listening). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Accessibility: replace the browser's default focus ring with a themed,
    high-contrast one shown only for keyboard navigation. */
 :focus { outline: none; }
@@ -325,11 +338,28 @@ button { font: inherit; cursor: pointer; color: inherit; }
   flex-direction: column;
   gap: 6px;
 }
+/* Hover bridge: hover-opened flyouts close on leaving the trigger+panel
+   subtree, and the 5px air gap between them would otherwise count as
+   "outside" while the pointer crosses it. An invisible strip spans the gap
+   (5px) plus the border (3px), with a little slack. */
+.tip-panel::before,
+.solves-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -11px;
+  height: 11px;
+}
 /* Flip which way the panel opens, for triggers near an edge (same 5px gap
    as the below-by-default position). */
 .tip-up .tip-panel {
   top: auto;
   bottom: calc(100% + 5px);
+}
+.tip-up .tip-panel::before {
+  top: auto;
+  bottom: -11px;
 }
 .tip-right .tip-panel {
   left: auto;
@@ -436,21 +466,52 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--surface);
   color: var(--fg);
   border: var(--bw) solid var(--line);
-  /* Same border, vertical padding, and font metrics as .btn, so an input
+  /* Same border, vertical padding, and line-height as .btn, so an input
      and a button sharing a row (search, copy-link, join) are the same
-     height. */
+     height — whatever the input's font-size. */
   padding: 9px 10px;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
+  line-height: 20px;
   /* Fields sit inside all-caps labels (.builder-field) — don't inherit
      their styling into what the user types. */
   text-transform: none;
   letter-spacing: normal;
+  transition: box-shadow 0.08s;
 }
 .text-input:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--accent);
+}
+.text-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Smaller take on the same input, for dense rows (builder clues, links). */
+.text-input.compact {
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 16px;
+}
+/* Selects swap the browser's arrow for the app's chevron (ChevronDownIcon's
+   path, inlined per theme — url() can't read custom properties). */
+select.text-input {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 13px;
+}
+[data-theme="dark"] select.text-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e6e6e6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E");
+}
+select.text-input.compact {
+  padding-right: 24px;
+  background-position: right 7px center;
+  background-size: 11px;
 }
 .setting-label {
   font-size: 12px;
@@ -630,6 +691,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
+  transition: background 0.08s, box-shadow 0.08s;
 }
 .seg-btn + .seg-btn { border-left: var(--bw) solid var(--line); }
 /* Selected = pressed-in (accent fill + inset shadow), no ring. */
@@ -728,7 +790,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
   padding: 9px 16px;
   font-size: 14px;
   font-weight: 700;
-  transition: transform 0.08s, box-shadow 0.08s;
+  /* Shared control metric: .btn and .text-input both use this line-height,
+     so a button and any input (whatever its font-size) land on the same
+     height when they share a row. */
+  line-height: 20px;
+  transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
 }
 /* Icon + label on desktop; the label (and caret) drop off on mobile, leaving
    just the icon — see the .toolbar rules in the mobile media query. */
@@ -737,14 +803,50 @@ button { font: inherit; cursor: pointer; color: inherit; }
 @media (hover: hover) {
   .btn:hover { background: var(--accent-2); color: #000; }
 }
-/* Toggle buttons (rebus) that are switched on. */
-.btn.active { background: var(--accent-2); color: #000; }
+/* Toggle buttons (rebus) that are switched on — pressed-in like the
+   segmented control: sat down into the shadow where there is one, with the
+   same inset shading either way, so "on" reads as held down. */
+.btn.active {
+  background: var(--accent-2);
+  color: #000;
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow:
+    inset 4px 4px 0 rgba(0, 0, 0, 0.22),
+    var(--nested-shadow, 0 0 0 var(--shadow-col));
+}
 /* A press uses the full tone — placed last so it wins over hover/.active. */
 .btn:active {
   background: var(--accent);
   color: #000;
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
   box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
+}
+/* Disabled: washed out, ban cursor, and none of the hover/press theatrics —
+   a control that can't be used shouldn't respond like one that can. */
+.btn:disabled,
+.seg-btn:disabled,
+.filter-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn:disabled,
+.btn:disabled:hover,
+.btn:disabled:active {
+  background: var(--surface);
+  color: var(--fg);
+  transform: none;
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
+}
+.filter-chip:disabled:hover {
+  background: var(--surface);
+  color: var(--fg);
+}
+
+/* Keyboard focus: the same accent ring the text inputs use, drawn as an
+   outline offset outside the border so it doesn't fight the hard shadows. */
+:is(.btn, .seg-btn, .filter-chip, .swatch, .check-row, .tip-trigger):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* The 2x2 "AB/CD" rebus glyph, a touch smaller than the surrounding text. */
@@ -1760,6 +1862,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
 }
 @media (hover: hover) {
   .filter-chip:hover { background: var(--accent-2); color: #000; }
@@ -1968,7 +2071,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
 /* Match the rebus glyph button to the height of the other control buttons
    (its solver-toolbar padding is shorter, which read as "shorted" here). */
 .builder-controls .rebus-btn { display: inline-flex; padding: 9px 16px; }
-.builder-controls .btn:disabled { opacity: 0.45; cursor: default; }
 
 .builder-meta {
   display: flex;
@@ -2050,12 +2152,8 @@ button { font: inherit; cursor: pointer; color: inherit; }
   flex: 1;
   min-width: 0;
 }
-/* Compact variant of .text-input for the clue rows. */
-.clue-input {
-  width: 100%;
-  font-weight: 500;
-  padding: 5px 8px;
-}
+/* The clue field fills its row; sizing comes from .text-input.compact. */
+.builder-clue-body .text-input { width: 100%; }
 .clue-answer {
   font-family: ui-monospace, monospace;
   font-size: 12px;
@@ -2083,11 +2181,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   background: var(--accent-2);
   color: #000;
   border: 2px solid var(--line);
-}
-/* Compact variant of .text-input for the "+ link…" dropdown. */
-.link-select {
-  padding: 3px 6px;
-  font-size: 12px;
 }
 
 /* ---- builder autofill ---------------------------------------------------- */
@@ -2480,9 +2573,11 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .mock-auth-switcher select {
   font: inherit;
   color: inherit;
-  background: var(--bg);
+  background-color: var(--bg);
   border: 1px solid var(--line);
-  padding: 2px 4px;
+  padding: 2px 20px 2px 4px;
+  background-position: right 4px center;
+  background-size: 10px;
 }
 
 /* ---- multiplayer co-op sessions ------------------------------------------ */
