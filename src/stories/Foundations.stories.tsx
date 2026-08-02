@@ -66,7 +66,9 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
     <div className="setting-label" style={{ marginBottom: 8 }}>
       {label}
     </div>
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+    {/* 8px is the app's gap between adjacent controls in a row (12px is
+        reserved for gaps between whole groups). */}
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
       {children}
     </div>
   </div>
