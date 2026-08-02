@@ -687,10 +687,13 @@ select.text-input.compact {
   gap: 7px;
   background: var(--surface);
   border: 0;
-  padding: 10px 18px;
+  /* 9px + 20px line + 9px inside the group's 3px border = the same 44px
+     as .btn and .text-input — segs share rows with both (builder toolbar,
+     anagram helper's controls). */
+  padding: 9px 18px;
   font-size: 14px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 20px;
   transition: background 0.08s, box-shadow 0.08s;
 }
 .seg-btn + .seg-btn { border-left: var(--bw) solid var(--line); }
