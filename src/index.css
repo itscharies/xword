@@ -513,6 +513,19 @@ select.text-input.compact {
   background-position: right 7px center;
   background-size: 11px;
 }
+/* Date inputs: WebKit's internal field wrapper and calendar icon carry their
+   own metrics that overflow the 20px line box (46px total instead of 44) —
+   pin them to it. */
+.text-input::-webkit-datetime-edit {
+  line-height: 20px;
+  max-height: 20px;
+}
+.text-input::-webkit-calendar-picker-indicator {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  margin-inline-start: 4px;
+}
 .setting-label {
   font-size: 12px;
   font-weight: 800;
