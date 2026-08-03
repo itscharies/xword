@@ -70,9 +70,11 @@ export function ThemeControls() {
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
   const [gridFit, setGridFitState] = useState<GridFit>(getGridFit);
-  // Lifted out of PrefRow because the "from anywhere" sub-row disables
-  // itself while this is off.
+  // Lifted out of PrefRow because these two are linked: the "from anywhere"
+  // sub-row disables itself while auto-advance is off, and turning
+  // auto-advance off clears it rather than leaving a hidden armed value.
   const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
+  const [anywhere, setAnywhereState] = useState<boolean>(getAdvanceAnywhere);
 
   const choose = (m: Mode) => {
     setMode(m);
@@ -85,6 +87,14 @@ export function ThemeControls() {
   const changeAdvance = (next: boolean) => {
     setAutoAdvance(next);
     setAdvanceState(next);
+    if (!next) {
+      setAdvanceAnywhere(false);
+      setAnywhereState(false);
+    }
+  };
+  const changeAnywhere = (next: boolean) => {
+    setAdvanceAnywhere(next);
+    setAnywhereState(next);
   };
   const chooseGridFit = (fit: GridFit) => {
     setGridFit(fit);
@@ -171,12 +181,12 @@ export function ThemeControls() {
           onChange={changeAdvance}
           label="Skip to the next clue when a word is finished"
         />
-        {/* Sub-option of auto-advance — meaningless on its own, so it can
-            only be toggled while its parent is on. */}
+        {/* Sub-option of auto-advance — meaningless on its own, so it's
+            cleared and untogglable while its parent is off. */}
         <div className="check-sub">
-          <PrefRow
-            get={getAdvanceAnywhere}
-            set={setAdvanceAnywhere}
+          <CheckRow
+            checked={anywhere}
+            onChange={changeAnywhere}
             label="From anywhere in the word, not just the end"
             disabled={!advance}
           />

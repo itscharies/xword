@@ -773,9 +773,9 @@ select.text-input.compact {
   background: var(--accent-2);
   color: #000;
 }
-/* Sub-options (e.g. auto-advance's "from anywhere in the word") indent under
-   their parent row and wash out while the parent is off. */
-.check-sub { padding-left: 26px; }
+/* Sub-options (e.g. auto-advance's "from anywhere in the word") indent a
+   touch under their parent row and wash out while the parent is off. */
+.check-sub { padding-left: 12px; }
 .check-row:disabled {
   opacity: 0.45;
   cursor: not-allowed;
