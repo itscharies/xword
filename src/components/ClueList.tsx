@@ -3,6 +3,7 @@ import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Crossword } from "../hooks/useCrossword.ts";
 import { cursorClue, type RemoteCursor } from "../hooks/useSession.ts";
 import { clueEnumeration, formatClue } from "../lib/clueFormat.ts";
+import { getStrikeFilledClues } from "../lib/theme.ts";
 
 function Column({
   title,
@@ -39,11 +40,16 @@ function Column({
     activeRef.current?.scrollIntoView({ block: "nearest" });
   }, [currentNumber]);
 
+  // Struck through once every square has a letter — filled, not *correct*,
+  // so the styling never leaks whether an answer is right (that's what
+  // check/autocheck are for). Toggleable in Settings.
+  const strike = getStrikeFilledClues();
   const isDone = (clue: Clue) => {
+    if (!strike) return false;
     for (let i = 0; i < clue.len; i++) {
       const r = direction === "down" ? clue.row + i : clue.row;
       const c = direction === "across" ? clue.col + i : clue.col;
-      if (xw.entries[r][c] !== xw.solutionAt(r, c)) return false;
+      if (!xw.entries[r][c]) return false;
     }
     return true;
   };

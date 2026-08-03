@@ -3,18 +3,30 @@ import {
   ACCENTS,
   getAccent,
   getAutoAdvance,
+  getAutocheck,
   getBackfillGaps,
+  getBackspacePrevWord,
   getGridFit,
   getMode,
+  getProtectCrossings,
+  getShowTimer,
   getSkipFilledClues,
   getSkipFilledSquares,
+  getSpaceClears,
+  getStrikeFilledClues,
   setAccent,
   setAutoAdvance,
+  setAutocheck,
   setBackfillGaps,
+  setBackspacePrevWord,
   setGridFit,
   setMode,
+  setProtectCrossings,
+  setShowTimer,
   setSkipFilledClues,
   setSkipFilledSquares,
+  setSpaceClears,
+  setStrikeFilledClues,
   type AccentId,
   type GridFit,
   type Mode,
@@ -23,6 +35,30 @@ import { MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
 import { CheckRow } from "./CheckRow.tsx";
 import { useAuth } from "../hooks/useAuthContext.tsx";
 
+/** One boolean setting: reads its saved value on mount, writes through on
+ *  toggle. Keeps the modal body from drowning in per-toggle useState. */
+function PrefRow({
+  get,
+  set,
+  label,
+}: {
+  get: () => boolean;
+  set: (on: boolean) => void;
+  label: string;
+}) {
+  const [on, setOn] = useState<boolean>(get);
+  return (
+    <CheckRow
+      checked={on}
+      onChange={(next) => {
+        set(next);
+        setOn(next);
+      }}
+      label={label}
+    />
+  );
+}
+
 /** Body of the settings modal: theme mode picker plus, for signed-out
  *  users only, the accent picker — signed-in users' accent follows their
  *  profile's avatar colour (set on the account page) instead. */
@@ -30,10 +66,6 @@ export function ThemeControls() {
   const { user } = useAuth();
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
-  const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
-  const [skipFilled, setSkipFilledState] = useState<boolean>(getSkipFilledSquares);
-  const [backfill, setBackfillState] = useState<boolean>(getBackfillGaps);
-  const [skipDone, setSkipDoneState] = useState<boolean>(getSkipFilledClues);
   const [gridFit, setGridFitState] = useState<GridFit>(getGridFit);
 
   const choose = (m: Mode) => {
@@ -43,22 +75,6 @@ export function ThemeControls() {
   const pick = (id: AccentId) => {
     setAccent(id);
     setAccentState(id);
-  };
-  const changeAdvance = (next: boolean) => {
-    setAutoAdvance(next);
-    setAdvanceState(next);
-  };
-  const changeSkipFilled = (next: boolean) => {
-    setSkipFilledSquares(next);
-    setSkipFilledState(next);
-  };
-  const changeBackfill = (next: boolean) => {
-    setBackfillGaps(next);
-    setBackfillState(next);
-  };
-  const changeSkipDone = (next: boolean) => {
-    setSkipFilledClues(next);
-    setSkipDoneState(next);
   };
   const chooseGridFit = (fit: GridFit) => {
     setGridFit(fit);
@@ -116,30 +132,64 @@ export function ThemeControls() {
 
       <div className="setting-row">
         <span className="setting-label">Typing</span>
-        <CheckRow
-          checked={skipFilled}
-          onChange={changeSkipFilled}
+        <PrefRow
+          get={getSkipFilledSquares}
+          set={setSkipFilledSquares}
           label="Skip over squares that are already filled"
         />
-        <CheckRow
-          checked={backfill}
-          onChange={changeBackfill}
+        <PrefRow
+          get={getBackfillGaps}
+          set={setBackfillGaps}
           label="Jump back to the first blank in the word"
+        />
+        <PrefRow
+          get={getSpaceClears}
+          set={setSpaceClears}
+          label="Space clears the square (instead of switching direction)"
+        />
+        <PrefRow
+          get={getBackspacePrevWord}
+          set={setBackspacePrevWord}
+          label="Backspace into the previous word"
+        />
+        <PrefRow
+          get={getProtectCrossings}
+          set={setProtectCrossings}
+          label="Keep letters of finished crossing words when deleting"
         />
       </div>
 
       <div className="setting-row">
         <span className="setting-label">Clues</span>
-        <CheckRow
-          checked={advance}
-          onChange={changeAdvance}
+        <PrefRow
+          get={getAutoAdvance}
+          set={setAutoAdvance}
           label="Skip to the next clue when a word is finished"
         />
-        <CheckRow
-          checked={skipDone}
-          onChange={changeSkipDone}
+        <PrefRow
+          get={getSkipFilledClues}
+          set={setSkipFilledClues}
           label="Skip clues that are already filled"
         />
+        <PrefRow
+          get={getStrikeFilledClues}
+          set={setStrikeFilledClues}
+          label="Strike through clues that are already filled"
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="setting-label">Checking</span>
+        <PrefRow
+          get={getAutocheck}
+          set={setAutocheck}
+          label="Check letters as you type"
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="setting-label">Timer</span>
+        <PrefRow get={getShowTimer} set={setShowTimer} label="Show the timer" />
       </div>
 
       <div className="setting-row">

@@ -212,6 +212,82 @@ export function setSkipFilledClues(on: boolean): void {
   }
 }
 
+// Some settings need to reach React beyond the modal that flipped them (the
+// timer readout, the clue lists, an autocheck sweep) — setters made with
+// boolPref(..., { notify: true }) ping these listeners; App.tsx subscribes.
+const prefListeners = new Set<() => void>();
+
+export function subscribePrefs(fn: () => void): () => void {
+  prefListeners.add(fn);
+  return () => prefListeners.delete(fn);
+}
+
+/** Build a get/set pair for one boolean preference. Prefs that default on
+ *  store "0" to opt out; prefs that default off store "1" to opt in — either
+ *  way an absent key means the default. */
+function boolPref(key: string, dflt: boolean, opts?: { notify?: boolean }) {
+  return {
+    get: (): boolean => {
+      try {
+        const v = localStorage.getItem(key);
+        return v === null ? dflt : v === "1";
+      } catch {
+        return dflt;
+      }
+    },
+    set: (on: boolean): void => {
+      try {
+        localStorage.setItem(key, on ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      if (opts?.notify) prefListeners.forEach((fn) => fn());
+    },
+  };
+}
+
+/** Space clears the active square and steps forward (NYT-style) instead of
+ *  switching direction. Enter always switches. */
+export const { get: getSpaceClears, set: setSpaceClears } = boolPref(
+  "xword:spaceClears",
+  false,
+);
+
+/** Backspacing at the first cell of a word hops to the previous clue's last
+ *  cell and clears it, instead of stopping at the word boundary. */
+export const { get: getBackspacePrevWord, set: setBackspacePrevWord } = boolPref(
+  "xword:backspacePrevWord",
+  false,
+);
+
+/** Deleting keeps letters that belong to a completely-filled crossing entry
+ *  (typing over them still works). */
+export const { get: getProtectCrossings, set: setProtectCrossings } = boolPref(
+  "xword:protectCrossings",
+  false,
+);
+
+/** Check letters against the solution as they're typed, marking wrong ones. */
+export const { get: getAutocheck, set: setAutocheck } = boolPref(
+  "xword:autocheck",
+  false,
+  { notify: true },
+);
+
+/** Show the elapsed-time readout while solving (timing continues regardless). */
+export const { get: getShowTimer, set: setShowTimer } = boolPref(
+  "xword:showTimer",
+  true,
+  { notify: true },
+);
+
+/** Strike through clues whose every square is filled in the clue lists. */
+export const { get: getStrikeFilledClues, set: setStrikeFilledClues } = boolPref(
+  "xword:strikeFilledClues",
+  true,
+  { notify: true },
+);
+
 const GRID_FIT_KEY = "xword:gridFit";
 
 /** "width" (default) sizes the grid to fit the screen, like today. "canvas"

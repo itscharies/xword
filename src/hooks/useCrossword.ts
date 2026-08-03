@@ -4,9 +4,13 @@ import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
 import {
   getAutoAdvance,
+  getAutocheck,
   getBackfillGaps,
+  getBackspacePrevWord,
+  getProtectCrossings,
   getSkipFilledClues,
   getSkipFilledSquares,
+  getSpaceClears,
 } from "../lib/theme.ts";
 import { SOURCES } from "../lib/sources.ts";
 
@@ -463,6 +467,33 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
   const lockedRevealed = (r: number, c: number) =>
     !!coopRef.current?.readOnlyRevealed && revealedRef.current.has(keyOf(r, c));
 
+  /** "Keep finished crossing words": with the setting on, deletes skip cells
+   *  whose crossing entry is completely filled — typing over still works, so
+   *  a letter boxed in by two finished words isn't permanently stuck. */
+  const protectedCrossing = (r: number, c: number): boolean => {
+    if (!getProtectCrossings()) return false;
+    const cross = lookup.get(keyOf(r, c))?.[otherDir(directionRef.current)];
+    return !!cross && isClueFilled(cross);
+  };
+
+  /** Autocheck: mark the cell wrong right after a letter lands if it doesn't
+   *  match the solution. Correct letters need no work here — the write path's
+   *  clearWrongAt has already dropped any stale mark. */
+  const autocheckAt = (r: number, c: number) => {
+    if (!getAutocheck()) return;
+    const entry = entriesRef.current[r][c];
+    const sol = grid[r][c].solution;
+    if (!entry || !sol || entry === sol) return;
+    const k = keyOf(r, c);
+    if (wrongRef.current.has(k)) return;
+    const next = new Set(wrongRef.current);
+    next.add(k);
+    setWrong(next);
+    coopRef.current?.onMarksCommitted?.({
+      marks: [{ row: r, col: c, expect: entry, wrong: true }],
+    });
+  };
+
   /** Report a local mutation to the co-op layer. Remote applies never come
    *  through here — applyRemoteCells writes state directly. */
   const emitCells = (cells: CellCommitDelta[], cause: CellCommitCause) => {
@@ -487,12 +518,14 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
         clearWrongAt(row, col);
         clearRevealedAt(row, col);
         emitCells([{ row, col, value: next, revealed: false }], "type");
+        autocheckAt(row, col);
         return;
       }
       writeCell(row, col, ch.toUpperCase());
       clearWrongAt(row, col);
       clearRevealedAt(row, col);
       emitCells([{ row, col, value: ch.toUpperCase(), revealed: false }], "type");
+      autocheckAt(row, col);
       advanceInWord();
     },
     [isOpen, advanceInWord],
@@ -511,12 +544,14 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       emitCells([{ row, col, value: next, revealed: false }], "delete");
       return;
     }
-    if (cur && !lockedRevealed(row, col)) {
+    if (cur && !lockedRevealed(row, col) && !protectedCrossing(row, col)) {
       clearAt(row, col);
       emitCells([{ row, col, value: "", revealed: false }], "delete");
       return;
     }
-    // Empty (or locked) cell: step back within the word and clear that one.
+    // Empty (or locked/protected) cell: step back within the word and clear
+    // that one — protected/locked targets keep their letter, cursor moves
+    // anyway so erasing can continue past them.
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
     const cells = clueCells(clue);
@@ -524,19 +559,60 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     if (i > 0) {
       const prev = cells[i - 1];
       setActive(prev);
-      if (lockedRevealed(prev.row, prev.col)) return;
+      if (lockedRevealed(prev.row, prev.col) || protectedCrossing(prev.row, prev.col)) return;
       clearAt(prev.row, prev.col);
       emitCells([{ row: prev.row, col: prev.col, value: "", revealed: false }], "delete");
+    } else if (i === 0 && getBackspacePrevWord()) {
+      // At the word's first cell: hop to the previous clue's last cell and
+      // clear it. Deliberately the raw previous clue — no skip-filled-clues
+      // walk — since erasing backwards should track entry order, not hunt
+      // for open words.
+      const idx = orderedClues.findIndex(
+        (c) => c.number === clue.number && c.direction === clue.direction,
+      );
+      if (idx > 0) {
+        const prevClue = orderedClues[idx - 1];
+        const prevCells = clueCells(prevClue);
+        const last = prevCells[prevCells.length - 1];
+        setRebus(false);
+        setDirection(prevClue.direction);
+        setActive(last);
+        if (lockedRevealed(last.row, last.col) || protectedCrossing(last.row, last.col)) return;
+        clearAt(last.row, last.col);
+        emitCells([{ row: last.row, col: last.col, value: "", revealed: false }], "delete");
+      }
     }
-  }, [clueThrough]);
+  }, [clueThrough, orderedClues]);
 
   const deleteCell = useCallback(() => {
     if (completedRef.current) return;
     const { row, col } = activeRef.current;
-    if (lockedRevealed(row, col)) return;
+    if (lockedRevealed(row, col) || protectedCrossing(row, col)) return;
     clearAt(row, col);
     emitCells([{ row, col, value: "", revealed: false }], "delete");
   }, []);
+
+  /** Space with the "space clears" setting on: blank the square and step to
+   *  the word's next cell — like typing an eraser. Never skips filled cells
+   *  (that would make them un-erasable) and never leaves the word. */
+  const spaceClear = useCallback(() => {
+    if (completedRef.current) return;
+    const { row, col } = activeRef.current;
+    if (!isOpen(row, col)) return;
+    if (
+      entriesRef.current[row][col] &&
+      !lockedRevealed(row, col) &&
+      !protectedCrossing(row, col)
+    ) {
+      clearAt(row, col);
+      emitCells([{ row, col, value: "", revealed: false }], "delete");
+    }
+    const clue = clueThrough(activeRef.current, directionRef.current);
+    if (!clue) return;
+    const cells = clueCells(clue);
+    const i = cells.findIndex((p) => p.row === row && p.col === col);
+    if (i >= 0 && i + 1 < cells.length) setActive(cells[i + 1]);
+  }, [isOpen, clueThrough]);
 
   // ---- check / reveal -----------------------------------------------------
 
@@ -652,6 +728,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       setWrong(wr);
       setRevealed(rev);
       emitCells(deltas, "fill");
+      for (const d of deltas) autocheckAt(d.row, d.col);
     },
     [clueThrough],
   );
@@ -774,7 +851,11 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       } else if (k === "Tab") {
         e.preventDefault();
         moveToClue(e.shiftKey ? -1 : 1);
-      } else if (k === " " || k === "Enter") {
+      } else if (k === " ") {
+        e.preventDefault();
+        if (getSpaceClears()) spaceClear();
+        else toggleDirection();
+      } else if (k === "Enter") {
         e.preventDefault();
         toggleDirection();
       } else if (/^[a-zA-Z]$/.test(k)) {
@@ -782,7 +863,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
         typeLetter(k);
       }
     },
-    [step, backspace, deleteCell, moveToClue, toggleDirection, typeLetter, check, reveal],
+    [step, backspace, deleteCell, moveToClue, toggleDirection, spaceClear, typeLetter, check, reveal],
   );
 
   return {

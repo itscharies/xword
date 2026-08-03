@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { Puzzle } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
-import { applyAccent, getLocalAccent, initTheme, updateFavicon } from "./lib/theme.ts";
+import {
+  applyAccent,
+  getAutocheck,
+  getLocalAccent,
+  getShowTimer,
+  initTheme,
+  subscribePrefs,
+  updateFavicon,
+} from "./lib/theme.ts";
 import { confirmLeave } from "./lib/navGuard.ts";
 import { useCrossword, type CoopOptions } from "./hooks/useCrossword.ts";
 import { useSession, type CoopBridge } from "./hooks/useSession.ts";
@@ -771,6 +779,37 @@ function Solver({
   );
   const elapsed = session ? (sApi?.elapsed ?? 0) : soloElapsed;
 
+  // Settings changed in the modal that the solver page itself must react to:
+  // re-render (timer readout, clue strikethrough), and sweep the grid when
+  // autocheck turns on so letters typed before enabling get marked too.
+  const xwRef = useRef(xw);
+  xwRef.current = xw;
+  const [, bumpPrefs] = useReducer((x: number) => x + 1, 0);
+  useEffect(
+    () =>
+      subscribePrefs(() => {
+        bumpPrefs();
+        if (getAutocheck()) xwRef.current.check("puzzle");
+      }),
+    [],
+  );
+  // A puzzle opened with autocheck already on shows its standing mistakes.
+  useEffect(() => {
+    if (getAutocheck()) xwRef.current.check("puzzle");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-pause when the window loses focus (solo only — the shared session
+  // clock never pauses). Any keystroke or touch on the board resumes.
+  useEffect(() => {
+    const onBlur = () => {
+      if (!session && !xw.completed) setPaused(true);
+    };
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, xw.completed]);
+
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showReset, setShowReset] = useState(false);
@@ -1008,9 +1047,11 @@ function Solver({
                   {paused ? <PlayIcon /> : <PauseIcon />}
                 </button>
               )}
-              <div className={`timer ${paused ? "paused" : ""}`}>
-                {formatTime(elapsed)}
-              </div>
+              {getShowTimer() && (
+                <div className={`timer ${paused ? "paused" : ""}`}>
+                  {formatTime(elapsed)}
+                </div>
+              )}
             </div>
             {!session && sessionsEnabled && (
               <button
