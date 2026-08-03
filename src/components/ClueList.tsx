@@ -16,7 +16,7 @@ function Column({
   clues: Clue[];
   xw: Crossword;
   /** Co-op: "across-12" / "down-3" -> the peers whose cursor sits on that
-   *  clue (at most two rendered). */
+   *  clue (up to four, matching the grid's stack cap). */
   remote: Map<string, RemoteCursor[]> | null;
 }) {
   const activeNumber =
@@ -57,6 +57,20 @@ function Column({
           const crossing = clue.number === crossNumber;
           const linked = xw.linkedNumbers[direction].has(clue.number);
           const remoteHere = remote?.get(`${direction}-${clue.number}`);
+          // A peer's clue renders like the local selection, in their accent:
+          // the skinny bar on the side plus a light tint across the row. Only
+          // the first peer paints — the rest keep their chip indicators (the
+          // grid's no-blending rule) — and any row the local player owns
+          // (their clue, its grey crossing clue, a linked clue) keeps its
+          // own styling untouched.
+          const localRow = active || crossing || linked;
+          const remoteStyle =
+            remoteHere && !localRow
+              ? {
+                  borderLeftColor: remoteHere[0].color,
+                  boxShadow: `inset 0 0 0 999px color-mix(in srgb, ${remoteHere[0].color} 18%, transparent)`,
+                }
+              : undefined;
           return (
             <li
               key={clue.number}
@@ -69,21 +83,7 @@ function Column({
               ]
                 .filter(Boolean)
                 .join(" ")}
-              // A peer on this clue tints the row with their accent — an
-              // inset shadow so it composites over active/crossing/hover
-              // backgrounds instead of replacing them (matching the grid).
-              style={
-                remoteHere
-                  ? {
-                      boxShadow: remoteHere
-                        .map(
-                          (p) =>
-                            `inset 0 0 0 999px color-mix(in srgb, ${p.color} 18%, transparent)`,
-                        )
-                        .join(", "),
-                    }
-                  : undefined
-              }
+              style={remoteStyle}
               onClick={() => xw.selectClue({ ...clue, direction })}
             >
               <span className="cn">{clue.number}</span>
@@ -120,8 +120,10 @@ export function ClueList({
 }: {
   puzzle: Puzzle;
   xw: Crossword;
-  /** Co-op sessions: peers' cursors — their selected clue gets a row tint
-   *  in their accent plus an initial-letter badge, like the grid cells. */
+  /** Co-op sessions: peers' cursors — their selected clue renders like the
+   *  local selection in their accent (side bar + light row tint) plus an
+   *  initial-letter chip. First peer paints, the local player's rows win
+   *  outright — matching the grid's rules. */
   remoteCursors?: RemoteCursor[];
 }) {
   const remoteByClue = useMemo(() => {
@@ -132,7 +134,7 @@ export function ClueList({
       if (!clue) continue;
       const k = `${clue.direction}-${clue.number}`;
       const list = map.get(k) ?? [];
-      if (list.length < 2) list.push(cur);
+      if (list.length < 4) list.push(cur);
       map.set(k, list);
     }
     return map;

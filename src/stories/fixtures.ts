@@ -99,7 +99,7 @@ export const SINK_PROGRESS: Progress = {
   completed: false,
 };
 
-const mkPeer = (
+export const mkPeer = (
   username: string,
   displayName: string,
   color: string,

@@ -2,7 +2,7 @@ import type { Story, StoryDefault } from "@ladle/react";
 import { ClueList } from "./ClueList.tsx";
 import { Grid } from "./Grid.tsx";
 import { useCrossword } from "../hooks/useCrossword.ts";
-import { MINI, PEERS } from "../stories/fixtures.ts";
+import { MINI, PEERS, mkPeer } from "../stories/fixtures.ts";
 
 export default {
   title: "Solver / Clue list",
@@ -18,14 +18,22 @@ export const WithPeers: Story = () => {
   return (
     <>
       <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
-        Peers' selected clues get a row tint in their accent plus their
-        initial badge — Grace and Alan share a clue, so both badges stack on
-        one row.
+        A peer's clue renders like the local selection in their accent: the
+        skinny side bar plus a light row tint. Grace and Edie share a down
+        clue — Grace got there first, so only her colour paints it and Edie
+        keeps her chip. Noor sits on the local player's clue and Pia on its
+        grey crossing clue: the local styling wins and they show as chips
+        only.
       </p>
       <ClueList
         puzzle={MINI}
         xw={xw}
-        remoteCursors={[PEERS.ada, PEERS.grace, PEERS.alan]}
+        remoteCursors={[
+          PEERS.grace,
+          PEERS.edie,
+          mkPeer("noor", "Noor", "#3cff52", 0, 3, "across"),
+          mkPeer("pia", "Pia", "#00e5ff", 1, 1, "down"),
+        ]}
       />
     </>
   );
