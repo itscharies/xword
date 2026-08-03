@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
-import { getAutoAdvance } from "../lib/theme.ts";
+import {
+  getAutoAdvance,
+  getBackfillGaps,
+  getSkipFilledClues,
+  getSkipFilledSquares,
+} from "../lib/theme.ts";
 import { SOURCES } from "../lib/sources.ts";
 
 export type RevealScope = "cell" | "word" | "puzzle";
@@ -347,14 +352,16 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       // Walk in the requested direction, skipping clues that are completely
       // filled, and stop on the first one that still has an empty cell. If
       // every other clue is full, just step one clue over so the buttons still
-      // do something.
+      // do something. (With the setting off, always take the adjacent clue.)
       let target = (idx + delta + n) % n;
-      for (let k = 1; k <= n; k++) {
-        const j = (idx + delta * k + n) % n;
-        if (j === idx) break; // came full circle — nothing open elsewhere
-        if (!isClueFilled(orderedClues[j])) {
-          target = j;
-          break;
+      if (getSkipFilledClues()) {
+        for (let k = 1; k <= n; k++) {
+          const j = (idx + delta * k + n) % n;
+          if (j === idx) break; // came full circle — nothing open elsewhere
+          if (!isClueFilled(orderedClues[j])) {
+            target = j;
+            break;
+          }
         }
       }
       const next = orderedClues[target];
@@ -382,8 +389,10 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
   );
 
   /** Advance after typing a letter:
-   *  1. next empty cell after the cursor;
-   *  2. else the first empty cell earlier in the word (fill the gaps);
+   *  1. next empty cell after the cursor — or, with "skip filled squares"
+   *     off, simply the next cell, filled or not;
+   *  2. else the first empty cell earlier in the word (fill the gaps),
+   *     unless "jump back to the first blank" is off;
    *  3. else (word now full) either jump to the next open clue — if the
    *     "auto-advance" setting is on — or step one cell forward to re-write,
    *     anchored at the end. */
@@ -395,18 +404,25 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     const cur = activeRef.current;
     const i = cells.findIndex((p) => p.row === cur.row && p.col === cur.col);
 
-    for (let j = i + 1; j < cells.length; j++) {
-      if (empty(cells[j])) return setActive(cells[j]);
+    if (getSkipFilledSquares()) {
+      for (let j = i + 1; j < cells.length; j++) {
+        if (empty(cells[j])) return setActive(cells[j]);
+      }
+    } else if (i + 1 < cells.length) {
+      return setActive(cells[i + 1]);
     }
-    // No empty cell after the cursor. Only jump to the next clue when the
-    // cursor is on the word's *last* cell and the whole word is now full —
-    // filling an earlier gap, or any non-final cell, behaves normally.
+    // Nothing (visitable) left ahead of the cursor. Only jump to the next
+    // clue when the cursor is on the word's *last* cell and the whole word
+    // is now full — filling an earlier gap, or any non-final cell, behaves
+    // normally.
     const lastCell = i === cells.length - 1;
     if (getAutoAdvance() && lastCell && !cells.some(empty)) {
       return moveToClue(1);
     }
-    const firstGap = cells.find(empty);
-    if (firstGap) return setActive(firstGap);
+    if (getBackfillGaps()) {
+      const firstGap = cells.find(empty);
+      if (firstGap) return setActive(firstGap);
+    }
     if (i + 1 < cells.length) setActive(cells[i + 1]);
   }, [clueThrough, moveToClue]);
 

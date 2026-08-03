@@ -149,6 +149,69 @@ export function setAutoAdvance(on: boolean): void {
   }
 }
 
+// Navigation rules that used to be hard-coded in useCrossword.ts — each
+// defaults to the old behaviour (on), so existing solvers notice nothing
+// until they opt out.
+
+const SKIP_FILLED_KEY = "xword:skipFilledSquares";
+
+/** When on (default), typing hops over squares that already have a letter. */
+export function getSkipFilledSquares(): boolean {
+  try {
+    return localStorage.getItem(SKIP_FILLED_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function setSkipFilledSquares(on: boolean): void {
+  try {
+    localStorage.setItem(SKIP_FILLED_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+const BACKFILL_KEY = "xword:backfillGaps";
+
+/** When on (default), running out of empty squares ahead of the cursor jumps
+ *  back to the word's first blank instead of parking on filled letters. */
+export function getBackfillGaps(): boolean {
+  try {
+    return localStorage.getItem(BACKFILL_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function setBackfillGaps(on: boolean): void {
+  try {
+    localStorage.setItem(BACKFILL_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+const SKIP_DONE_CLUES_KEY = "xword:skipFilledClues";
+
+/** When on (default), moving between clues (Tab, the banner arrows, and the
+ *  auto-advance jump) passes over clues whose every square is filled. */
+export function getSkipFilledClues(): boolean {
+  try {
+    return localStorage.getItem(SKIP_DONE_CLUES_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+export function setSkipFilledClues(on: boolean): void {
+  try {
+    localStorage.setItem(SKIP_DONE_CLUES_KEY, on ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
 const GRID_FIT_KEY = "xword:gridFit";
 
 /** "width" (default) sizes the grid to fit the screen, like today. "canvas"

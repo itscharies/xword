@@ -3,12 +3,18 @@ import {
   ACCENTS,
   getAccent,
   getAutoAdvance,
+  getBackfillGaps,
   getGridFit,
   getMode,
+  getSkipFilledClues,
+  getSkipFilledSquares,
   setAccent,
   setAutoAdvance,
+  setBackfillGaps,
   setGridFit,
   setMode,
+  setSkipFilledClues,
+  setSkipFilledSquares,
   type AccentId,
   type GridFit,
   type Mode,
@@ -25,6 +31,9 @@ export function ThemeControls() {
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
   const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
+  const [skipFilled, setSkipFilledState] = useState<boolean>(getSkipFilledSquares);
+  const [backfill, setBackfillState] = useState<boolean>(getBackfillGaps);
+  const [skipDone, setSkipDoneState] = useState<boolean>(getSkipFilledClues);
   const [gridFit, setGridFitState] = useState<GridFit>(getGridFit);
 
   const choose = (m: Mode) => {
@@ -38,6 +47,18 @@ export function ThemeControls() {
   const changeAdvance = (next: boolean) => {
     setAutoAdvance(next);
     setAdvanceState(next);
+  };
+  const changeSkipFilled = (next: boolean) => {
+    setSkipFilledSquares(next);
+    setSkipFilledState(next);
+  };
+  const changeBackfill = (next: boolean) => {
+    setBackfillGaps(next);
+    setBackfillState(next);
+  };
+  const changeSkipDone = (next: boolean) => {
+    setSkipFilledClues(next);
+    setSkipDoneState(next);
   };
   const chooseGridFit = (fit: GridFit) => {
     setGridFit(fit);
@@ -96,9 +117,28 @@ export function ThemeControls() {
       <div className="setting-row">
         <span className="setting-label">Typing</span>
         <CheckRow
+          checked={skipFilled}
+          onChange={changeSkipFilled}
+          label="Skip over squares that are already filled"
+        />
+        <CheckRow
+          checked={backfill}
+          onChange={changeBackfill}
+          label="Jump back to the first blank in the word"
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="setting-label">Clues</span>
+        <CheckRow
           checked={advance}
           onChange={changeAdvance}
           label="Skip to the next clue when a word is finished"
+        />
+        <CheckRow
+          checked={skipDone}
+          onChange={changeSkipDone}
+          label="Skip clues that are already filled"
         />
       </div>
 
