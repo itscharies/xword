@@ -117,14 +117,16 @@ button { font: inherit; cursor: pointer; color: inherit; }
 
 /* One card, one shadow: a surface that already casts the hard offset shadow
    flattens any shadow-bearing control nested inside it — a shadowed button
-   sitting on a shadowed card reads as clutter. These containers set the two
+   sitting on a shadowed card reads as clutter. These containers set the
    properties; nested controls consume them with their normal shadow (and
-   press-translate, which trades on that shadow) as the fallback. Inset
+   press-translate, which trades on that shadow) as the fallback. Controls
+   whose pressed state trades on that same shadow (the swatch) read
+   --nested-active-shadow for a pressed face that still works flat. Inset
    affordances like the theme segmented control are untouched on purpose. */
 .box,
 .modal,
 .account-summary,
-.archive-item,
+.card,
 .session-gate,
 .session-notice,
 .solves-panel,
@@ -136,6 +138,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .def-popover {
   --nested-shadow: none;
   --nested-press: none;
+  --nested-active-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
 }
 
 /* The same shadowless treatment as an explicit, per-control opt-in: the
@@ -145,6 +148,7 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .flat {
   --nested-shadow: none;
   --nested-press: none;
+  --nested-active-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
 }
 
 /* ---- layout ------------------------------------------------------------- */
@@ -723,16 +727,15 @@ select.text-input.compact {
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   transition: transform 0.08s, box-shadow 0.08s;
 }
-/* Selected swatch reads as pressed: it sits down into where its shadow was. */
+/* Selected swatch reads as pressed. With a shadow to trade on it sits down
+   into where its shadow was; in flat contexts (the settings modal) it shows
+   the segmented control's pressed face — an inset shadow cut into the
+   colour — via --nested-active-shadow. No ring in either state. */
 .swatch.active,
 .swatch:active {
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
-  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
+  box-shadow: var(--nested-active-shadow, 0 0 0 var(--shadow-col));
 }
-/* Flat contexts (the settings modal — the only place swatches render) lose
-   that sit-down cue, so the selected swatch marks itself with an inset ring
-   instead, cut into the colour like the segmented control's pressed face. */
-.swatch.active { box-shadow: inset 0 0 0 3px var(--bg); }
 
 /* A group of check-rows acting as a single-select (e.g. publish visibility)
    instead of independent toggles. */
