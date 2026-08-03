@@ -1,4 +1,5 @@
 import { AVATAR_CENTER, AVATAR_GRID, computeAvatarPattern } from "../lib/avatar.ts";
+import type { AccentId } from "../lib/theme.ts";
 
 /** Outer frame and gridline weight (CSS px). The frame is part of the
  *  component — consumers must not stack their own border on top. */
@@ -31,14 +32,17 @@ export function Avatar({
   username,
   displayName,
   size = 32,
+  accent: accentId,
   className,
 }: {
   username: string;
   displayName: string;
   size?: number;
+  /** Saved profile accent — overrides the username-derived colour. */
+  accent?: AccentId | null;
   className?: string;
 }) {
-  const { open, highlight, accent, letter } = computeAvatarPattern(username, displayName);
+  const { open, highlight, accent, letter } = computeAvatarPattern(username, displayName, accentId);
   const tinted = tint(accent.swatch, 0.35);
 
   // Strip extents via cumulative rounding, so the strips always total

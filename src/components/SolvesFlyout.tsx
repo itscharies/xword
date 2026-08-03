@@ -72,7 +72,7 @@ export function SolvesFlyout({
               : Math.min(99, Math.round((100 * m.filled) / Math.max(1, m.total)));
             return (
               <div className="solves-row" key={m.user_id}>
-                <Avatar username={m.username} displayName={m.display_name} size={20} />
+                <Avatar username={m.username} displayName={m.display_name} accent={m.accent} size={20} />
                 <span className="solves-row-name">{m.display_name}</span>
                 {m.completed ? (
                   <span className="solves-row-done" title="Solved" aria-label="Solved">

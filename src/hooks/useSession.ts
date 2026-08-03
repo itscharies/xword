@@ -149,6 +149,7 @@ export function useSession(
       meta: {
         username: me?.username ?? "solver",
         displayName: me?.display_name ?? "Solver",
+        accent: me?.accent ?? null,
       },
       initialState: join.session.state ?? {},
       initialVersion: join.session.state_version ?? 0,
@@ -187,7 +188,7 @@ export function useSession(
               row: cursor.r,
               col: cursor.c,
               direction: cursor.d,
-              color: computeAvatarPattern(username, displayName).accent.swatch,
+              color: computeAvatarPattern(username, displayName, meta?.accent).accent.swatch,
               letter: (displayName.trim()[0] ?? "?").toUpperCase(),
             });
             return next;
@@ -214,6 +215,7 @@ export function useSession(
                 user_id: p.uid,
                 username: p.username,
                 display_name: p.displayName,
+                accent: p.accent ?? null,
                 joined_at: new Date(p.joinedAt).toISOString(),
               }));
             return [...prev, ...rows];

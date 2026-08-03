@@ -1,4 +1,5 @@
 import { Avatar } from "./Avatar.tsx";
+import type { AccentId } from "../lib/theme.ts";
 
 /** The minimum identity an avatar needs — satisfied structurally by both
  *  MutualProgress rows and session participants. */
@@ -6,6 +7,7 @@ export interface AvatarPerson {
   user_id: string;
   username: string;
   display_name: string;
+  accent?: AccentId | null;
 }
 
 /** A group of people as one depth-stacked cluster: the first avatar leads
@@ -18,7 +20,12 @@ export function AvatarStack({ people }: { people: AvatarPerson[] }) {
     <span className="solves-avatars" aria-hidden>
       {people.slice(0, 3).map((m, i) => (
         <span className="solves-avatar" key={m.user_id} style={{ zIndex: people.length - i }}>
-          <Avatar username={m.username} displayName={m.display_name} size={16 - (i * 4)} />
+          <Avatar
+            username={m.username}
+            displayName={m.display_name}
+            accent={m.accent}
+            size={16 - (i * 4)}
+          />
         </span>
       ))}
     </span>

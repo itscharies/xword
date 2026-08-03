@@ -49,7 +49,7 @@ export function SessionBar({
         <div className="solves-panel" role="tooltip">
           {session.participants.map((p) => (
             <div className="solves-row" key={p.user_id}>
-              <Avatar username={p.username} displayName={p.display_name} size={20} />
+              <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={20} />
               <span className="solves-row-name">
                 {p.display_name}
                 {p.user_id === userId ? " (you)" : ""}

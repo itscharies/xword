@@ -18,6 +18,7 @@ import { supabase } from "./supabase.ts";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Direction, Puzzle } from "../types.ts";
 import type { Progress } from "./storage.ts";
+import type { AccentId } from "./theme.ts";
 
 export const PROTO_V = 1;
 
@@ -204,6 +205,10 @@ export interface PeerMeta {
   sid: string;
   username: string;
   displayName: string;
+  /** Saved profile accent, carried in presence so peers colour this
+   *  player's cursor without a profiles fetch. Optional: peers on builds
+   *  that predate it simply fall back to the derived colour. */
+  accent?: AccentId | null;
   joinedAt: number;
 }
 
@@ -231,7 +236,7 @@ export interface CoopEvents {
 export interface CoopDeps {
   sessionId: string;
   uid: string;
-  meta: { username: string; displayName: string };
+  meta: { username: string; displayName: string; accent?: AccentId | null };
   initialState: SessionState;
   initialVersion: number;
   /** Guarded snapshot write (UPDATE ... WHERE state_version < versionMs). */
@@ -465,6 +470,7 @@ export class CoopClient {
           sid: this.sid,
           username: this.deps.meta.username,
           displayName: this.deps.meta.displayName,
+          accent: this.deps.meta.accent ?? null,
           joinedAt: Date.now(),
         } satisfies PeerMeta);
         void this.resync(first);

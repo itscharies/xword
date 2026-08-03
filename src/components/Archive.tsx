@@ -384,7 +384,12 @@ export function Archive({
             title={user ? user.email : "Sign in"}
           >
             {profile && profile !== "loading" ? (
-              <Avatar username={profile.username} displayName={profile.display_name} size={28} />
+              <Avatar
+                username={profile.username}
+                displayName={profile.display_name}
+                accent={profile.accent}
+                size={28}
+              />
             ) : user && profile === "loading" ? (
               // Shimmer square where the avatar will land, instead of a
               // UserIcon that pops into an avatar a beat later.
@@ -580,7 +585,7 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
       <span className="tip-panel" role="tooltip">
         {started.map((m) => (
           <span className="solves-row" key={m.user_id}>
-            <Avatar username={m.username} displayName={m.display_name} size={20} />
+            <Avatar username={m.username} displayName={m.display_name} accent={m.accent} size={20} />
             <span className="solves-row-name">{m.display_name}</span>
             {m.completed ? (
               <span className="solves-row-done">
@@ -664,6 +669,7 @@ function CommunityItem({
             <Avatar
               username={item.authorProfile.username}
               displayName={item.authorProfile.display_name}
+              accent={item.authorProfile.accent}
               size={36}
             />
           )}

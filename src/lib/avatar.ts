@@ -3,7 +3,7 @@
 // since we only ever have a real one (from Google OAuth) for whoever is
 // actually signed in right now, never for someone else's profile.
 
-import { ACCENTS } from "./theme.ts";
+import { ACCENTS, type AccentId } from "./theme.ts";
 
 export const AVATAR_GRID = 3;
 export const AVATAR_CENTER = 1;
@@ -47,8 +47,15 @@ export interface AvatarPattern {
 /** A random-looking (but reproducible) crossword block pattern, seeded from
  *  `username` — built with 180°-rotational symmetry, the same layout rule
  *  real crosswords use. The center cell always holds the first letter of
- *  `displayName` and is never boxed in on all four sides by black squares. */
-export function computeAvatarPattern(username: string, displayName: string): AvatarPattern {
+ *  `displayName` and is never boxed in on all four sides by black squares.
+ *
+ *  `accentId` — a saved profile accent — overrides the username-derived
+ *  colour pick; the pattern itself is unaffected. */
+export function computeAvatarPattern(
+  username: string,
+  displayName: string,
+  accentId?: AccentId | null,
+): AvatarPattern {
   const rand = mulberry32(hashString(username));
   const n = AVATAR_GRID;
   const open: boolean[][] = Array.from({ length: n }, () => Array(n).fill(true));
@@ -81,10 +88,18 @@ export function computeAvatarPattern(username: string, displayName: string): Ava
     open[n - 1 - r][n - 1 - c] = true;
   }
 
-  // The highlighted line always runs through the center tile — a random row
-  // or column elsewhere wouldn't visually read as "belonging" to it.
-  const axis = rand() < 0.5 ? "row" : "col";
-  const accent = ACCENTS[Math.floor(rand() * ACCENTS.length)];
+  // The highlighted line runs through the center tile, and only ever along
+  // a fully open axis — a highlight crossing a black square wouldn't read
+  // as a real crossword word. Symmetry makes each center axis all-open or
+  // all-blocked (its flanks mirror each other), and the reachability rule
+  // above guarantees at least one axis is open.
+  const rowOpen = open[CENTER].every(Boolean);
+  const colOpen = open.every((row) => row[CENTER]);
+  const axis: "row" | "col" =
+    rowOpen && colOpen ? (rand() < 0.5 ? "row" : "col") : rowOpen ? "row" : "col";
+  const accent =
+    (accentId && ACCENTS.find((a) => a.id === accentId)) ||
+    ACCENTS[Math.floor(rand() * ACCENTS.length)];
   const letter = (displayName.trim()[0] ?? username[0] ?? "?").toUpperCase();
 
   return { open, highlight: { axis, index: CENTER }, accent, letter };

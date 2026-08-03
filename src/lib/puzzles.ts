@@ -5,6 +5,7 @@ import { supabase } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { Profile } from "./profile.ts";
 import type { PuzzleSource } from "./sources.ts";
+import type { AccentId } from "./theme.ts";
 
 export type Visibility = "public" | "mutual" | "unlisted" | "draft";
 
@@ -153,7 +154,7 @@ export async function listArchivePage(opts: {
   const authorIds = [...new Set(rows.map((r) => r.author_id).filter((id): id is string => !!id))];
   const { data: profiles } =
     authorIds.length > 0
-      ? await supabase.from("profiles").select("user_id, username, display_name").in("user_id", authorIds)
+      ? await supabase.from("profiles").select("user_id, username, display_name, accent").in("user_id", authorIds)
       : { data: [] as Profile[] };
   const byId = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
@@ -184,6 +185,7 @@ export interface MutualProgress {
   user_id: string;
   username: string;
   display_name: string;
+  accent?: AccentId | null;
   completed: boolean;
   filled: number;
   total: number;

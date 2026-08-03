@@ -2,11 +2,15 @@
 // empty/neutral results) if Supabase isn't configured, matching lib/auth.ts.
 
 import { supabase } from "./supabase.ts";
+import type { AccentId } from "./theme.ts";
 
 export interface Profile {
   user_id: string;
   username: string;
   display_name: string;
+  /** Saved avatar accent — colours their avatar and their multiplayer
+   *  cursor on every client. Null falls back to the username-derived pick. */
+  accent?: AccentId | null;
   is_admin?: boolean;
 }
 
@@ -20,7 +24,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("user_id, username, display_name, is_admin")
+    .select("user_id, username, display_name, accent, is_admin")
     .eq("user_id", userId)
     .maybeSingle();
   return data;
@@ -47,6 +51,17 @@ export async function claimProfile(
   return { error: error?.message ?? null };
 }
 
+/** Save the avatar accent colour on the caller's own profile (RLS limits
+ *  updates to your own row). Null clears it back to the derived colour. */
+export async function setProfileAccent(
+  userId: string,
+  accent: AccentId | null,
+): Promise<{ error: string | null }> {
+  if (!supabase) return { error: "Supabase isn't configured." };
+  const { error } = await supabase.from("profiles").update({ accent }).eq("user_id", userId);
+  return { error: error?.message ?? null };
+}
+
 /** Usernames (and display names) matching a search prefix, excluding the
  *  searcher themselves. */
 export async function searchProfiles(
@@ -56,7 +71,7 @@ export async function searchProfiles(
   if (!supabase || !query.trim()) return [];
   const { data } = await supabase
     .from("profiles")
-    .select("user_id, username, display_name")
+    .select("user_id, username, display_name, accent")
     .ilike("username", `${query.trim()}%`)
     .neq("user_id", excludeUserId)
     .limit(10);
@@ -90,7 +105,7 @@ export async function listFollowing(userId: string): Promise<Profile[]> {
   if (ids.length === 0) return [];
   const { data } = await supabase
     .from("profiles")
-    .select("user_id, username, display_name")
+    .select("user_id, username, display_name, accent")
     .in("user_id", ids);
   return data ?? [];
 }
@@ -107,7 +122,7 @@ export async function listFollowers(userId: string): Promise<Profile[]> {
   if (ids.length === 0) return [];
   const { data } = await supabase
     .from("profiles")
-    .select("user_id, username, display_name")
+    .select("user_id, username, display_name, accent")
     .in("user_id", ids);
   return data ?? [];
 }

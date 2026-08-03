@@ -7,9 +7,12 @@ import {
   listFollowers,
   listFollowing,
   searchProfiles,
+  setProfileAccent,
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
+import { ACCENTS, type AccentId } from "../lib/theme.ts";
+import { computeAvatarPattern } from "../lib/avatar.ts";
 import {
   deletePuzzle,
   listMyPuzzles,
@@ -113,17 +116,56 @@ function AccountSummary({
   profile: Profile;
   onSignOut: () => void;
 }) {
+  const [accent, setAccentState] = useState<AccentId | null>(profile.accent ?? null);
+  // With nothing saved yet, the active swatch shows the username-derived
+  // colour the avatar is already wearing — picking is an override, never a
+  // change from "no colour".
+  const effective =
+    accent ?? computeAvatarPattern(profile.username, profile.display_name).accent.id;
+
+  const pick = (id: AccentId) => {
+    setAccentState(id);
+    void setProfileAccent(profile.user_id, id);
+  };
+
   return (
-    <div className="account-summary">
-      <Avatar username={profile.username} displayName={profile.display_name} size={48} />
-      <div className="account-identity">
-        <div className="account-display-name">{profile.display_name}</div>
-        <div className="savedata-status">@{profile.username}</div>
+    <>
+      <div className="account-summary">
+        <Avatar
+          username={profile.username}
+          displayName={profile.display_name}
+          accent={accent}
+          size={48}
+        />
+        <div className="account-identity">
+          <div className="account-display-name">{profile.display_name}</div>
+          <div className="savedata-status">@{profile.username}</div>
+        </div>
+        <button className="btn" onClick={onSignOut}>
+          Sign out
+        </button>
       </div>
-      <button className="btn" onClick={onSignOut}>
-        Sign out
-      </button>
-    </div>
+      <div className="setting-row">
+        <span className="setting-label">Avatar colour</span>
+        <div className="swatches" role="radiogroup" aria-label="Avatar colour">
+          {ACCENTS.map((a) => (
+            <button
+              key={a.id}
+              className={`swatch ${effective === a.id ? "active" : ""}`}
+              style={{ background: a.swatch }}
+              onClick={() => pick(a.id)}
+              role="radio"
+              aria-checked={effective === a.id}
+              aria-label={a.label}
+              title={a.label}
+            />
+          ))}
+        </div>
+        <p className="savedata-status">
+          Colours your avatar and your cursor when solving together.
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -298,7 +340,7 @@ function FollowersSection({
           {followers.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
               <div className="ai-row">
-                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
                 <div className="ai-row-text">
                   <span className="ai-source">{p.display_name}</span>
                   <span className="ai-author">@{p.username}</span>
@@ -378,7 +420,7 @@ function FollowingSection({
           {newResults.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
               <div className="ai-row">
-                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
                 <div className="ai-row-text">
                   <span className="ai-source">{p.display_name}</span>
                   <span className="ai-author">@{p.username}</span>
@@ -431,7 +473,7 @@ function FollowingSection({
           {following.map((p) => (
             <li key={p.user_id} className="archive-item account-tile">
               <div className="ai-row">
-                <Avatar username={p.username} displayName={p.display_name} size={36} />
+                <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
                 <div className="ai-row-text">
                   <span className="ai-source">{p.display_name}</span>
                   <span className="ai-author">@{p.username}</span>

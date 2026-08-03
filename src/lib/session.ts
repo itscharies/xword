@@ -7,6 +7,7 @@ import { supabase, supabaseEnabled } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "./sources.ts";
 import type { SessionState } from "./coop.ts";
+import type { AccentId } from "./theme.ts";
 import { applyEnumerationBars } from "./enumeration.ts";
 
 // The mock backend is an in-memory, per-tab database — two tabs can't share
@@ -35,6 +36,7 @@ export interface SessionParticipant {
   user_id: string;
   username: string;
   display_name: string;
+  accent?: AccentId | null;
   joined_at: string;
 }
 
@@ -54,7 +56,7 @@ export interface SessionPreview {
   puzzle_id: string | null;
   created_by: string;
   is_participant: boolean;
-  participants: { user_id: string; username: string; display_name: string }[];
+  participants: { user_id: string; username: string; display_name: string; accent?: AccentId | null }[];
 }
 
 export type SessionPuzzleRef =

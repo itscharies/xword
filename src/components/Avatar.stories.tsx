@@ -1,6 +1,7 @@
 import type { Story, StoryDefault } from "@ladle/react";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack, type AvatarPerson } from "./AvatarStack.tsx";
+import { ACCENTS } from "../lib/theme.ts";
 
 export default {
   title: "Primitives / Avatar",
@@ -14,16 +15,60 @@ export const Sizes: Story = () => (
   </div>
 );
 
+const NATO_ALPHABET = [
+  "alpha",
+  "bravo",
+  "charlie",
+  "delta",
+  "echo",
+  "foxtrot",
+  "golf",
+  "hotel",
+  "india",
+  "juliett",
+  "kilo",
+  "lima",
+  "mike",
+  "november",
+  "oscar",
+  "papa",
+  "quebec",
+  "romeo",
+  "sierra",
+  "tango",
+  "uniform",
+  "victor",
+  "whiskey",
+  "xray",
+  "yankee",
+  "zulu",
+];
+
 export const PatternVariety: Story = () => (
-  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, maxWidth: 480 }}>
-    {["ada", "grace", "alan", "edie", "ivy", "max", "kay", "lin", "moss", "quinn", "rex", "sol"].map(
-      (name) => (
-        <div key={name} style={{ textAlign: "center", fontSize: 12 }}>
-          <Avatar username={name} displayName={name} size={48} />
-          <div style={{ color: "var(--muted)" }}>{name}</div>
-        </div>
-      ),
-    )}
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, maxWidth: 560 }}>
+    {NATO_ALPHABET.map((name) => (
+      <div key={name} style={{ textAlign: "center", fontSize: 12 }}>
+        <Avatar username={name} displayName={name} size={48} />
+        <div style={{ color: "var(--muted)" }}>{name}</div>
+      </div>
+    ))}
+  </div>
+);
+
+/** A saved profile accent overrides the username-derived colour — the same
+ *  pattern in each of the ten accents, plus the derived default first. */
+export const SavedAccent: Story = () => (
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, maxWidth: 560 }}>
+    <div style={{ textAlign: "center", fontSize: 12 }}>
+      <Avatar username="oscar" displayName="oscar" size={48} />
+      <div style={{ color: "var(--muted)" }}>derived</div>
+    </div>
+    {ACCENTS.map((a) => (
+      <div key={a.id} style={{ textAlign: "center", fontSize: 12 }}>
+        <Avatar username="oscar" displayName="oscar" accent={a.id} size={48} />
+        <div style={{ color: "var(--muted)" }}>{a.id}</div>
+      </div>
+    ))}
   </div>
 );
 
