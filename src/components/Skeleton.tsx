@@ -1,4 +1,5 @@
 import { Logo } from "./Logo.tsx";
+import { Card } from "./Card.tsx";
 import { useStuck } from "../hooks/useStuck.ts";
 
 /** Shimmering placeholder blocks shown while async data loads. Each skeleton
@@ -59,13 +60,13 @@ export function ArchiveDaySkeleton({ count }: { count: number }) {
       <h2 className="archive-day-head">
         <Sk w={150} h={14} lh={18} />
       </h2>
-      <ul className="archive-list">
+      <ul className="card-list">
         {Array.from({ length: count }, (_, i) => (
-          <li className="archive-item sk-tile" key={i}>
+          <Card key={i}>
             <Sk w={`${52 + ((i * 17) % 30)}%`} h={16} lh={21} />
             {i % 3 !== 1 && <Sk w={`${68 + ((i * 23) % 24)}%`} h={14} lh={18} />}
             <Sk w={`${34 + ((i * 11) % 18)}%`} h={13} lh={17} />
-          </li>
+          </Card>
         ))}
       </ul>
     </section>
@@ -158,9 +159,9 @@ export function TileListSkeleton({
   avatar?: boolean;
 }) {
   return (
-    <ul className="archive-list" aria-busy="true" aria-label="Loading">
+    <ul className="card-list" aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
-        <li className="archive-item account-tile sk-tile" key={i}>
+        <Card className="account-tile" key={i}>
           {avatar ? (
             <div className="ai-row">
               <SkAvatar />
@@ -175,7 +176,7 @@ export function TileListSkeleton({
               <Sk w={`${30 + ((i * 13) % 22)}%`} h={13} lh={17} />
             </>
           )}
-        </li>
+        </Card>
       ))}
     </ul>
   );

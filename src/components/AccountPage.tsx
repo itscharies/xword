@@ -19,9 +19,11 @@ import {
   type PublishedPuzzle,
 } from "../lib/puzzles.ts";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
-import { DeleteIcon, EditIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
+import { CheckIcon, DeleteIcon, EditIcon, UserMinusIcon, UserPlusIcon } from "./icons.tsx";
 import { Logo } from "./Logo.tsx";
 import { Avatar } from "./Avatar.tsx";
+import { Card } from "./Card.tsx";
+import { Modal } from "./Modal.tsx";
 import { AccountPageSkeleton, TileListSkeleton } from "./Skeleton.tsx";
 
 /** Full "/account" page. Branches on auth + profile state: signed out ->
@@ -201,23 +203,11 @@ function PuzzlesSection({
           You haven't published a puzzle yet — start one with "+ New" above.
         </p>
       ) : (
-        <ul className="archive-list">
+        <ul className="card-list">
           {puzzles.map((p) => {
             const open = () => (p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id));
             return (
-              <li
-                key={p.id}
-                className="archive-item account-tile"
-                role="button"
-                tabIndex={0}
-                onClick={open}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    open();
-                  }
-                }}
-              >
+              <Card key={p.id} className="account-tile" onPress={open}>
                 <span className="ai-source">{p.title}</span>
                 <span className="ai-author">
                   {VISIBILITY_LABEL[p.visibility]}
@@ -246,7 +236,7 @@ function PuzzlesSection({
                     <DeleteIcon />
                   </button>
                 </div>
-              </li>
+              </Card>
             );
           })}
         </ul>
@@ -330,9 +320,9 @@ function FollowersSection({
       ) : followers.length === 0 ? (
         <p className="account-empty">No one's following you yet.</p>
       ) : (
-        <ul className="archive-list">
+        <ul className="card-list">
           {followers.map((p) => (
-            <li key={p.user_id} className="archive-item account-tile">
+            <Card key={p.user_id} className="account-tile">
               <div className="ai-row">
                 <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
                 <div className="ai-row-text">
@@ -351,7 +341,7 @@ function FollowersSection({
                   </button>
                 </div>
               )}
-            </li>
+            </Card>
           ))}
         </ul>
       )}
@@ -368,104 +358,34 @@ function FollowingSection({
   following: Profile[] | null;
   onFollowingChanged: () => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Profile[]>([]);
-
-  const search = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setResults(await searchProfiles(query, userId));
-  };
+  const [showFind, setShowFind] = useState(false);
 
   const followingIds = new Set((following ?? []).map((p) => p.user_id));
 
-  const toggleFollow = async (p: Profile) => {
-    if (followingIds.has(p.user_id)) await unfollow(userId, p.user_id);
-    else await follow(userId, p.user_id);
+  const unfollowUser = async (p: Profile) => {
+    await unfollow(userId, p.user_id);
     onFollowingChanged();
   };
-
-  // Someone you've already searched up and followed shouldn't show as a
-  // second, identical-looking tile duplicating their row in the Following
-  // list below — split them into their own compact, visually distinct
-  // section instead of mixing them into the main results.
-  const newResults = results.filter((p) => !followingIds.has(p.user_id));
-  const alreadyFollowing = results.filter((p) => followingIds.has(p.user_id));
 
   return (
     <section className="account-section">
       <div className="account-section-head">
         <h2>Following{following && following.length > 0 ? ` (${following.length})` : ""}</h2>
-      </div>
-
-      <form className="savedata-actions" onSubmit={search}>
-        <input
-          className="text-input"
-          placeholder="Find someone by username"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <button className="btn" type="submit">
-          Search
+        <button className="btn" onClick={() => setShowFind(true)}>
+          + Add
         </button>
-      </form>
-
-      {newResults.length > 0 && (
-        <ul className="archive-list">
-          {newResults.map((p) => (
-            <li key={p.user_id} className="archive-item account-tile">
-              <div className="ai-row">
-                <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
-                <div className="ai-row-text">
-                  <span className="ai-source">{p.display_name}</span>
-                  <span className="ai-author">@{p.username}</span>
-                </div>
-              </div>
-              <div className="account-tile-actions">
-                <button
-                  onClick={() => void toggleFollow(p)}
-                  aria-label={`Follow ${p.display_name}`}
-                  title="Follow"
-                >
-                  <UserPlusIcon />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {alreadyFollowing.length > 0 && (
-        <div className="already-following">
-          <span className="setting-label">Already following</span>
-          <ul className="already-following-list">
-            {alreadyFollowing.map((p) => (
-              <li key={p.user_id} className="already-following-row">
-                <span>
-                  {p.display_name} <span className="ai-author">@{p.username}</span>
-                </span>
-                <button
-                  onClick={() => void toggleFollow(p)}
-                  aria-label={`Unfollow ${p.display_name}`}
-                  title="Unfollow"
-                >
-                  <UserMinusIcon />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </div>
 
       {following === null ? (
         <TileListSkeleton rows={2} avatar />
       ) : following.length === 0 ? (
         <p className="account-empty">
-          You're not following anyone yet — search a username above to find friends.
+          You're not following anyone yet — add friends with "+ Add" above.
         </p>
       ) : (
-        <ul className="archive-list">
+        <ul className="card-list">
           {following.map((p) => (
-            <li key={p.user_id} className="archive-item account-tile">
+            <Card key={p.user_id} className="account-tile">
               <div className="ai-row">
                 <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
                 <div className="ai-row-text">
@@ -475,17 +395,126 @@ function FollowingSection({
               </div>
               <div className="account-tile-actions">
                 <button
-                  onClick={() => void toggleFollow(p)}
+                  onClick={() => void unfollowUser(p)}
                   aria-label={`Unfollow ${p.display_name}`}
                   title="Unfollow"
                 >
                   <UserMinusIcon />
                 </button>
               </div>
-            </li>
+            </Card>
           ))}
         </ul>
       )}
+
+      {showFind && (
+        <Modal title="Find people" onClose={() => setShowFind(false)}>
+          <FindPeopleDialog
+            userId={userId}
+            followingIds={followingIds}
+            onFollowingChanged={onFollowingChanged}
+          />
+        </Modal>
+      )}
     </section>
+  );
+}
+
+/** Body of the "Find people" modal: search-as-you-type over usernames.
+ *  Anyone already followed — including someone just followed from these
+ *  results — keeps their row but wears the corner tick instead of a follow
+ *  button, so the list doesn't reshuffle under the cursor. */
+function FindPeopleDialog({
+  userId,
+  followingIds,
+  onFollowingChanged,
+}: {
+  userId: string;
+  followingIds: Set<string>;
+  onFollowingChanged: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  // null = nothing searched yet, so an empty result list ("no matches")
+  // is distinguishable from a blank input (no message at all).
+  const [results, setResults] = useState<Profile[] | null>(null);
+  // True only while a request is in flight (not during the debounce), so
+  // fast typing doesn't strobe the skeleton.
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults(null);
+      setSearching(false);
+      return;
+    }
+    // Debounced per keystroke; `cancelled` also drops any response that
+    // comes back out of order after a newer keystroke superseded it.
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setSearching(true);
+      void searchProfiles(query, userId).then((found) => {
+        if (cancelled) return;
+        setResults(found);
+        setSearching(false);
+      });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, userId]);
+
+  const followUser = async (p: Profile) => {
+    await follow(userId, p.user_id);
+    onFollowingChanged();
+  };
+
+  return (
+    <div className="find-people">
+      <input
+        className="text-input"
+        placeholder="Search by username"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        autoFocus
+      />
+      {searching ? (
+        <TileListSkeleton rows={2} avatar />
+      ) : results !== null &&
+        (results.length === 0 ? (
+          <p className="account-empty">
+            No players found with the username: "{query.trim()}"
+          </p>
+        ) : (
+          <ul className="card-list">
+            {results.map((p) => (
+              <Card key={p.user_id} className="account-tile">
+                <div className="ai-row">
+                  <Avatar username={p.username} displayName={p.display_name} accent={p.accent} size={36} />
+                  <div className="ai-row-text">
+                    <span className="ai-source">{p.display_name}</span>
+                    <span className="ai-author">@{p.username}</span>
+                  </div>
+                </div>
+                {followingIds.has(p.user_id) ? (
+                  <span className="ai-done" title="Following" aria-label={`Following ${p.display_name}`}>
+                    <CheckIcon />
+                  </span>
+                ) : (
+                  <div className="account-tile-actions">
+                    <button
+                      onClick={() => void followUser(p)}
+                      aria-label={`Follow ${p.display_name}`}
+                      title="Follow"
+                    >
+                      <UserPlusIcon />
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </ul>
+        ))}
+    </div>
   );
 }

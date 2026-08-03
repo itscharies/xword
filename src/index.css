@@ -126,7 +126,9 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .box,
 .modal,
 .account-summary,
-.card,
+/* Children only: .card reads --nested-shadow itself (to go flat inside a
+   modal), so setting it on .card directly would flatten every card. */
+.card > *,
 .session-gate,
 .session-notice,
 .solves-panel,
@@ -578,11 +580,10 @@ select.text-input.compact {
 }
 .follow-info strong { color: var(--fg); }
 
-/* Puzzle/profile tiles reuse .archive-item's box look; this modifier just
-   loosens the gap a little for the extra action button some of them carry,
-   and lets it act as its own click target ("go to the puzzle") alongside
-   the Edit/Delete buttons layered on top of it. */
-.account-tile { gap: 8px; cursor: pointer; }
+/* Account-page take on .card: just loosens the gap a little for the extra
+   action button some of these tiles carry. Whether the tile itself is a
+   click target is the Card component's onPress, not this modifier. */
+.account-tile { gap: 8px; }
 
 /* Edit/Delete/Follow icon buttons, in the corner slot .ai-done/.ai-pct
    occupy on the home page's tiles, so a tile keeps the same silhouette.
@@ -622,56 +623,40 @@ select.text-input.compact {
   .account-tile-actions button:hover { background: var(--accent-2); color: #000; }
   /* Hovering an action button shouldn't also flip the whole card's
      hover-invert background — the two hover states should stay independent. */
-  li.archive-item.account-tile:has(.account-tile-actions button:hover) {
+  .card.interactive:has(.account-tile-actions button:hover) {
     background: var(--surface);
     color: var(--fg);
   }
   /* ...including the username line, whose own :hover rule paints it black
      for the inverted background this card no longer has. */
-  li.archive-item.account-tile:has(.account-tile-actions button:hover) .ai-author {
+  .card.interactive:has(.account-tile-actions button:hover) .ai-author {
     color: var(--muted);
   }
 }
 
-/* A search result you already follow: intentionally plain/dashed rather than
-   the solid bordered+shadowed tile look, so it doesn't read as a duplicate
-   of that same person's row in the Following list below. */
-.already-following { display: flex; flex-direction: column; gap: 6px; }
-.already-following-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* "Find people" modal body: search-as-you-type over usernames. Results are
+   the same profile cards as the account-page lists, stacked one per row so
+   they fit the dialog. Two departures from the page tiles: the follow
+   button is always visible (in a search dialog the button is the point, so
+   no hover-reveal), and a card can't be hovered into showing an action it
+   doesn't have — someone already followed wears the .ai-done corner tick
+   instead. */
+.find-people {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+  text-align: left;
 }
-.already-following-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.find-people .text-input { width: 100%; }
+.find-people .card-list {
+  grid-template-columns: 1fr;
   gap: 10px;
-  padding: 6px 10px;
-  border: var(--bw) dashed var(--line);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+  /* Long result lists scroll inside the dialog instead of growing it (the
+     cards in here are flat, so the clipping loses no shadows). */
+  max-height: 300px;
+  overflow-y: auto;
 }
-.already-following-row button {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--bw) solid var(--line);
-  background: var(--surface);
-  color: var(--fg);
-  cursor: pointer;
-}
-.already-following-row svg { width: 15px; height: 15px; }
-@media (hover: hover) {
-  .already-following-row button:hover { background: var(--accent-2); color: #000; }
-}
+.find-people .account-tile-actions { opacity: 1; }
 
 /* Header account button: the signed-out user icon gets the same square
    frame the avatar draws for itself, so both states read as one slot. */
@@ -1694,11 +1679,6 @@ select.text-input.compact {
 /* Square avatar placeholder — real avatars are bordered square SVGs. */
 .sk-avatar { border: 1px solid var(--line); }
 
-/* Non-interactive tile placeholders: keep .archive-item's box but drop its
-   hover/active affordances. Line spacing comes from each bar's lh prop
-   (matching the real text line boxes), not blanket margins. */
-.sk-tile { pointer-events: none; }
-
 /* Line-box wrapper for text-line stand-ins: centres the bar in the height
    the real text line will occupy. */
 .sk-line { display: flex; align-items: center; flex: none; }
@@ -1938,7 +1918,7 @@ select.text-input.compact {
   padding-bottom: 5px;
 }
 
-.archive-list {
+.card-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1946,7 +1926,7 @@ select.text-input.compact {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
 }
-.archive-item {
+.card {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1955,16 +1935,22 @@ select.text-input.compact {
   text-align: left;
   background: var(--surface);
   border: var(--bw) solid var(--line);
-  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  /* Reads --nested-shadow so cards inside an already-shadowed surface
+     (e.g. search results in a modal) go flat like every other control. */
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
   padding: 14px 16px;
   transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
 }
+/* Hover-invert + press-down are reserved for cards that actually go
+   somewhere (the Card component adds .interactive with onPress) — a static
+   card shouldn't advertise a click it won't honour. */
+.card.interactive { cursor: pointer; }
 @media (hover: hover) {
-  .archive-item:hover { background: var(--accent-2); color: #000; }
+  .card.interactive:hover { background: var(--accent-2); color: #000; }
 }
-.archive-item:active {
-  transform: translate(var(--sh), var(--sh));
-  box-shadow: 0 0 0 var(--shadow-col);
+.card.interactive:active {
+  transform: var(--nested-press, translate(var(--sh), var(--sh)));
+  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }
 .ai-date { font-size: 16px; font-weight: 700; }
 .ai-source { font-size: 16px; font-weight: 700; }
@@ -1975,7 +1961,7 @@ select.text-input.compact {
 .ai-row svg:not(.avatar) { border: 1px solid var(--line); }
 .ai-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 @media (hover: hover) {
-  .archive-item:hover .ai-author { color: #000; }
+  .card.interactive:hover .ai-author { color: #000; }
 }
 
 /* ---- star rating -------------------------------------------------------- */
@@ -1992,10 +1978,9 @@ select.text-input.compact {
 .stars .star.on { color: var(--accent); }
 .stars.interactive .star { cursor: pointer; }
 .stars-lg .star { font-size: 32px; }
-.archive-item { gap: 3px; }
-.archive-item .stars { margin-top: 4px; }
+.card .stars { margin-top: 4px; }
 @media (hover: hover) {
-  .archive-item:hover .star:not(.on) { color: rgba(0, 0, 0, 0.4); }
+  .card.interactive:hover .star:not(.on) { color: rgba(0, 0, 0, 0.4); }
 }
 
 /* completion-modal rating */
@@ -2026,8 +2011,8 @@ select.text-input.compact {
   font-variant-numeric: tabular-nums;
 }
 @media (hover: hover) {
-  .archive-item:hover .ai-done,
-  .archive-item:hover .ai-pct { background: var(--surface); color: var(--fg); }
+  .card.interactive:hover .ai-done,
+  .card.interactive:hover .ai-pct { background: var(--surface); color: var(--fg); }
 }
 
 /* Mutuals on this puzzle — stacked mini avatars in the tile's bottom-right
@@ -2059,7 +2044,7 @@ select.text-input.compact {
 .ai-mutual-done svg { width: 11px; height: 11px; }
 @media (hover: hover) {
   /* Match the username's hover treatment on the inverted card. */
-  .archive-item:hover .ai-mutual-pct { color: #000; }
+  .card.interactive:hover .ai-mutual-pct { color: #000; }
 }
 
 /* ---- responsive --------------------------------------------------------- */

@@ -19,6 +19,7 @@ import { useProfile } from "../hooks/useProfile.ts";
 import { listArchivePage, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
+import { Card } from "./Card.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -431,7 +432,7 @@ export function Archive({
           {days.map(([iso, dayItems]) => (
             <section className="archive-day" key={iso}>
               <h2 className="archive-day-head">{formatDate(iso)}</h2>
-              <ul className="archive-list">
+              <ul className="card-list">
                 {dayItems.map((it) =>
                   it.kind === "community" ? (
                     <CommunityItem key={it.id} item={it} onOpen={onOpenPuzzle} />
@@ -627,7 +628,7 @@ function SyndicatedItem({
   const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
   return (
     <li>
-      <button className={`archive-item ${done ? "done" : ""}`} onClick={() => onPick(source, date)}>
+      <Card as="button" onPress={() => onPick(source, date)}>
         <span className="ai-source">{mainLabel}</span>
         {theme && <span className="ai-theme">{theme}</span>}
         <span className="ai-author">By {item.author || "Anonymous"}</span>
@@ -641,7 +642,7 @@ function SyndicatedItem({
             {pct}%
           </span>
         ) : null}
-      </button>
+      </Card>
     </li>
   );
 }
@@ -663,7 +664,7 @@ function CommunityItem({
   const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
   return (
     <li>
-      <button className={`archive-item ${done ? "done" : ""}`} onClick={() => onOpen(item.id)}>
+      <Card as="button" onPress={() => onOpen(item.id)}>
         <div className="ai-row">
           {item.authorProfile && (
             <Avatar
@@ -690,7 +691,7 @@ function CommunityItem({
             {pct}%
           </span>
         ) : null}
-      </button>
+      </Card>
     </li>
   );
 }
