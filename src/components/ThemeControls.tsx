@@ -2,26 +2,26 @@ import { useState } from "react";
 import {
   ACCENTS,
   getAccent,
+  getAdvanceAnywhere,
   getAutoAdvance,
   getAutocheck,
   getBackfillGaps,
   getBackspacePrevWord,
   getGridFit,
   getMode,
-  getProtectCrossings,
   getShowTimer,
   getSkipFilledClues,
   getSkipFilledSquares,
   getSpaceClears,
   getStrikeFilledClues,
   setAccent,
+  setAdvanceAnywhere,
   setAutoAdvance,
   setAutocheck,
   setBackfillGaps,
   setBackspacePrevWord,
   setGridFit,
   setMode,
-  setProtectCrossings,
   setShowTimer,
   setSkipFilledClues,
   setSkipFilledSquares,
@@ -41,10 +41,12 @@ function PrefRow({
   get,
   set,
   label,
+  disabled,
 }: {
   get: () => boolean;
   set: (on: boolean) => void;
   label: string;
+  disabled?: boolean;
 }) {
   const [on, setOn] = useState<boolean>(get);
   return (
@@ -55,6 +57,7 @@ function PrefRow({
         setOn(next);
       }}
       label={label}
+      disabled={disabled}
     />
   );
 }
@@ -67,6 +70,9 @@ export function ThemeControls() {
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
   const [gridFit, setGridFitState] = useState<GridFit>(getGridFit);
+  // Lifted out of PrefRow because the "from anywhere" sub-row disables
+  // itself while this is off.
+  const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
 
   const choose = (m: Mode) => {
     setMode(m);
@@ -75,6 +81,10 @@ export function ThemeControls() {
   const pick = (id: AccentId) => {
     setAccent(id);
     setAccentState(id);
+  };
+  const changeAdvance = (next: boolean) => {
+    setAutoAdvance(next);
+    setAdvanceState(next);
   };
   const chooseGridFit = (fit: GridFit) => {
     setGridFit(fit);
@@ -152,20 +162,25 @@ export function ThemeControls() {
           set={setBackspacePrevWord}
           label="Backspace into the previous word"
         />
-        <PrefRow
-          get={getProtectCrossings}
-          set={setProtectCrossings}
-          label="Keep letters of finished crossing words when deleting"
-        />
       </div>
 
       <div className="setting-row">
         <span className="setting-label">Clues</span>
-        <PrefRow
-          get={getAutoAdvance}
-          set={setAutoAdvance}
+        <CheckRow
+          checked={advance}
+          onChange={changeAdvance}
           label="Skip to the next clue when a word is finished"
         />
+        {/* Sub-option of auto-advance — meaningless on its own, so it can
+            only be toggled while its parent is on. */}
+        <div className="check-sub">
+          <PrefRow
+            get={getAdvanceAnywhere}
+            set={setAdvanceAnywhere}
+            label="From anywhere in the word, not just the end"
+            disabled={!advance}
+          />
+        </div>
         <PrefRow
           get={getSkipFilledClues}
           set={setSkipFilledClues}

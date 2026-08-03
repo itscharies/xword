@@ -3,11 +3,11 @@ import type { Clue, Direction, Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
 import { parseClueRefs } from "../lib/clueRefs.ts";
 import {
+  getAdvanceAnywhere,
   getAutoAdvance,
   getAutocheck,
   getBackfillGaps,
   getBackspacePrevWord,
-  getProtectCrossings,
   getSkipFilledClues,
   getSkipFilledSquares,
   getSpaceClears,
@@ -393,13 +393,14 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
   );
 
   /** Advance after typing a letter:
-   *  1. next empty cell after the cursor — or, with "skip filled squares"
-   *     off, simply the next cell, filled or not;
-   *  2. else the first empty cell earlier in the word (fill the gaps),
+   *  1. word now full — jump to the next open clue if "auto-advance" is on
+   *     and the letter landed on the last cell (or anywhere, with the
+   *     "from anywhere in the word" sub-setting);
+   *  2. else next empty cell after the cursor — or, with "skip filled
+   *     squares" off, simply the next cell, filled or not;
+   *  3. else the first empty cell earlier in the word (fill the gaps),
    *     unless "jump back to the first blank" is off;
-   *  3. else (word now full) either jump to the next open clue — if the
-   *     "auto-advance" setting is on — or step one cell forward to re-write,
-   *     anchored at the end. */
+   *  4. else step one cell forward to re-write, anchored at the end. */
   const advanceInWord = useCallback(() => {
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
@@ -407,21 +408,21 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     const empty = (p: Pos) => !entriesRef.current[p.row][p.col];
     const cur = activeRef.current;
     const i = cells.findIndex((p) => p.row === cur.row && p.col === cur.col);
+    const lastCell = i === cells.length - 1;
 
+    if (
+      getAutoAdvance() &&
+      (lastCell || getAdvanceAnywhere()) &&
+      !cells.some(empty)
+    ) {
+      return moveToClue(1);
+    }
     if (getSkipFilledSquares()) {
       for (let j = i + 1; j < cells.length; j++) {
         if (empty(cells[j])) return setActive(cells[j]);
       }
     } else if (i + 1 < cells.length) {
       return setActive(cells[i + 1]);
-    }
-    // Nothing (visitable) left ahead of the cursor. Only jump to the next
-    // clue when the cursor is on the word's *last* cell and the whole word
-    // is now full — filling an earlier gap, or any non-final cell, behaves
-    // normally.
-    const lastCell = i === cells.length - 1;
-    if (getAutoAdvance() && lastCell && !cells.some(empty)) {
-      return moveToClue(1);
     }
     if (getBackfillGaps()) {
       const firstGap = cells.find(empty);
@@ -466,15 +467,6 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
    *  oscillate forever). */
   const lockedRevealed = (r: number, c: number) =>
     !!coopRef.current?.readOnlyRevealed && revealedRef.current.has(keyOf(r, c));
-
-  /** "Keep finished crossing words": with the setting on, deletes skip cells
-   *  whose crossing entry is completely filled — typing over still works, so
-   *  a letter boxed in by two finished words isn't permanently stuck. */
-  const protectedCrossing = (r: number, c: number): boolean => {
-    if (!getProtectCrossings()) return false;
-    const cross = lookup.get(keyOf(r, c))?.[otherDir(directionRef.current)];
-    return !!cross && isClueFilled(cross);
-  };
 
   /** Autocheck: mark the cell wrong right after a letter lands if it doesn't
    *  match the solution. Correct letters need no work here — the write path's
@@ -544,14 +536,12 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       emitCells([{ row, col, value: next, revealed: false }], "delete");
       return;
     }
-    if (cur && !lockedRevealed(row, col) && !protectedCrossing(row, col)) {
+    if (cur && !lockedRevealed(row, col)) {
       clearAt(row, col);
       emitCells([{ row, col, value: "", revealed: false }], "delete");
       return;
     }
-    // Empty (or locked/protected) cell: step back within the word and clear
-    // that one — protected/locked targets keep their letter, cursor moves
-    // anyway so erasing can continue past them.
+    // Empty (or locked) cell: step back within the word and clear that one.
     const clue = clueThrough(activeRef.current, directionRef.current);
     if (!clue) return;
     const cells = clueCells(clue);
@@ -559,7 +549,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     if (i > 0) {
       const prev = cells[i - 1];
       setActive(prev);
-      if (lockedRevealed(prev.row, prev.col) || protectedCrossing(prev.row, prev.col)) return;
+      if (lockedRevealed(prev.row, prev.col)) return;
       clearAt(prev.row, prev.col);
       emitCells([{ row: prev.row, col: prev.col, value: "", revealed: false }], "delete");
     } else if (i === 0 && getBackspacePrevWord()) {
@@ -577,7 +567,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
         setRebus(false);
         setDirection(prevClue.direction);
         setActive(last);
-        if (lockedRevealed(last.row, last.col) || protectedCrossing(last.row, last.col)) return;
+        if (lockedRevealed(last.row, last.col)) return;
         clearAt(last.row, last.col);
         emitCells([{ row: last.row, col: last.col, value: "", revealed: false }], "delete");
       }
@@ -587,7 +577,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
   const deleteCell = useCallback(() => {
     if (completedRef.current) return;
     const { row, col } = activeRef.current;
-    if (lockedRevealed(row, col) || protectedCrossing(row, col)) return;
+    if (lockedRevealed(row, col)) return;
     clearAt(row, col);
     emitCells([{ row, col, value: "", revealed: false }], "delete");
   }, []);
@@ -599,11 +589,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     if (completedRef.current) return;
     const { row, col } = activeRef.current;
     if (!isOpen(row, col)) return;
-    if (
-      entriesRef.current[row][col] &&
-      !lockedRevealed(row, col) &&
-      !protectedCrossing(row, col)
-    ) {
+    if (entriesRef.current[row][col] && !lockedRevealed(row, col)) {
       clearAt(row, col);
       emitCells([{ row, col, value: "", revealed: false }], "delete");
     }

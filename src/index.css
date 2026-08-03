@@ -766,13 +766,21 @@ select.text-input.compact {
 }
 .checkbox svg { width: 16px; height: 16px; }
 @media (hover: hover) {
-  .check-row:hover .checkbox:not(.on) { background: var(--surface-2); }
+  .check-row:hover:not(:disabled) .checkbox:not(.on) { background: var(--surface-2); }
 }
 /* Checked keeps its shadow; only the click animates a push-and-return. */
 .checkbox.on {
   background: var(--accent-2);
   color: #000;
 }
+/* Sub-options (e.g. auto-advance's "from anywhere in the word") indent under
+   their parent row and wash out while the parent is off. */
+.check-sub { padding-left: 26px; }
+.check-row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .check-row:active .checkbox {
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
   box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
@@ -851,6 +859,19 @@ select.text-input.compact {
 .filter-chip:disabled:hover {
   background: var(--surface);
   color: var(--fg);
+}
+/* The Check button while autocheck is on (Toolbar.tsx): wears the disabled
+   look but stays interactive, because it opens an explanatory tip — a real
+   disabled button would swallow the hover/tap that reaches it. */
+.btn.btn-inert,
+.btn.btn-inert:hover,
+.btn.btn-inert:active {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--surface);
+  color: var(--fg);
+  transform: none;
+  box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
 }
 
 /* Keyboard focus: the same accent ring the text inputs use, drawn as an

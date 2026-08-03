@@ -8,10 +8,14 @@ export function CheckRow({
   checked,
   onChange,
   label,
+  disabled,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
+  /** For sub-options gated on a parent toggle: keeps its stored value
+   *  visible but washed out and untogglable while the parent is off. */
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -20,6 +24,7 @@ export function CheckRow({
       aria-checked={checked}
       className="check-row"
       onClick={() => onChange(!checked)}
+      disabled={disabled}
     >
       <span className={`checkbox ${checked ? "on" : ""}`}>{checked && <CheckIcon />}</span>
       <span>{label}</span>

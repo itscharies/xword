@@ -76,9 +76,11 @@ export function applyAccent(accent: AccentId): void {
   updateFavicon();
 }
 
-/** The stored signed-out accent. Signed-in users' accents come from their
- *  profile instead (AppRoutes syncs [data-accent] from it), so this is what
- *  the page falls back to after signing out. */
+/** The last accent saved locally — the signed-out settings choice or the
+ *  most recently applied profile accent, whichever came last. index.html's
+ *  pre-paint script reads the same key, so a signed-in user's first paint
+ *  (hover states, favicon) already matches while their profile is still
+ *  fetching; it's also what the page falls back to after signing out. */
 export function getLocalAccent(): AccentId {
   try {
     const a = localStorage.getItem(ACCENT_KEY);
@@ -89,7 +91,9 @@ export function getLocalAccent(): AccentId {
   return "yellow";
 }
 
-/** Save the signed-out accent preference (and paint it). */
+/** Paint an accent and persist it as the local accent (see getLocalAccent) —
+ *  used by the signed-out settings picker and by the profile-accent paths,
+ *  which keep the pre-paint cache in step with the profile. */
 export function setAccent(accent: AccentId): void {
   applyAccent(accent);
   try {
@@ -260,10 +264,12 @@ export const { get: getBackspacePrevWord, set: setBackspacePrevWord } = boolPref
   false,
 );
 
-/** Deleting keeps letters that belong to a completely-filled crossing entry
- *  (typing over them still works). */
-export const { get: getProtectCrossings, set: setProtectCrossings } = boolPref(
-  "xword:protectCrossings",
+/** With auto-advance on: jump to the next clue whenever a word becomes
+ *  fully filled, wherever in the word the cursor is — not only when the
+ *  finishing letter lands on its last square. Linked sub-option of
+ *  auto-advance; it has no effect while that is off. */
+export const { get: getAdvanceAnywhere, set: setAdvanceAnywhere } = boolPref(
+  "xword:advanceAnywhere",
   false,
 );
 

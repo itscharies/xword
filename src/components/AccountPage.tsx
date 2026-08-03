@@ -11,7 +11,7 @@ import {
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
-import { ACCENTS, applyAccent, type AccentId } from "../lib/theme.ts";
+import { ACCENTS, setAccent, type AccentId } from "../lib/theme.ts";
 import {
   deletePuzzle,
   listMyPuzzles,
@@ -119,8 +119,9 @@ function AccountSummary({
   const pick = (id: AccentId) => {
     setAccentState(id);
     // The theme accent mirrors the profile accent while signed in — repaint
-    // right away rather than waiting for a profile refetch.
-    applyAccent(id);
+    // right away rather than waiting for a profile refetch, and keep the
+    // local pre-paint cache in step so the next load starts on this colour.
+    setAccent(id);
     void setProfileAccent(profile.user_id, id);
   };
 

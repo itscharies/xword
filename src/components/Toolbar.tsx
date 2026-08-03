@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Crossword, RevealScope } from "../hooks/useCrossword.ts";
+import { getAutocheck } from "../lib/theme.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
+import { Tip } from "./Tip.tsx";
 import { AnagramIcon, CheckIcon, ChevronDownIcon, EyeIcon, ResetIcon } from "./icons.tsx";
 
 function Dropdown({
@@ -72,7 +74,23 @@ export function Toolbar({
 }) {
   return (
     <div className="toolbar">
-      <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} disabled={xw.completed} />
+      {getAutocheck() ? (
+        // With autocheck on there's nothing left to check by hand. A truly
+        // disabled button would eat the hover/tap that could explain itself,
+        // so this one only *looks* disabled and answers with a tip instead.
+        <Tip
+          tip="Autocheck is on — letters are checked as they're typed. Turn it off in Settings to check by hand."
+          label="Check (autocheck is on)"
+        >
+          <span className="btn btn-inert" aria-disabled="true">
+            <span className="btn-icon"><CheckIcon /></span>
+            <span className="btn-label">Check</span>
+            <span className="btn-caret"><ChevronDownIcon /></span>
+          </span>
+        </Tip>
+      ) : (
+        <Dropdown label="Check" icon={<CheckIcon />} onPick={xw.check} disabled={xw.completed} />
+      )}
       <Dropdown label="Reveal" icon={<EyeIcon />} onPick={xw.reveal} disabled={xw.completed} />
       {xw.isCryptic ? (
         <button

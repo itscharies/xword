@@ -8,6 +8,7 @@ import {
   getLocalAccent,
   getShowTimer,
   initTheme,
+  setAccent,
   subscribePrefs,
   updateFavicon,
 } from "./lib/theme.ts";
@@ -190,12 +191,15 @@ function AppRoutes() {
   }, []);
 
   // Signed in: the theme accent follows the profile's avatar colour, so the
-  // whole app matches how the user shows up to others. Signed out (or after
-  // signing out): the locally-saved accent from the settings modal.
+  // whole app matches how the user shows up to others — and it's saved
+  // locally too, so the next load's pre-paint (hover states, favicon) starts
+  // on the right colour while the profile is still fetching. Signed out (or
+  // after signing out): the last locally-saved accent.
   const profile = useProfile();
   useEffect(() => {
     if (profile === "loading") return; // keep the pre-paint accent, no flash
-    applyAccent(profile ? profile.accent : getLocalAccent());
+    if (profile) setAccent(profile.accent);
+    else applyAccent(getLocalAccent());
   }, [profile]);
 
   const [routeSrc, routeDate] = route.split("/");
@@ -1036,23 +1040,23 @@ function Solver({
             hideReset={!!session}
           />
           <div className="actionbar-controls">
-            <div className="timer-group">
-              {!session && (
-                <button
-                  className="btn icon-btn"
-                  onClick={() => setPaused(!paused)}
-                  aria-label={paused ? "Resume timer" : "Pause timer"}
-                  title={paused ? "Resume" : "Pause"}
-                >
-                  {paused ? <PlayIcon /> : <PauseIcon />}
-                </button>
-              )}
-              {getShowTimer() && (
+            {getShowTimer() && (
+              <div className="timer-group">
+                {!session && (
+                  <button
+                    className="btn icon-btn"
+                    onClick={() => setPaused(!paused)}
+                    aria-label={paused ? "Resume timer" : "Pause timer"}
+                    title={paused ? "Resume" : "Pause"}
+                  >
+                    {paused ? <PlayIcon /> : <PauseIcon />}
+                  </button>
+                )}
                 <div className={`timer ${paused ? "paused" : ""}`}>
                   {formatTime(elapsed)}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             {!session && sessionsEnabled && (
               <button
                 className="btn icon-btn"
