@@ -207,7 +207,6 @@ function AppRoutes() {
       <AccountPage
         onOpenArchive={() => goTo("")}
         onOpenCreate={() => goTo("create")}
-        onOpenPuzzle={(id) => goTo(`p/${id}`)}
         onOpenDraft={(id) => goTo(`draft/${id}`)}
       />
     );

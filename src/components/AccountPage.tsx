@@ -33,12 +33,10 @@ import { AccountPageSkeleton, TileListSkeleton } from "./Skeleton.tsx";
 export function AccountPage({
   onOpenArchive,
   onOpenCreate,
-  onOpenPuzzle,
   onOpenDraft,
 }: {
   onOpenArchive: () => void;
   onOpenCreate: () => void;
-  onOpenPuzzle: (id: string) => void;
   onOpenDraft: (id: string) => void;
 }) {
   const { status, user, signInWithGoogle, signOut } = useAuth();
@@ -60,7 +58,6 @@ export function AccountPage({
           <PuzzlesSection
             userId={user.id}
             onOpenCreate={onOpenCreate}
-            onOpenPuzzle={onOpenPuzzle}
             onOpenDraft={onOpenDraft}
           />
           <SocialSections userId={user.id} />
@@ -145,8 +142,8 @@ function AccountSummary({
         </button>
       </div>
       <div className="setting-row">
-        <span className="setting-label">Avatar colour</span>
-        <div className="swatches" role="radiogroup" aria-label="Avatar colour">
+        <span className="setting-label">Theme colour</span>
+        <div className="swatches" role="radiogroup" aria-label="Theme colour">
           {ACCENTS.map((a) => (
             <button
               key={a.id}
@@ -160,9 +157,6 @@ function AccountSummary({
             />
           ))}
         </div>
-        <p className="savedata-status">
-          Colours the app, your avatar, and your cursor when solving together.
-        </p>
       </div>
     </>
   );
@@ -171,12 +165,10 @@ function AccountSummary({
 function PuzzlesSection({
   userId,
   onOpenCreate,
-  onOpenPuzzle,
   onOpenDraft,
 }: {
   userId: string;
   onOpenCreate: () => void;
-  onOpenPuzzle: (id: string) => void;
   onOpenDraft: (id: string) => void;
 }) {
   const [puzzles, setPuzzles] = useState<PublishedPuzzle[] | null>(null);
@@ -207,41 +199,32 @@ function PuzzlesSection({
         </p>
       ) : (
         <ul className="card-list">
-          {puzzles.map((p) => {
-            const open = () => (p.visibility === "draft" ? onOpenDraft(p.id) : onOpenPuzzle(p.id));
-            return (
-              <Card key={p.id} className="account-tile" onPress={open}>
-                <span className="ai-source">{p.title}</span>
-                <span className="ai-author">
-                  {VISIBILITY_LABEL[p.visibility]}
-                  {p.visibility !== "draft" &&
-                    ` · ${p.completions} ${p.completions === 1 ? "solve" : "solves"}`}
-                </span>
-                <div className="account-tile-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDraft(p.id);
-                    }}
-                    aria-label={`Edit "${p.title}"`}
-                    title="Edit"
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void onDelete(p);
-                    }}
-                    aria-label={`Delete "${p.title}"`}
-                    title="Delete"
-                  >
-                    <DeleteIcon />
-                  </button>
-                </div>
-              </Card>
-            );
-          })}
+          {puzzles.map((p) => (
+            <Card key={p.id} className="account-tile">
+              <span className="ai-source">{p.title}</span>
+              <span className="ai-author">
+                {VISIBILITY_LABEL[p.visibility]}
+                {p.visibility !== "draft" &&
+                  ` · ${p.completions} ${p.completions === 1 ? "solve" : "solves"}`}
+              </span>
+              <div className="account-tile-actions">
+                <button
+                  onClick={() => onOpenDraft(p.id)}
+                  aria-label={`Edit "${p.title}"`}
+                  title="Edit"
+                >
+                  <EditIcon />
+                </button>
+                <button
+                  onClick={() => void onDelete(p)}
+                  aria-label={`Delete "${p.title}"`}
+                  title="Delete"
+                >
+                  <DeleteIcon />
+                </button>
+              </div>
+            </Card>
+          ))}
         </ul>
       )}
     </section>

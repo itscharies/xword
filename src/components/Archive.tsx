@@ -358,7 +358,13 @@ export function Archive({
   return (
     <div className="app archive">
       <header className="header">
-        <h1 className="archive-heading brand">The Daily Grid</h1>
+        <h1 className="archive-heading brand">
+          {/* A real navigation, not SPA routing: clicking the wordmark on the
+              page it already lives on reloads fresh. */}
+          <a className="brand-link" href={import.meta.env.BASE_URL}>
+            The Daily Grid
+          </a>
+        </h1>
         <div className="header-right">
           {sessionsEnabled && (
             <button
