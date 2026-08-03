@@ -225,13 +225,10 @@ button { font: inherit; cursor: pointer; color: inherit; }
 .solves-avatar {
   display: inline-flex;
   /* Stacked with depth: the lead avatar is full size, the rest render
-     smaller and slide behind it (AvatarStack sets descending z-index). */
+     smaller and slide behind it (AvatarStack sets descending z-index).
+     The avatar draws its own 1px frame, which doubles as the separation
+     ring where the stack overlaps. */
   position: relative;
-  /* At 16px the avatar's own cell strokes scale away to nothing — a real
-     border keeps the tile readable against the header, and doubles as the
-     separation ring where the stack overlaps. */
-  border: 1px solid #000;
-  background: var(--surface);
 }
 /* The svg would otherwise sit on the text baseline, dropping the stack a
    few px below centre of the trigger's line. */
@@ -265,10 +262,6 @@ button { font: inherit; cursor: pointer; color: inherit; }
   gap: 7px;
   font-size: 12px;
   font-weight: 600;
-}
-/* Same story as .solves-avatar at panel size. */
-.solves-row > svg {
-  border: 1px solid #000;
 }
 .solves-row-name {
   flex: 1;
@@ -676,8 +669,9 @@ select.text-input.compact {
   .already-following-row button:hover { background: var(--accent-2); color: #000; }
 }
 
-/* Header account button's icon slot doubles as an avatar frame. */
-.account-btn svg { border: 1px solid var(--line); }
+/* Header account button: the signed-out user icon gets the same square
+   frame the avatar draws for itself, so both states read as one slot. */
+.account-btn svg:not(.avatar) { border: 1px solid var(--line); }
 
 .account-summary {
   display: flex;
@@ -688,7 +682,7 @@ select.text-input.compact {
   box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
   padding: 14px 16px;
 }
-.account-summary svg { flex-shrink: 0; border: 1px solid var(--line); }
+.account-summary svg { flex-shrink: 0; }
 .account-identity { flex: 1; min-width: 0; }
 .account-display-name { font-weight: 700; }
 
@@ -1972,7 +1966,8 @@ select.text-input.compact {
 .ai-theme { font-size: 14px; font-weight: 600; }
 .ai-author { font-size: 13px; color: var(--muted); }
 .ai-row { display: flex; align-items: center; gap: 10px; }
-.ai-row svg { flex: none; border: 1px solid var(--line); }
+.ai-row svg { flex: none; }
+.ai-row svg:not(.avatar) { border: 1px solid var(--line); }
 .ai-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 @media (hover: hover) {
   .archive-item:hover .ai-author { color: #000; }

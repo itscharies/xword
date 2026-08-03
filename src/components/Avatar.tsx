@@ -1,12 +1,9 @@
 import { AVATAR_CENTER, AVATAR_GRID, computeAvatarPattern } from "../lib/avatar.ts";
 
-const CELL = 20;
-const FULL = AVATAR_GRID * CELL;
-// The outer ring of tiles is only half-shown — cropping in like this makes
-// the center letter tile (always fully visible) read as the focal point
-// instead of one square among many.
-const CROP = FULL - CELL;
-const OFFSET = CELL / 2;
+/** Outer frame and gridline weight (CSS px). The frame is part of the
+ *  component — consumers must not stack their own border on top. */
+const FRAME = 1;
+const LINE = 1;
 
 /** Mixes a hex color into white — the highlighted row/column reads as a
  *  light tint rather than the full, bright accent (that's reserved for the
@@ -22,7 +19,14 @@ function tint(hex: string, ratio: number): string {
 
 /** A generated, crossword-styled avatar — see lib/avatar.ts. Used for every
  *  profile, including the signed-in user's own — there's no photo to show
- *  instead (see the removed lib/auth.ts avatarUrl). */
+ *  instead (see the removed lib/auth.ts avatarUrl).
+ *
+ *  All geometry is computed in whole CSS pixels at the requested size — a
+ *  real per-size layout, not one coordinate space scaled down — so the
+ *  gridlines and the built-in 1px frame land on pixel boundaries at every
+ *  size instead of antialiasing into sub-pixel seams. The outer ring shows
+ *  as half-tiles (the old viewBox crop) so the center letter tile stays
+ *  the focal point: the strips weigh 0.5 / 1 / 0.5 of a cell. */
 export function Avatar({
   username,
   displayName,
@@ -37,32 +41,49 @@ export function Avatar({
   const { open, highlight, accent, letter } = computeAvatarPattern(username, displayName);
   const tinted = tint(accent.swatch, 0.35);
 
+  // Strip extents via cumulative rounding, so the strips always total
+  // exactly the available space and every strip keeps at least a pixel.
+  const span = AVATAR_GRID - 1;
+  const avail = Math.max(size - 2 * FRAME - (AVATAR_GRID - 1) * LINE, AVATAR_GRID);
+  let cum = 0;
+  const stops = Array.from({ length: AVATAR_GRID }, (_, i) => {
+    cum += i === 0 || i === AVATAR_GRID - 1 ? 0.5 : 1;
+    return Math.round((cum / span) * avail);
+  });
+  const startOf = (i: number) => FRAME + (i > 0 ? stops[i - 1] : 0) + i * LINE;
+  const sizeOf = (i: number) => stops[i] - (i > 0 ? stops[i - 1] : 0);
+  const centerMid = startOf(AVATAR_CENTER) + sizeOf(AVATAR_CENTER) / 2;
+
   return (
     <svg
-      className={className}
+      className={className ? `avatar ${className}` : "avatar"}
       width={size}
       height={size}
-      viewBox={`${OFFSET} ${OFFSET} ${CROP} ${CROP}`}
+      viewBox={`0 0 ${size} ${size}`}
       role="img"
       aria-label={displayName || username}
     >
+      {/* One black backdrop supplies the frame, the gridlines, and the
+          blocked squares in a single fill; open cells are punched on top as
+          exact-pixel rects, so there's never a seam to antialias. */}
+      <rect x={0} y={0} width={size} height={size} fill="#000" shapeRendering="crispEdges" />
       {open.map((row, r) =>
         row.map((isOpen, c) => {
+          if (!isOpen) return null;
           const isCenter = r === AVATAR_CENTER && c === AVATAR_CENTER;
           const isHighlighted =
             (highlight.axis === "row" && r === highlight.index) ||
             (highlight.axis === "col" && c === highlight.index);
-          const fill = !isOpen ? "#000" : isCenter ? accent.swatch : isHighlighted ? tinted : "#ededed";
+          const fill = isCenter ? accent.swatch : isHighlighted ? tinted : "#ededed";
           return (
             <rect
               key={`${r}-${c}`}
-              x={c * CELL}
-              y={r * CELL}
-              width={CELL}
-              height={CELL}
+              x={startOf(c)}
+              y={startOf(r)}
+              width={sizeOf(c)}
+              height={sizeOf(r)}
               fill={fill}
-              stroke="#000"
-              strokeWidth={1}
+              shapeRendering="crispEdges"
             />
           );
         }),
@@ -71,13 +92,13 @@ export function Avatar({
           decorative "Jaro" brand-title face — it's already on the page, so
           an inline SVG <text> here picks it up for free. */}
       <text
-        x={AVATAR_CENTER * CELL + CELL / 2}
-        y={AVATAR_CENTER * CELL + CELL / 2}
+        x={centerMid}
+        y={centerMid}
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily='"SN Pro", ui-sans-serif, sans-serif'
         fontWeight={800}
-        fontSize={CELL * 0.85}
+        fontSize={sizeOf(AVATAR_CENTER) * 0.9}
         fill="#000"
       >
         {letter}
