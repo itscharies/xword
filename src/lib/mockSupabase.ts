@@ -20,7 +20,7 @@ interface MockProfile {
   user_id: string;
   username: string;
   display_name: string;
-  accent: AccentId | null;
+  accent: AccentId;
   is_admin: boolean;
 }
 
@@ -201,11 +201,9 @@ function makeSyndicatedRow(
 
 const db = {
   profiles: [
-    // Iris has a saved accent so the override path is exercised in mock
-    // mode; the others keep the username-derived colour.
     { user_id: IRIS, username: "iris_solver", display_name: "Iris", accent: "pink", is_admin: false },
-    { user_id: MAX, username: "max_cryptic", display_name: "Max", accent: null, is_admin: false },
-    { user_id: SAM, username: "sam_grid", display_name: "Sam", accent: null, is_admin: false },
+    { user_id: MAX, username: "max_cryptic", display_name: "Max", accent: "blue", is_admin: false },
+    { user_id: SAM, username: "sam_grid", display_name: "Sam", accent: "orange", is_admin: false },
   ] as MockProfile[],
 
   // Sam follows Iris (one-way); Iris and Max follow each other (mutual).
@@ -550,7 +548,7 @@ function mockListMutualProgress(params: {
         user_id: pr.user_id,
         username: prof?.username ?? "unknown",
         display_name: prof?.display_name ?? "Unknown",
-        accent: prof?.accent ?? null,
+        accent: prof?.accent ?? "yellow",
         completed: d.completed ?? false,
         filled: d.filled ?? 0,
         total: d.total ?? 0,

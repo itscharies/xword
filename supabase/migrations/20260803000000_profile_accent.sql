@@ -1,11 +1,96 @@
--- Saved avatar accent colour. Null means "derived from the username hash" —
--- the colour every client already computes locally. A saved value overrides
--- that derivation everywhere the profile shows: avatars, and the cursor
+-- Saved avatar accent colour, non-nullable: every profile owns a concrete
+-- colour. Existing rows are backfilled with the exact colour clients already
+-- derive from the username (see derived_accent below), so nothing visibly
+-- changes at migration time; from then on the stored value is the single
+-- source of truth everywhere the profile shows — avatars, and the cursor
 -- colour peers see in multiplayer. The check mirrors ACCENTS in
 -- src/lib/theme.ts.
 alter table profiles add column accent text
   check (accent in ('red','orange','yellow','lime','green','cyan','blue',
                     'indigo','violet','pink'));
+
+-- JS Math.imul: uint32 multiplication mod 2^32. Two uint32s can overflow
+-- bigint when multiplied directly, so widen through numeric.
+create function imul32(x bigint, y bigint) returns bigint
+language sql immutable as $$
+  select mod(x::numeric * y::numeric, 4294967296)::bigint;
+$$;
+
+-- One step of the mulberry32 PRNG (bit-exact port of lib/avatar.ts, uint32
+-- carried in bigint): a_out is the next seed state, r the [0,1) draw.
+create function mulberry32_step(a_in bigint, out a_out bigint, out r double precision)
+language plpgsql immutable as $$
+declare t bigint;
+begin
+  a_out := (a_in + 1831565813) & 4294967295;                 -- a += 0x6d2b79f5
+  t := imul32(a_out # (a_out >> 15), a_out | 1);             -- imul(a ^ a>>>15, 1|a)
+  t := (((t + imul32(t # (t >> 7), t | 61)) & 4294967295) # t);
+  t := t # (t >> 14);
+  r := t / 4294967296.0;
+end;
+$$;
+
+-- The accent computeAvatarPattern derives for a username with no saved
+-- override: FNV-1a seeds mulberry32, and the rand stream is consumed in the
+-- generator's exact order (five pattern cells, the reachability fix-up, the
+-- highlight-axis pick when both axes are open) before the accent draw — so
+-- this returns precisely the colour clients have been showing.
+create function derived_accent(p_username text) returns text
+language plpgsql immutable as $$
+declare
+  accents constant text[] := array['red','orange','yellow','lime','green',
+                                   'cyan','blue','indigo','violet','pink'];
+  a bigint := 2166136261;   -- FNV-1a offset basis (0x811c9dc5)
+  r double precision;
+  b01 boolean;              -- top/bottom flank pair is black
+  b10 boolean;              -- left/right flank pair is black
+  i int;
+begin
+  for i in 1..length(p_username) loop
+    a := a # ascii(substr(p_username, i, 1));
+    a := imul32(a, 16777619);                  -- imul(h, 0x01000193)
+  end loop;
+
+  -- Pattern cells in loop order: (0,0), (0,1), (0,2), (1,0), (1,1). Only
+  -- the flank pairs steer later draws; the rest just advance the stream.
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  b01 := r < 0.4;
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  b10 := r < 0.4;
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+
+  if b01 and b10 then
+    -- Center enclosed: one draw picks which neighbour (and its mirror) to
+    -- open, leaving exactly one open axis — no axis draw follows.
+    select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  elsif not b01 and not b10 then
+    -- Both axes open: one draw picks the highlight axis.
+    select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  end if;
+
+  select s.a_out, s.r into a, r from mulberry32_step(a) s;
+  return accents[1 + floor(r * 10)::int];
+end;
+$$;
+
+update profiles set accent = derived_accent(username) where accent is null;
+alter table profiles alter column accent set not null;
+
+-- The client sends an accent when claiming a profile; this backstops any
+-- insert path that doesn't.
+create function profiles_default_accent() returns trigger
+language plpgsql as $$
+begin
+  if new.accent is null then
+    new.accent := derived_accent(new.username);
+  end if;
+  return new;
+end;
+$$;
+create trigger profiles_accent_default before insert on profiles
+  for each row execute function profiles_default_accent();
 
 -- Adding a return column changes the row type, which `create or replace`
 -- refuses — drop the old signature first (grants go with it; re-granted

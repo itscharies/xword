@@ -7,7 +7,7 @@ export interface AvatarPerson {
   user_id: string;
   username: string;
   display_name: string;
-  accent?: AccentId | null;
+  accent: AccentId;
 }
 
 /** A group of people as one depth-stacked cluster: the first avatar leads

@@ -9,8 +9,9 @@ export interface Profile {
   username: string;
   display_name: string;
   /** Saved avatar accent — colours their avatar and their multiplayer
-   *  cursor on every client. Null falls back to the username-derived pick. */
-  accent?: AccentId | null;
+   *  cursor on every client. Non-null in the DB: an insert trigger seeds
+   *  new claims, and existing rows were backfilled at migration time. */
+  accent: AccentId;
   is_admin?: boolean;
 }
 
@@ -44,6 +45,8 @@ export async function claimProfile(
   }
   if (!displayName.trim()) return { error: "Display name can't be empty." };
 
+  // No accent sent: the profiles insert trigger seeds one server-side, and
+  // the owner can change it from the account page.
   const { error } = await supabase
     .from("profiles")
     .insert({ user_id: userId, username, display_name: displayName.trim() });
@@ -52,10 +55,10 @@ export async function claimProfile(
 }
 
 /** Save the avatar accent colour on the caller's own profile (RLS limits
- *  updates to your own row). Null clears it back to the derived colour. */
+ *  updates to your own row). */
 export async function setProfileAccent(
   userId: string,
-  accent: AccentId | null,
+  accent: AccentId,
 ): Promise<{ error: string | null }> {
   if (!supabase) return { error: "Supabase isn't configured." };
   const { error } = await supabase.from("profiles").update({ accent }).eq("user_id", userId);

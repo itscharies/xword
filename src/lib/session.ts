@@ -36,7 +36,7 @@ export interface SessionParticipant {
   user_id: string;
   username: string;
   display_name: string;
-  accent?: AccentId | null;
+  accent: AccentId;
   joined_at: string;
 }
 
@@ -56,7 +56,7 @@ export interface SessionPreview {
   puzzle_id: string | null;
   created_by: string;
   is_participant: boolean;
-  participants: { user_id: string; username: string; display_name: string; accent?: AccentId | null }[];
+  participants: { user_id: string; username: string; display_name: string; accent: AccentId }[];
 }
 
 export type SessionPuzzleRef =

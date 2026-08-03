@@ -27,7 +27,7 @@ import {
   type SessionParticipant,
   type SessionStatus,
 } from "../lib/session.ts";
-import { computeAvatarPattern } from "../lib/avatar.ts";
+import { accentSwatch } from "../lib/theme.ts";
 import type { Direction } from "../types.ts";
 
 const BASE = import.meta.env.BASE_URL;
@@ -89,6 +89,10 @@ export interface SessionApi {
 const NOTICE_TTL_MS = 4000;
 const ENDED_CHECK_MS = 60_000;
 
+/** Accents are non-null on every profile, so this only covers presence
+ *  payloads from clients on builds that predate the accent field. */
+const FALLBACK_ACCENT = "yellow" as const;
+
 export function useSession(
   join: JoinResult | null,
   xw: Crossword,
@@ -149,7 +153,7 @@ export function useSession(
       meta: {
         username: me?.username ?? "solver",
         displayName: me?.display_name ?? "Solver",
-        accent: me?.accent ?? null,
+        accent: me?.accent ?? FALLBACK_ACCENT,
       },
       initialState: join.session.state ?? {},
       initialVersion: join.session.state_version ?? 0,
@@ -188,7 +192,7 @@ export function useSession(
               row: cursor.r,
               col: cursor.c,
               direction: cursor.d,
-              color: computeAvatarPattern(username, displayName, meta?.accent).accent.swatch,
+              color: accentSwatch(meta?.accent ?? FALLBACK_ACCENT),
               letter: (displayName.trim()[0] ?? "?").toUpperCase(),
             });
             return next;
@@ -215,7 +219,7 @@ export function useSession(
                 user_id: p.uid,
                 username: p.username,
                 display_name: p.displayName,
-                accent: p.accent ?? null,
+                accent: p.accent ?? FALLBACK_ACCENT,
                 joined_at: new Date(p.joinedAt).toISOString(),
               }));
             return [...prev, ...rows];

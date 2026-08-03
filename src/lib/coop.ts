@@ -206,8 +206,9 @@ export interface PeerMeta {
   username: string;
   displayName: string;
   /** Saved profile accent, carried in presence so peers colour this
-   *  player's cursor without a profiles fetch. Optional: peers on builds
-   *  that predate it simply fall back to the derived colour. */
+   *  player's cursor without a profiles fetch. Optional only because peers
+   *  on builds that predate it don't send one — receivers fall back to the
+   *  app's default accent. */
   accent?: AccentId | null;
   joinedAt: number;
 }
@@ -236,7 +237,7 @@ export interface CoopEvents {
 export interface CoopDeps {
   sessionId: string;
   uid: string;
-  meta: { username: string; displayName: string; accent?: AccentId | null };
+  meta: { username: string; displayName: string; accent: AccentId };
   initialState: SessionState;
   initialVersion: number;
   /** Guarded snapshot write (UPDATE ... WHERE state_version < versionMs). */
@@ -470,7 +471,7 @@ export class CoopClient {
           sid: this.sid,
           username: this.deps.meta.username,
           displayName: this.deps.meta.displayName,
-          accent: this.deps.meta.accent ?? null,
+          accent: this.deps.meta.accent,
           joinedAt: Date.now(),
         } satisfies PeerMeta);
         void this.resync(first);

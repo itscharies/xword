@@ -168,13 +168,14 @@ export const PARTICIPANTS = ["ada", "grace", "alan", "edie"].map((name) => ({
 
 /** Followed-solver progress rows for the solves flyout. */
 export const MUTUALS = [
-  { name: "ada", completed: true, filled: 21, total: 21 },
-  { name: "grace", completed: false, filled: 14, total: 21 },
-  { name: "alan", completed: false, filled: 3, total: 21 },
-].map(({ name, completed, filled, total }) => ({
+  { name: "ada", accent: "cyan" as const, completed: true, filled: 21, total: 21 },
+  { name: "grace", accent: "pink" as const, completed: false, filled: 14, total: 21 },
+  { name: "alan", accent: "lime" as const, completed: false, filled: 3, total: 21 },
+].map(({ name, accent, completed, filled, total }) => ({
   user_id: `user-${name}`,
   username: name,
   display_name: name.charAt(0).toUpperCase() + name.slice(1),
+  accent,
   completed,
   filled,
   total,

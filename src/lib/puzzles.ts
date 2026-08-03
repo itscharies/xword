@@ -185,7 +185,7 @@ export interface MutualProgress {
   user_id: string;
   username: string;
   display_name: string;
-  accent?: AccentId | null;
+  accent: AccentId;
   completed: boolean;
   filled: number;
   total: number;

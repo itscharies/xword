@@ -7,10 +7,14 @@ export default {
   title: "Primitives / Avatar",
 } satisfies StoryDefault;
 
+/** Every avatar renders with its profile's stored accent — colour is never
+ *  derived, so the stories always pass one explicitly. */
+const accentFor = (i: number) => ACCENTS[i % ACCENTS.length].id;
+
 export const Sizes: Story = () => (
   <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
     {[16, 24, 32, 48, 64, 96].map((size) => (
-      <Avatar key={size} username="ada" displayName="Ada" size={size} />
+      <Avatar key={size} username="ada" displayName="Ada" accent="yellow" size={size} />
     ))}
   </div>
 );
@@ -46,23 +50,19 @@ const NATO_ALPHABET = [
 
 export const PatternVariety: Story = () => (
   <div style={{ display: "flex", flexWrap: "wrap", gap: 12, maxWidth: 560 }}>
-    {NATO_ALPHABET.map((name) => (
+    {NATO_ALPHABET.map((name, i) => (
       <div key={name} style={{ textAlign: "center", fontSize: 12 }}>
-        <Avatar username={name} displayName={name} size={48} />
+        <Avatar username={name} displayName={name} accent={accentFor(i)} size={48} />
         <div style={{ color: "var(--muted)" }}>{name}</div>
       </div>
     ))}
   </div>
 );
 
-/** A saved profile accent overrides the username-derived colour — the same
- *  pattern in each of the ten accents, plus the derived default first. */
-export const SavedAccent: Story = () => (
+/** One pattern across all ten accents — the accent recolours the center
+ *  tile and highlight tint, never the layout. */
+export const Accents: Story = () => (
   <div style={{ display: "flex", flexWrap: "wrap", gap: 12, maxWidth: 560 }}>
-    <div style={{ textAlign: "center", fontSize: 12 }}>
-      <Avatar username="oscar" displayName="oscar" size={48} />
-      <div style={{ color: "var(--muted)" }}>derived</div>
-    </div>
     {ACCENTS.map((a) => (
       <div key={a.id} style={{ textAlign: "center", fontSize: 12 }}>
         <Avatar username="oscar" displayName="oscar" accent={a.id} size={48} />
@@ -73,10 +73,11 @@ export const SavedAccent: Story = () => (
 );
 
 const people = (n: number): AvatarPerson[] =>
-  ["ada", "grace", "alan", "edie", "ivy"].slice(0, n).map((name) => ({
+  ["ada", "grace", "alan", "edie", "ivy"].slice(0, n).map((name, i) => ({
     user_id: `user-${name}`,
     username: name,
     display_name: name,
+    accent: accentFor(i),
   }));
 
 export const Stack: Story = () => (

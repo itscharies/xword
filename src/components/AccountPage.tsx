@@ -12,7 +12,6 @@ import {
   type Profile,
 } from "../lib/profile.ts";
 import { ACCENTS, type AccentId } from "../lib/theme.ts";
-import { computeAvatarPattern } from "../lib/avatar.ts";
 import {
   deletePuzzle,
   listMyPuzzles,
@@ -116,12 +115,7 @@ function AccountSummary({
   profile: Profile;
   onSignOut: () => void;
 }) {
-  const [accent, setAccentState] = useState<AccentId | null>(profile.accent ?? null);
-  // With nothing saved yet, the active swatch shows the username-derived
-  // colour the avatar is already wearing — picking is an override, never a
-  // change from "no colour".
-  const effective =
-    accent ?? computeAvatarPattern(profile.username, profile.display_name).accent.id;
+  const [accent, setAccentState] = useState<AccentId>(profile.accent);
 
   const pick = (id: AccentId) => {
     setAccentState(id);
@@ -151,11 +145,11 @@ function AccountSummary({
           {ACCENTS.map((a) => (
             <button
               key={a.id}
-              className={`swatch ${effective === a.id ? "active" : ""}`}
+              className={`swatch ${accent === a.id ? "active" : ""}`}
               style={{ background: a.swatch }}
               onClick={() => pick(a.id)}
               role="radio"
-              aria-checked={effective === a.id}
+              aria-checked={accent === a.id}
               aria-label={a.label}
               title={a.label}
             />

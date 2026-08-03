@@ -16,6 +16,12 @@ export const ACCENTS = [
 
 export type AccentId = (typeof ACCENTS)[number]["id"];
 
+/** Swatch hex for an accent id — avatars and multiplayer cursors resolve a
+ *  profile's stored accent through this. */
+export function accentSwatch(id: AccentId): string {
+  return ACCENTS.find((a) => a.id === id)?.swatch ?? ACCENTS[0].swatch;
+}
+
 const THEME_KEY = "xword:theme";
 const ACCENT_KEY = "xword:accent";
 

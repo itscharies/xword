@@ -2,8 +2,10 @@
 // person's username + display name — there's no photo to store or fetch,
 // since we only ever have a real one (from Google OAuth) for whoever is
 // actually signed in right now, never for someone else's profile.
-
-import { ACCENTS, type AccentId } from "./theme.ts";
+//
+// Colour is NOT part of the pattern: every profile carries a non-null
+// `accent` column (seeded server-side at claim time, editable on the
+// account page), so renderers always receive an explicit accent.
 
 export const AVATAR_GRID = 3;
 export const AVATAR_CENTER = 1;
@@ -37,25 +39,17 @@ export interface AvatarPattern {
   /** [row][col] — true is an open, letter-tile-style cell; false is a black square. */
   open: boolean[][];
   /** The row or column (always the one through the center — see below) to
-   *  render as a lighter tint of `accent`, instead of the plain open-cell
-   *  colour. */
+   *  render as a lighter tint of the profile's accent, instead of the plain
+   *  open-cell colour. */
   highlight: { axis: "row" | "col"; index: number };
-  accent: (typeof ACCENTS)[number];
   letter: string;
 }
 
 /** A random-looking (but reproducible) crossword block pattern, seeded from
  *  `username` — built with 180°-rotational symmetry, the same layout rule
  *  real crosswords use. The center cell always holds the first letter of
- *  `displayName` and is never boxed in on all four sides by black squares.
- *
- *  `accentId` — a saved profile accent — overrides the username-derived
- *  colour pick; the pattern itself is unaffected. */
-export function computeAvatarPattern(
-  username: string,
-  displayName: string,
-  accentId?: AccentId | null,
-): AvatarPattern {
+ *  `displayName` and is never boxed in on all four sides by black squares. */
+export function computeAvatarPattern(username: string, displayName: string): AvatarPattern {
   const rand = mulberry32(hashString(username));
   const n = AVATAR_GRID;
   const open: boolean[][] = Array.from({ length: n }, () => Array(n).fill(true));
@@ -97,10 +91,7 @@ export function computeAvatarPattern(
   const colOpen = open.every((row) => row[CENTER]);
   const axis: "row" | "col" =
     rowOpen && colOpen ? (rand() < 0.5 ? "row" : "col") : rowOpen ? "row" : "col";
-  const accent =
-    (accentId && ACCENTS.find((a) => a.id === accentId)) ||
-    ACCENTS[Math.floor(rand() * ACCENTS.length)];
   const letter = (displayName.trim()[0] ?? username[0] ?? "?").toUpperCase();
 
-  return { open, highlight: { axis, index: CENTER }, accent, letter };
+  return { open, highlight: { axis, index: CENTER }, letter };
 }
