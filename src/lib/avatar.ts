@@ -48,7 +48,9 @@ export interface AvatarPattern {
 /** A random-looking (but reproducible) crossword block pattern, seeded from
  *  `username` — built with 180°-rotational symmetry, the same layout rule
  *  real crosswords use. The center cell always holds the first letter of
- *  `displayName` and is never boxed in on all four sides by black squares. */
+ *  `displayName` and is never boxed in on all four sides by black squares;
+ *  at the other extreme, at least one symmetric pair of black squares
+ *  always survives, so no avatar renders as a blank open grid. */
 export function computeAvatarPattern(username: string, displayName: string): AvatarPattern {
   const rand = mulberry32(hashString(username));
   const n = AVATAR_GRID;
@@ -70,6 +72,26 @@ export function computeAvatarPattern(username: string, displayName: string): Ava
   // The center is always a letter tile, and always reachable — never fully
   // enclosed by black squares on every side.
   open[CENTER][CENTER] = true;
+
+  // A grid with no black squares reads as a blank tile, not a crossword —
+  // the mirror of the enclosure rule below. Blocks come in symmetric pairs
+  // (the center is always open), so force one pair black, keeping every
+  // pattern at two blocks or more.
+  if (open.every((row) => row.every(Boolean))) {
+    const pairs: [number, number][] = [];
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const mr = n - 1 - r;
+        const mc = n - 1 - c;
+        if (r > mr || (r === mr && c > mc)) continue;
+        if (r === CENTER && c === CENTER) continue;
+        pairs.push([r, c]);
+      }
+    }
+    const [r, c] = pairs[Math.floor(rand() * pairs.length)];
+    open[r][c] = false;
+    open[n - 1 - r][n - 1 - c] = false;
+  }
   const neighbors: [number, number][] = [
     [CENTER - 1, CENTER],
     [CENTER + 1, CENTER],
