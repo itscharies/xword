@@ -2,6 +2,7 @@ import type { Story, StoryDefault } from "@ladle/react";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { ClaimProfileForm } from "./ClaimProfileForm.tsx";
+import { AuthProvider } from "../hooks/useAuthContext.tsx";
 
 export default {
   title: "Settings",
@@ -11,9 +12,14 @@ export const Theme: Story = () => (
   <div style={{ maxWidth: 420 }}>
     <p style={{ color: "var(--muted)", fontSize: 14 }}>
       The real settings panel — it writes the actual document theme/accent, so
-      it composes with (and overrides) the gallery's own pickers.
+      it composes with (and overrides) the gallery's own pickers. The accent
+      row shows because the gallery counts as signed out; signed-in users set
+      their accent via the account page's avatar colour instead.
     </p>
-    <ThemeControls />
+    {/* ThemeControls branches on auth (accent row is signed-out only). */}
+    <AuthProvider>
+      <ThemeControls />
+    </AuthProvider>
   </div>
 );
 

@@ -633,6 +633,8 @@ select.text-input.compact {
     color: var(--muted);
   }
 }
+/* A press uses the full accent tone, same convention as .btn:active. */
+.account-tile-actions button:active { background: var(--accent); color: #000; }
 
 /* "Find people" modal body: search-as-you-type over usernames. Results are
    the same profile cards as the account-page lists, stacked one per row so
@@ -1948,7 +1950,11 @@ select.text-input.compact {
 @media (hover: hover) {
   .card.interactive:hover { background: var(--accent-2); color: #000; }
 }
+/* A press uses the full accent tone (the .btn convention) on top of the
+   sit-down translate. */
 .card.interactive:active {
+  background: var(--accent);
+  color: #000;
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
   box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
 }

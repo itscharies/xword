@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Puzzle } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
-import { initTheme, updateFavicon } from "./lib/theme.ts";
+import { applyAccent, getLocalAccent, initTheme, updateFavicon } from "./lib/theme.ts";
 import { confirmLeave } from "./lib/navGuard.ts";
 import { useCrossword, type CoopOptions } from "./hooks/useCrossword.ts";
 import { useSession, type CoopBridge } from "./hooks/useSession.ts";
@@ -180,6 +180,15 @@ function AppRoutes() {
     initTheme();
     updateFavicon();
   }, []);
+
+  // Signed in: the theme accent follows the profile's avatar colour, so the
+  // whole app matches how the user shows up to others. Signed out (or after
+  // signing out): the locally-saved accent from the settings modal.
+  const profile = useProfile();
+  useEffect(() => {
+    if (profile === "loading") return; // keep the pre-paint accent, no flash
+    applyAccent(profile ? profile.accent : getLocalAccent());
+  }, [profile]);
 
   const [routeSrc, routeDate] = route.split("/");
 

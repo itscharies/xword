@@ -11,7 +11,7 @@ import {
   unfollow,
   type Profile,
 } from "../lib/profile.ts";
-import { ACCENTS, type AccentId } from "../lib/theme.ts";
+import { ACCENTS, applyAccent, type AccentId } from "../lib/theme.ts";
 import {
   deletePuzzle,
   listMyPuzzles,
@@ -121,6 +121,9 @@ function AccountSummary({
 
   const pick = (id: AccentId) => {
     setAccentState(id);
+    // The theme accent mirrors the profile accent while signed in — repaint
+    // right away rather than waiting for a profile refetch.
+    applyAccent(id);
     void setProfileAccent(profile.user_id, id);
   };
 
@@ -158,7 +161,7 @@ function AccountSummary({
           ))}
         </div>
         <p className="savedata-status">
-          Colours your avatar and your cursor when solving together.
+          Colours the app, your avatar, and your cursor when solving together.
         </p>
       </div>
     </>

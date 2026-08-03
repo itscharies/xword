@@ -69,14 +69,34 @@ export function getAccent(): AccentId {
   return (root().dataset.accent as AccentId) || "yellow";
 }
 
-export function setAccent(accent: AccentId): void {
+/** Paint an accent (attribute + favicon) without touching the saved
+ *  signed-out preference — profile-driven accents ride through here. */
+export function applyAccent(accent: AccentId): void {
   root().dataset.accent = accent;
+  updateFavicon();
+}
+
+/** The stored signed-out accent. Signed-in users' accents come from their
+ *  profile instead (AppRoutes syncs [data-accent] from it), so this is what
+ *  the page falls back to after signing out. */
+export function getLocalAccent(): AccentId {
+  try {
+    const a = localStorage.getItem(ACCENT_KEY);
+    if (ACCENTS.some((x) => x.id === a)) return a as AccentId;
+  } catch {
+    /* ignore */
+  }
+  return "yellow";
+}
+
+/** Save the signed-out accent preference (and paint it). */
+export function setAccent(accent: AccentId): void {
+  applyAccent(accent);
   try {
     localStorage.setItem(ACCENT_KEY, accent);
   } catch {
     /* ignore */
   }
-  updateFavicon();
 }
 
 /** Redraw the favicon (the highlighted-word mark) in the current accent colour,

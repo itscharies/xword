@@ -15,9 +15,13 @@ import {
 } from "../lib/theme.ts";
 import { MoonIcon, SunIcon, SystemIcon } from "./icons.tsx";
 import { CheckRow } from "./CheckRow.tsx";
+import { useAuth } from "../hooks/useAuthContext.tsx";
 
-/** Body of the settings modal: theme mode + accent colour pickers. */
+/** Body of the settings modal: theme mode picker plus, for signed-out
+ *  users only, the accent picker — signed-in users' accent follows their
+ *  profile's avatar colour (set on the account page) instead. */
 export function ThemeControls() {
+  const { user } = useAuth();
   const [mode, setModeState] = useState<Mode>(getMode);
   const [accent, setAccentState] = useState<AccentId>(getAccent);
   const [advance, setAdvanceState] = useState<boolean>(getAutoAdvance);
@@ -69,23 +73,25 @@ export function ThemeControls() {
         </div>
       </div>
 
-      <div className="setting-row">
-        <span className="setting-label">Accent</span>
-        <div className="swatches" role="radiogroup" aria-label="Accent colour">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              className={`swatch ${accent === a.id ? "active" : ""}`}
-              style={{ background: a.swatch }}
-              onClick={() => pick(a.id)}
-              role="radio"
-              aria-checked={accent === a.id}
-              aria-label={a.label}
-              title={a.label}
-            />
-          ))}
+      {!user && (
+        <div className="setting-row">
+          <span className="setting-label">Accent</span>
+          <div className="swatches" role="radiogroup" aria-label="Accent colour">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                className={`swatch ${accent === a.id ? "active" : ""}`}
+                style={{ background: a.swatch }}
+                onClick={() => pick(a.id)}
+                role="radio"
+                aria-checked={accent === a.id}
+                aria-label={a.label}
+                title={a.label}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="setting-row">
         <span className="setting-label">Typing</span>
