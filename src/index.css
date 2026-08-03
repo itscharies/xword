@@ -1296,8 +1296,10 @@ select.text-input.compact {
 @media (hover: hover) {
   .clue-col li:hover { background: var(--surface-2); }
 }
+/* The local selection mirrors the peer treatment in the user's own accent:
+   skinny bar + light row tint. The crossing clue stays grey below. */
 .clue-col li.active {
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--accent-2) 26%, transparent);
   border-left-color: var(--accent-2);
   font-weight: 700;
 }
