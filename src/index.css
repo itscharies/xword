@@ -834,19 +834,22 @@ select.text-input.compact {
    just the icon — see the .toolbar rules in the mobile media query. */
 .btn-icon { display: inline-flex; align-items: center; justify-content: center; }
 .btn-icon svg { display: block; }
+/* Chips are small buttons: every state below is shared, so the two can
+   never drift. Chips keep only their own sizing (see .filter-chip). */
 @media (hover: hover) {
-  .btn:hover { background: var(--accent-2); color: #000; }
+  :is(.btn, .filter-chip):hover { background: var(--accent-2); color: #000; }
 }
-/* Toggle buttons (rebus) that are switched on: the full accent, the same
+/* Toggled-on controls (rebus, a selected chip): the full accent, the same
    tone as a held press — hover's lighter accent-2 stays distinct. */
-.btn.active {
+.btn.active,
+.filter-chip.on {
   background: var(--accent);
   color: #000;
 }
-/* A press uses the full tone — placed last so it wins over hover/.active.
-   With a shadow to trade on the button sits down into it; flat buttons show
+/* A press uses the full tone — placed last so it wins over hover/toggled.
+   With a shadow to trade on the control sits down into it; flat ones show
    the inset pressed face instead (the swatch convention). */
-.btn:active {
+:is(.btn, .filter-chip):active {
   background: var(--accent);
   color: #000;
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
@@ -860,17 +863,13 @@ select.text-input.compact {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.btn:disabled,
-.btn:disabled:hover,
-.btn:disabled:active {
+:is(.btn, .filter-chip):disabled,
+:is(.btn, .filter-chip):disabled:hover,
+:is(.btn, .filter-chip):disabled:active {
   background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   transform: none;
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
-}
-.filter-chip:disabled:hover {
-  background: var(--nested-btn-bg, var(--surface));
-  color: var(--fg);
 }
 /* The Check button while autocheck is on (Toolbar.tsx): wears the disabled
    look but stays interactive, because it opens an explanatory tip — a real
@@ -1898,8 +1897,10 @@ select.text-input.compact {
 /* Filter chips inside the modal — wrap onto multiple lines rather than
    scrolling sideways, since the modal gives them vertical room. */
 .filter-chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+/* A chip is a small button: only the metrics live here — every state
+   (hover, .on, press, disabled) is shared with .btn in the buttons
+   section, so the two can never drift apart. */
 .filter-chip {
-  /* Pressables wear the tinted face in flat contexts — same as .btn. */
   background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   border: var(--bw) solid var(--line);
@@ -1910,17 +1911,6 @@ select.text-input.compact {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
-}
-@media (hover: hover) {
-  .filter-chip:hover { background: var(--accent-2); color: #000; }
-}
-/* Selected = pressed: sits into its shadow, or shows the inset pressed face
-   when flat (the swatch convention). */
-.filter-chip.on {
-  background: var(--accent);
-  color: #000;
-  transform: var(--nested-press, translate(var(--sh), var(--sh)));
-  box-shadow: var(--nested-active-shadow, 0 0 0 var(--shadow-col));
 }
 
 /* Shown when the Paper/Type filters exclude everything. */

@@ -8,6 +8,7 @@ import "../src/index.css";
  *  can be checked against all ten [data-accent] palettes. */
 export const Provider: GlobalProvider = ({ globalState, children }) => {
   const [accent, pickAccent] = useState<AccentId>("yellow");
+  const [probe, setProbe] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const dark =
@@ -21,8 +22,33 @@ export const Provider: GlobalProvider = ({ globalState, children }) => {
     setAccent(accent);
   }, [accent]);
 
+  /* When a viewport width is picked, Ladle moves the story into a real
+     iframe and copies the parent head's stylesheets across — but not the
+     <html> attributes, and every token in index.css hangs off [data-theme]/
+     [data-accent]. The probe span tells us which document the story really
+     rendered into; mirror the attributes onto that root (and keep them in
+     step when the toggles change them on the parent). */
+  useEffect(() => {
+    if (!probe) return;
+    const src = document.documentElement;
+    const dst = probe.ownerDocument.documentElement;
+    if (dst === src) return;
+    const sync = () => {
+      dst.dataset.theme = src.dataset.theme;
+      dst.dataset.accent = src.dataset.accent;
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(src, {
+      attributes: true,
+      attributeFilter: ["data-theme", "data-accent"],
+    });
+    return () => observer.disconnect();
+  }, [probe]);
+
   return (
     <>
+      <span ref={setProbe} hidden />
       {/* Ladle's story pane paints its own background; hand it the app's. */}
       <style>{`.ladle-main { background: var(--bg); color: var(--fg); }`}</style>
       <div

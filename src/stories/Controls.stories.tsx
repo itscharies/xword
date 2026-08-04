@@ -58,7 +58,7 @@ export const Chips: Story = () => {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <Row label="Filter chips">
+      <Row label="Filter chips — small buttons: identical hover/press/selected states, chip-sized">
         <div className="filter-chip-group">
           {days.map((d) => (
             <button
@@ -71,7 +71,7 @@ export const Chips: Story = () => {
           ))}
         </div>
       </Row>
-      <Row label="Secondary — .flat: tinted face, selected shows the inset pressed face">
+      <Row label="Secondary — .flat: shadowless with the tinted key face, inset press (as inside modals and panels)">
         <div className="filter-chip-group flat">
           {days.map((d) => (
             <button
