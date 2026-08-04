@@ -130,8 +130,11 @@ summary,
    sitting on a shadowed card reads as clutter. These containers set the
    properties; nested controls consume them with their normal shadow (and
    press-translate, which trades on that shadow) as the fallback. Controls
-   whose pressed state trades on that same shadow (the swatch) read
-   --nested-active-shadow for a pressed face that still works flat. Inset
+   whose pressed state trades on that same shadow (the swatch, the flat
+   button) read --nested-active-shadow for a pressed face that still works
+   flat. Without its shadow a button is box-identical to a text input, so
+   flat contexts also hand pressables (.btn, .filter-chip) a --surface-2
+   face via --nested-btn-bg — fields stay paper, buttons read as keys. Inset
    affordances like the theme segmented control are untouched on purpose. */
 .box,
 .modal,
@@ -151,6 +154,7 @@ summary,
   --nested-shadow: none;
   --nested-press: none;
   --nested-active-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
+  --nested-btn-bg: var(--surface-2);
 }
 
 /* The same shadowless treatment as an explicit, per-control opt-in: the
@@ -161,6 +165,7 @@ summary,
   --nested-shadow: none;
   --nested-press: none;
   --nested-active-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
+  --nested-btn-bg: var(--surface-2);
 }
 
 /* ---- layout ------------------------------------------------------------- */
@@ -454,10 +459,13 @@ summary,
 }
 .savedata-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 /* A button sharing a row with a flat text input goes flat too — a shadowed
-   button beside a shadowless input reads as mismatched siblings. */
+   button beside a shadowless input reads as mismatched siblings. Same
+   property set as .flat, so the button keeps its key face and inset press. */
 .savedata-actions {
   --nested-shadow: none;
   --nested-press: none;
+  --nested-active-shadow: inset 4px 4px 0 rgba(0, 0, 0, 0.22);
+  --nested-btn-bg: var(--surface-2);
 }
 /* A text input sharing the row with a button (share link + Copy, username
    search + Search) stretches to fill the space instead of sitting at its
@@ -807,7 +815,9 @@ select.text-input.compact {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: var(--surface);
+  /* Flat contexts tint the face (--surface-2) so a shadowless button still
+     reads as a key, not a field — see the --nested-btn-bg block up top. */
+  background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   border: var(--bw) solid var(--line);
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
@@ -833,12 +843,14 @@ select.text-input.compact {
   background: var(--accent);
   color: #000;
 }
-/* A press uses the full tone — placed last so it wins over hover/.active. */
+/* A press uses the full tone — placed last so it wins over hover/.active.
+   With a shadow to trade on the button sits down into it; flat buttons show
+   the inset pressed face instead (the swatch convention). */
 .btn:active {
   background: var(--accent);
   color: #000;
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
-  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
+  box-shadow: var(--nested-active-shadow, 0 0 0 var(--shadow-col));
 }
 /* Disabled: washed out, ban cursor, and none of the hover/press theatrics —
    a control that can't be used shouldn't respond like one that can. */
@@ -851,13 +863,13 @@ select.text-input.compact {
 .btn:disabled,
 .btn:disabled:hover,
 .btn:disabled:active {
-  background: var(--surface);
+  background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   transform: none;
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
 }
 .filter-chip:disabled:hover {
-  background: var(--surface);
+  background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
 }
 /* The Check button while autocheck is on (Toolbar.tsx): wears the disabled
@@ -868,7 +880,7 @@ select.text-input.compact {
 .btn.btn-inert:active {
   opacity: 0.45;
   cursor: not-allowed;
-  background: var(--surface);
+  background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   transform: none;
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
@@ -1887,7 +1899,8 @@ select.text-input.compact {
    scrolling sideways, since the modal gives them vertical room. */
 .filter-chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-chip {
-  background: var(--surface);
+  /* Pressables wear the tinted face in flat contexts — same as .btn. */
+  background: var(--nested-btn-bg, var(--surface));
   color: var(--fg);
   border: var(--bw) solid var(--line);
   box-shadow: var(--nested-shadow, var(--sh) var(--sh) 0 var(--shadow-col));
@@ -1901,11 +1914,13 @@ select.text-input.compact {
 @media (hover: hover) {
   .filter-chip:hover { background: var(--accent-2); color: #000; }
 }
+/* Selected = pressed: sits into its shadow, or shows the inset pressed face
+   when flat (the swatch convention). */
 .filter-chip.on {
   background: var(--accent);
   color: #000;
   transform: var(--nested-press, translate(var(--sh), var(--sh)));
-  box-shadow: var(--nested-shadow, 0 0 0 var(--shadow-col));
+  box-shadow: var(--nested-active-shadow, 0 0 0 var(--shadow-col));
 }
 
 /* Shown when the Paper/Type filters exclude everything. */

@@ -4,6 +4,7 @@ import { PublishDialog } from "./PublishDialog.tsx";
 import { Modal } from "./Modal.tsx";
 import { AuthProvider } from "../hooks/useAuthContext.tsx";
 import { MINI } from "../stories/fixtures.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Modals / Publish dialog",
@@ -13,11 +14,11 @@ export const Default: Story = () => {
   const [open, setOpen] = useState(true);
   return (
     <AuthProvider>
-      <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+      <Note>
         The Builder's publish form (visibility, then the share-link state
         after publishing). Submitting needs a signed-in backend, so here it
         stays on the form state.
-      </p>
+      </Note>
       <button className="btn" onClick={() => setOpen(true)}>
         Reopen
       </button>

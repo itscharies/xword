@@ -2,6 +2,7 @@ import type { Story, StoryDefault } from "@ladle/react";
 import { Card } from "./Card.tsx";
 import { Avatar } from "./Avatar.tsx";
 import { CheckIcon, DeleteIcon, EditIcon, UserPlusIcon } from "./icons.tsx";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Primitives / Card",
@@ -9,12 +10,12 @@ export default {
 
 export const Interactive: Story = () => (
   <div style={{ maxWidth: 620 }}>
-    <p style={{ color: "var(--muted)", fontSize: 14 }}>
+    <Note>
       Cards with onPress light up: hover inverts to the accent, click presses
       the card down into its shadow. A plain click target is a real button;
       a card layering its own action buttons stays an li (role="button") so
       it can nest them.
-    </p>
+    </Note>
     <ul className="card-list">
       <li>
         <Card as="button" onPress={() => {}}>
@@ -44,11 +45,11 @@ export const Interactive: Story = () => (
 
 export const Static: Story = () => (
   <div style={{ maxWidth: 620 }}>
-    <p style={{ color: "var(--muted)", fontSize: 14 }}>
+    <Note>
       Without onPress a card is inert — no hover invert, no press-down, no
       pointer cursor — even when it carries action buttons of its own
       (profile rows, skeleton placeholders).
-    </p>
+    </Note>
     <ul className="card-list">
       <Card className="account-tile">
         <div className="ai-row">

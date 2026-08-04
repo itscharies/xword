@@ -1,6 +1,7 @@
 import type { Story, StoryDefault } from "@ladle/react";
 import { SolvesFlyout } from "./SolvesFlyout.tsx";
 import { MUTUALS } from "../stories/fixtures.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Session / Solves flyout",
@@ -8,10 +9,10 @@ export default {
 
 export const WithMutuals: Story = () => (
   <div style={{ minHeight: 320 }}>
-    <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+    <Note>
       Followed solvers' progress on this puzzle — hover or tap the avatar
       stack for the detail panel (finished, in progress, percentages).
-    </p>
+    </Note>
     <SolvesFlyout mutuals={MUTUALS} completions={128} />
   </div>
 );

@@ -3,6 +3,7 @@ import { Toolbar } from "./Toolbar.tsx";
 import { Grid } from "./Grid.tsx";
 import { useCrossword } from "../hooks/useCrossword.ts";
 import { CRYPTIC_MINI, MINI } from "../stories/fixtures.ts";
+import { Note, WithGrid } from "../stories/helpers.tsx";
 
 export default {
   title: "Solver / Toolbar",
@@ -11,10 +12,16 @@ export default {
 export const Default: Story = () => {
   const xw = useCrossword(MINI, null);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Toolbar xw={xw} onRequestReset={() => xw.reset()} onAnagram={() => {}} />
-      <Grid puzzle={MINI} xw={xw} />
-    </div>
+    <>
+      <Note>
+        The check/reveal menus and the rebus toggle drive the real engine —
+        the grid below shows what they do.
+      </Note>
+      <WithGrid>
+        <Toolbar xw={xw} onRequestReset={() => xw.reset()} onAnagram={() => {}} />
+        <Grid puzzle={MINI} xw={xw} />
+      </WithGrid>
+    </>
   );
 };
 
@@ -22,11 +29,14 @@ export const Cryptic: Story = () => {
   const xw = useCrossword(CRYPTIC_MINI, null);
   return (
     <>
-      <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
-        Cryptic puzzles add the anagram-helper button and the rebus toggle
-        behaves the same — the check/reveal menus drive the real engine.
-      </p>
-      <Toolbar xw={xw} onRequestReset={() => xw.reset()} onAnagram={() => {}} />
+      <Note>
+        Cryptic puzzles add the anagram-helper button; everything else works
+        as in the quick puzzle.
+      </Note>
+      <WithGrid>
+        <Toolbar xw={xw} onRequestReset={() => xw.reset()} onAnagram={() => {}} />
+        <Grid puzzle={CRYPTIC_MINI} xw={xw} />
+      </WithGrid>
     </>
   );
 };

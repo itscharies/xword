@@ -1,5 +1,6 @@
 import type { Story, StoryDefault } from "@ladle/react";
 import { ErrorBoundary } from "./ErrorBoundary.tsx";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Primitives / Error boundary",
@@ -11,10 +12,10 @@ function Bomb(): never {
 
 export const Fallback: Story = () => (
   <>
-    <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+    <Note>
       What users see when a render throws. The buttons navigate the real
       page, so clicking them leaves the gallery.
-    </p>
+    </Note>
     <ErrorBoundary>
       <Bomb />
     </ErrorBoundary>

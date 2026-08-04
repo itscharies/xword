@@ -2,6 +2,7 @@ import type { Story, StoryDefault } from "@ladle/react";
 import { SessionBar } from "./SessionBar.tsx";
 import type { SessionApi } from "../hooks/useSession.ts";
 import { PARTICIPANTS } from "../stories/fixtures.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Session / Session bar",
@@ -23,10 +24,10 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 
 export const Active: Story = () => (
   <Shell>
-    <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+    <Note>
       Hover or tap to open the roster — green dots are participants with a
       live tab. Viewed as Ada, so she's filtered from "solving with".
-    </p>
+    </Note>
     <SessionBar
       session={session({ online: ["user-ada", "user-grace"] })}
       userId="user-ada"

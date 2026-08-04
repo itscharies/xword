@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Story, StoryDefault } from "@ladle/react";
 import { AnagramOverlay } from "./AnagramOverlay.tsx";
 import { useAnagramPool } from "../hooks/useAnagramPool.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Anagram / Overlay",
@@ -18,11 +19,11 @@ export const Default: Story = () => {
   }, [add]);
   return (
     <>
-      <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+      <Note>
         The mobile stand-in for the anagram helper — it covers the grid area
         (a positioned parent here). While it's open, typing on a physical
         keyboard feeds the letter pool.
-      </p>
+      </Note>
       <div style={{ position: "relative", height: 420, maxWidth: 560 }}>
         <AnagramOverlay pool={pool} />
       </div>

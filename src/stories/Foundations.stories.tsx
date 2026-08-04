@@ -1,8 +1,12 @@
-import { useState } from "react";
 import type { Story, StoryDefault } from "@ladle/react";
 import { ACCENTS } from "../lib/theme.ts";
 import { SettingsIcon } from "../components/icons.tsx";
+import { CheckRow } from "../components/CheckRow.tsx";
+import { useState } from "react";
 
+/** Foundations = the design language itself: colour tokens, accents, type,
+ *  and the elevation rules every surface follows. The controls built from
+ *  it (buttons, chips, inputs…) live under Primitives. */
 export default {
   title: "Foundations",
 } satisfies StoryDefault;
@@ -61,146 +65,116 @@ export const Accents: Story = () => (
   </div>
 );
 
-const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div>
-    <div className="setting-label" style={{ marginBottom: 8 }}>
+const Level = ({
+  label,
+  blurb,
+  children,
+}: {
+  label: string;
+  blurb: string;
+  children: React.ReactNode;
+}) => (
+  <section>
+    <div className="setting-label" style={{ marginBottom: 4 }}>
       {label}
     </div>
-    {/* 8px is the app's gap between adjacent controls in a row (12px is
-        reserved for gaps between whole groups). */}
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-      {children}
-    </div>
-  </div>
+    <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 14px" }}>{blurb}</p>
+    {children}
+  </section>
 );
 
-export const Buttons: Story = () => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-    <Row label="Primary — hard shadow, press to sit down">
-      <button className="btn">Default</button>
-      <button className="btn active">Active</button>
-      <button className="btn btn-accent">Accent</button>
-      <button className="btn" disabled>
-        Disabled
-      </button>
-      <button className="btn icon-btn" aria-label="Settings">
-        <SettingsIcon />
-      </button>
-    </Row>
-    <Row label="Secondary — .flat, shadowless (as inside modals and panels)">
-      <button className="btn flat">Default</button>
-      <button className="btn flat active">Active</button>
-      <button className="btn flat btn-accent">Accent</button>
-      <button className="btn flat" disabled>
-        Disabled
-      </button>
-      <button className="btn flat icon-btn" aria-label="Settings">
-        <SettingsIcon />
-      </button>
-    </Row>
-  </div>
-);
-
-export const Chips: Story = () => {
-  const [on, setOn] = useState(["Mon"]);
-  const toggle = (d: string) =>
-    setOn((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** One card, one shadow — the app's whole elevation system, shown at each
+ *  level it actually occurs in. Containers that already cast the hard offset
+ *  shadow flatten every control inside them (--nested-shadow: none) and hand
+ *  pressables a --surface-2 face (--nested-btn-bg), so buttons stay visually
+ *  distinct from the paper-coloured text fields they share rows with. */
+export const Elevation: Story = () => {
+  const [autocheck, setAutocheck] = useState(true);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <Row label="Filter chips">
-        <div className="filter-chip-group">
-          {days.map((d) => (
-            <button
-              key={d}
-              className={`filter-chip ${on.includes(d) ? "on" : ""}`}
-              onClick={() => toggle(d)}
-            >
-              {d}
-            </button>
-          ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: 36, maxWidth: 620 }}>
+      <Level
+        label="On the page — raised"
+        blurb="Controls sitting directly on the page carry the full hard shadow
+               and press down into it, like the solver's action bar."
+      >
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn">Check</button>
+          <button className="btn">Reveal</button>
+          <button className="btn btn-accent">New puzzle</button>
+          <button className="btn icon-btn" aria-label="Settings">
+            <SettingsIcon />
+          </button>
         </div>
-      </Row>
-      <Row label="Secondary — .flat">
-        <div className="filter-chip-group flat">
-          {days.map((d) => (
-            <button
-              key={d}
-              className={`filter-chip ${on.includes(d) ? "on" : ""}`}
-              onClick={() => toggle(d)}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-      </Row>
-    </div>
-  );
-};
+      </Level>
 
-export const SegmentedControl: Story = () => {
-  const options = ["Cell", "Word", "Puzzle"];
-  const [active, setActive] = useState("Word");
-  return (
-    <div className="seg">
-      {options.map((o) => (
-        <button
-          key={o}
-          className={`seg-btn ${o === active ? "active" : ""}`}
-          onClick={() => setActive(o)}
+      <Level
+        label="Inside a panel — flat, automatically"
+        blurb="A .box (or session gate, account summary, clue banner…) casts the
+               one shadow itself, so everything nested goes flat. Buttons wear
+               the tinted key face; the input keeps the paper surface; the
+               segmented control's inset affordance is untouched."
+      >
+        <div
+          className="box"
+          style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}
         >
-          {o}
-        </button>
-      ))}
+          <div className="seg">
+            {["Cell", "Word", "Puzzle"].map((o) => (
+              <button key={o} className={`seg-btn ${o === "Word" ? "active" : ""}`}>
+                {o}
+              </button>
+            ))}
+          </div>
+          <CheckRow
+            checked={autocheck}
+            onChange={setAutocheck}
+            label="Check letters as you type"
+          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <input className="text-input" placeholder="Username" style={{ flex: 1 }} />
+            <button className="btn">Claim</button>
+          </div>
+        </div>
+      </Level>
+
+      <Level
+        label="Inside a modal — the same rule"
+        blurb="The invite dialog's link row (rendered inline here — a real modal
+               floats on the overlay): a paper field between key-faced buttons,
+               where a shadowless all-white row used to blur together."
+      >
+        <div className="modal">
+          <h2 className="modal-title">Solve together</h2>
+          <p>Anyone with this link can sign in and join your session.</p>
+          <div className="savedata-actions">
+            <input
+              className="text-input"
+              readOnly
+              value="https://itscharies.github.io/xword/s/fixture123"
+            />
+            <button className="btn">Copy</button>
+            <button className="btn btn-accent">Share…</button>
+          </div>
+          <div className="modal-actions">
+            <button className="btn">Done</button>
+          </div>
+        </div>
+      </Level>
+
+      <Level
+        label="Manual opt-in — .flat"
+        blurb="Anywhere the automatic containers don't reach, .flat on a wrapper
+               (or the control itself) applies the identical treatment — used
+               whenever a control shares a row with a shadowless input."
+      >
+        <div className="flat" style={{ display: "flex", gap: 8 }}>
+          <input className="text-input" placeholder="Paste an invite link" style={{ flex: 1 }} />
+          <button className="btn">Join</button>
+        </div>
+      </Level>
     </div>
   );
 };
-
-export const Inputs: Story = () => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 480 }}>
-    <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
-      Every text input and select shares the .text-input base — same surface,
-      border, focus ring, and .btn-matched height. Specialized fields stack a
-      modifier on top.
-    </p>
-    <Row label="Base">
-      <input className="text-input" placeholder="Paste an invite link" style={{ flex: 1 }} />
-    </Row>
-    <Row label="Sharing a row with a button — the row is .flat, so the button drops its shadow to match">
-      <div className="flat" style={{ display: "flex", gap: 8, flex: 1 }}>
-        <input className="text-input" placeholder="https://…" style={{ flex: 1 }} />
-        <button className="btn">Join</button>
-      </div>
-    </Row>
-    <Row label="Select, number, date — same base">
-      <select className="text-input" defaultValue="quick">
-        <option value="quick">Quick</option>
-        <option value="cryptic">Cryptic</option>
-      </select>
-      <input className="text-input" type="number" defaultValue={15} style={{ width: 72 }} />
-      <input className="text-input" type="date" defaultValue="2026-01-01" />
-    </Row>
-    <Row label=".ana-input — spaced uppercase letter entry">
-      <input
-        className="text-input ana-input"
-        defaultValue="LISTEN"
-        autoCapitalize="characters"
-        spellCheck={false}
-      />
-    </Row>
-    <Row label=".compact — the same input, smaller, for dense rows">
-      <input className="text-input compact" placeholder="Clue…" style={{ flex: 1 }} />
-      <select className="text-input compact" defaultValue="">
-        <option value="">+ link…</option>
-        <option value="1a">1a</option>
-      </select>
-    </Row>
-    <Row label="States">
-      <input className="text-input" disabled placeholder="Disabled" />
-      <input className="text-input" readOnly value="Read-only" />
-    </Row>
-  </div>
-);
 
 export const Type: Story = () => (
   <div style={{ maxWidth: 560 }}>

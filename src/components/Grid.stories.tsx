@@ -11,6 +11,7 @@ import {
   PEER_POOL,
   SINK_PROGRESS,
 } from "../stories/fixtures.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Solver / Grid",
@@ -27,10 +28,6 @@ function usePlayable(puzzle: Puzzle, saved: Progress | null = null) {
   }, [handleKeyDown]);
   return xw;
 }
-
-const Note = ({ children }: { children: string }) => (
-  <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>{children}</p>
-);
 
 export const Playable: Story = () => {
   const xw = usePlayable(MINI);

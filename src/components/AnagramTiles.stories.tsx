@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Story, StoryDefault } from "@ladle/react";
 import { AnagramTiles } from "./AnagramTiles.tsx";
 import { useAnagramPool, type AnagramPool } from "../hooks/useAnagramPool.ts";
+import { Note } from "../stories/helpers.tsx";
 
 export default {
   title: "Anagram / Tiles",
@@ -24,10 +25,10 @@ const PoolStory = ({ view }: { view: "circle" | "grid" }) => {
   const pool = useSeededPool("LISTEN");
   return (
     <>
-      <p style={{ maxWidth: 560, color: "var(--muted)", fontSize: 14 }}>
+      <Note>
         Drag tiles to reorder, double-tap/click one to lock it in place
         (locked tiles survive shuffles).
-      </p>
+      </Note>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <button className="btn" onClick={pool.shuffle}>
           Shuffle
