@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Cell, Direction, Puzzle } from "../types.ts";
+import { MINI_MAX_SIZE, type Cell, type Direction, type Puzzle, type PuzzleType } from "../types.ts";
 import { numberGrid, readWord, slotCells, type WordStart } from "../lib/numbering.ts";
 import { appendRefs, refLabel, splitGeneratedRefs, stripRefs } from "../lib/clueRefs.ts";
 import { splitEnumeration } from "../lib/enumeration.ts";
@@ -73,8 +73,11 @@ export function useBuilder() {
   const [height, setHeightState] = useState(DEFAULT_SIZE);
   const [linked, setLinked] = useState(true);
   const [symmetry, setSymmetry] = useState(true);
-  // Cryptic puzzles offer the anagram helper and carry clue enumerations.
-  const [cryptic, setCryptic] = useState(false);
+  // The puzzle's style: Mini / Regular / Cryptic. `null` means the author
+  // hasn't picked one, and the control tracks the grid size instead (small
+  // grids read as minis) — matching how the feed categorises puzzles that
+  // never chose. Clicking a style pins it.
+  const [styleChoice, setStyleChoice] = useState<PuzzleType | null>(null);
   // Set a "(3,4)" length enumeration on each clue on export (cryptic style).
   const [autoEnumerate, setAutoEnumerate] = useState(false);
 
@@ -139,14 +142,21 @@ export function useBuilder() {
     symmetryRef.current = !symmetryRef.current;
     setSymmetry(symmetryRef.current);
   }, []);
-  // Switching to cryptic turns clue enumerations on (and regular turns them
-  // off) as a sensible preset; the lengths toggle can still be set on its own.
-  const toggleCryptic = useCallback(() => {
-    setCryptic((c) => {
-      const next = !c;
-      setAutoEnumerate(next);
-      return next;
-    });
+  // What actually gets published: the pinned choice, or the size default.
+  // Auto never yields cryptic — that's always a deliberate pick.
+  const puzzleType: PuzzleType =
+    styleChoice ?? (Math.max(width, height) <= MINI_MAX_SIZE ? "mini" : "regular");
+  const cryptic = puzzleType === "cryptic";
+  const puzzleTypeRef = useRef(puzzleType);
+  puzzleTypeRef.current = puzzleType;
+
+  // Switching to cryptic turns clue enumerations on (and leaving it turns
+  // them off) as a sensible preset; the lengths toggle can still be set on
+  // its own, and mini<->regular moves leave it alone.
+  const setStyle = useCallback((t: PuzzleType) => {
+    const wasCryptic = puzzleTypeRef.current === "cryptic";
+    if ((t === "cryptic") !== wasCryptic) setAutoEnumerate(t === "cryptic");
+    setStyleChoice(t);
   }, []);
   const toggleAutoEnumerate = useCallback(() => setAutoEnumerate((v) => !v), []);
 
@@ -830,6 +840,9 @@ export function useBuilder() {
       editor,
       width,
       height,
+      // Both spellings: `type` is what the feed categorises by, and the
+      // solver still reads the older boolean for its cryptic affordances.
+      type: puzzleType,
       cryptic,
       grid: clone,
       clues: {
@@ -838,7 +851,7 @@ export function useBuilder() {
       },
       ...(exportLinks.length ? { links: exportLinks } : {}),
     };
-  }, [grid, clueText, links, date, title, author, editor, width, height, autoEnumerate, cryptic]);
+  }, [grid, clueText, links, date, title, author, editor, width, height, autoEnumerate, puzzleType, cryptic]);
 
   // Unsaved-changes flag, driving the leave-page warnings in Builder.tsx.
   // Any content edit sets it (cursor, mode and selection moves don't count);
@@ -851,7 +864,7 @@ export function useBuilder() {
   const lastContentRef = useRef<unknown[] | null>(null);
   useEffect(() => {
     const content = [
-      width, height, cryptic, autoEnumerate, grid, clueText, links,
+      width, height, puzzleType, autoEnumerate, grid, clueText, links,
       title, author, editor, date,
     ];
     if (lastContentRef.current) {
@@ -864,7 +877,7 @@ export function useBuilder() {
       lastContentRef.current = content; // mount, not an edit
     }
   }, [
-    width, height, cryptic, autoEnumerate, grid, clueText, links,
+    width, height, puzzleType, autoEnumerate, grid, clueText, links,
     title, author, editor, date,
   ]);
 
@@ -880,7 +893,7 @@ export function useBuilder() {
     setLinked(true);
     symmetryRef.current = true;
     setSymmetry(true);
-    setCryptic(false);
+    setStyleChoice(null);
     setAutoEnumerate(false);
     setGrid(makeGrid(DEFAULT_SIZE, DEFAULT_SIZE));
     setActive({ row: 0, col: 0 });
@@ -910,7 +923,10 @@ export function useBuilder() {
     setActive({ row: 0, col: 0 });
     setDirection("across");
     setMode("fill");
-    setCryptic(Boolean(puzzle.cryptic));
+    // Explicit type (or the older cryptic flag) pins the style; anything
+    // saved before either existed stays on the size-derived default, which
+    // is also how the feed will categorise it.
+    setStyleChoice(puzzle.type ?? (puzzle.cryptic ? "cryptic" : null));
 
     // Rebuild clue text and structured links together. buildPuzzle writes
     // links twice — baked into the clue text for solvers, and structurally
@@ -973,14 +989,14 @@ export function useBuilder() {
     height,
     linked,
     symmetry,
-    cryptic,
+    puzzleType,
     autoEnumerate,
     setSize,
     setWidth,
     setHeight,
     toggleLink,
     toggleSymmetry,
-    toggleCryptic,
+    setStyle,
     toggleAutoEnumerate,
     clearDraft,
     // Unsaved-changes tracking (nothing persists locally).

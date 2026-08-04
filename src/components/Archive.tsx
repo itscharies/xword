@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PuzzleSource } from "../lib/sources.ts";
-import { SOURCES, PAPERS, TYPES } from "../lib/sources.ts";
+import { SOURCES, PAPERS, TYPES, TYPE_LABEL } from "../lib/sources.ts";
 import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
@@ -321,8 +321,9 @@ export function Archive({
 
   // The Sources row covers both worlds: paper chips match syndicated
   // puzzles, the Following/Your puzzles chips match community ones. Type
-  // still describes syndicated sources only, so it drops community puzzles
-  // once active.
+  // covers both too — syndicated items get theirs from their source's
+  // metadata, community ones from their own type field (author-picked or
+  // size-derived server-side).
   const filteredItems = useMemo(() => {
     return visibleItems.filter((it) => {
       if (it.kind === "syndicated") {
@@ -331,7 +332,7 @@ export function Archive({
         if (types.length > 0 && !types.includes(meta.type)) return false;
         return matchesProgress(loadProgress(it.source!, it.puzzleDate!));
       }
-      if (types.length > 0) return false;
+      if (types.length > 0 && !types.includes(TYPE_LABEL[it.type ?? "regular"])) return false;
       if (papers.length > 0) {
         const mine = !!user && it.authorProfile?.user_id === user.id;
         if (!papers.includes(mine ? MINE_CHIP : FOLLOWING_CHIP)) return false;
@@ -684,6 +685,9 @@ function CommunityItem({
             <span className="ai-source">{item.title}</span>
             <span className="ai-author">
               {isMine ? "By you" : `By ${item.authorProfile?.display_name} · @${item.authorProfile?.username}`}
+              {/* Only the non-default types get a tag — "Crossword" on every
+                  regular row would just be noise. */}
+              {(item.type === "mini" || item.type === "cryptic") && ` · ${TYPE_LABEL[item.type]}`}
             </span>
           </div>
         </div>

@@ -350,27 +350,23 @@ export function Builder({
           <div className="builder-setting">
             <span className="builder-field-label">Style</span>
             <div className="seg">
-              <button
-                className={`seg-btn ${!b.cryptic ? "active" : ""}`}
-                onClick={() => b.cryptic && b.toggleCryptic()}
-                aria-pressed={!b.cryptic}
-              >
-                Regular
-              </button>
-              <button
-                className={`seg-btn ${b.cryptic ? "active" : ""}`}
-                onClick={() => !b.cryptic && b.toggleCryptic()}
-                aria-pressed={b.cryptic}
-              >
-                Cryptic
-              </button>
+              {(["mini", "regular", "cryptic"] as const).map((t) => (
+                <button
+                  key={t}
+                  className={`seg-btn ${b.puzzleType === t ? "active" : ""}`}
+                  onClick={() => b.puzzleType !== t && b.setStyle(t)}
+                  aria-pressed={b.puzzleType === t}
+                >
+                  {t === "mini" ? "Mini" : t === "regular" ? "Regular" : "Cryptic"}
+                </button>
+              ))}
             </div>
             {/* tip-up: the settings row sits at the page's bottom edge, so a
                 downward panel would fall below the fold. */}
             <Tip
               className="tip-up"
               label="About the puzzle style setting"
-              tip="Cryptic puzzles offer the anagram helper and show clue length enumerations like (3,4). Regular (American-style) puzzles do neither. Saved into the exported file as cryptic: true/false."
+              tip="How the puzzle is categorised in the feed's Type filter. Small grids (up to 7×7) default to Mini. Cryptic puzzles also offer the anagram helper and show clue length enumerations like (3,4)."
             >
               <span className="builder-info">ⓘ</span>
             </Tip>

@@ -1,6 +1,8 @@
 // The puzzle collections the app pulls from. Each lives in its own folder
 // under public/puzzles/<source>/ and carries a `source` tag in the index.
 
+import type { PuzzleType } from "../types.ts";
+
 // Seattle Times publishes several AmuseLabs sets. The non-"large" daily set
 // (seattletimes-crossword) is deactivated upstream (errorCode 115), but large,
 // midi, and mini are live.
@@ -84,6 +86,15 @@ export const SOURCE_ORDER: PuzzleSource[] = [
   "tny-crossword",
   "tny-mini",
 ];
+
+/** Community puzzles carry a PuzzleType instead of a source — map it onto
+ * the same three display strings SourceMeta.type uses, so one Type filter
+ * covers both worlds. */
+export const TYPE_LABEL: Record<PuzzleType, SourceMeta["type"]> = {
+  regular: "Crossword",
+  mini: "Mini",
+  cryptic: "Cryptic",
+};
 
 /** Distinct papers / types in display order, for the archive filters. */
 export const PAPERS: string[] = [

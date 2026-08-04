@@ -2,7 +2,7 @@
 // wrapper, no-ops if Supabase isn't configured, matching lib/auth.ts.
 
 import { supabase } from "./supabase.ts";
-import type { Puzzle } from "../types.ts";
+import type { Puzzle, PuzzleType } from "../types.ts";
 import type { Profile } from "./profile.ts";
 import type { PuzzleSource } from "./sources.ts";
 import type { AccentId } from "./theme.ts";
@@ -66,6 +66,11 @@ export interface ArchiveFeedItem {
   author: string | null;
   /** Community only — hydrated from `profiles` after the feed query. */
   authorProfile: Profile | null;
+  /** Community only — the puzzle's type for the feed's Type filter, from
+   *  the author's explicit pick or derived from the grid size / cryptic
+   *  flag by community_puzzle_type() server-side. Syndicated items carry
+   *  null and derive theirs from SOURCES[source].type instead. */
+  type: PuzzleType | null;
   completions: number;
   /** Mutuals' progress on this puzzle, projected onto the feed query. */
   mutualProgress: MutualProgress[];
@@ -83,6 +88,7 @@ interface RawFeedRow {
   completions: number | null;
   neg_date: number;
   tie: number;
+  puzzle_type: string | null;
   mutual_progress: MutualProgress[] | null;
 }
 
@@ -168,6 +174,7 @@ export async function listArchivePage(opts: {
     weekday: r.weekday,
     author: r.author,
     authorProfile: r.author_id ? (byId.get(r.author_id) ?? null) : null,
+    type: r.kind === 0 ? ((r.puzzle_type as PuzzleType) ?? "regular") : null,
     completions: r.completions ?? 0,
     mutualProgress: r.mutual_progress ?? [],
   }));

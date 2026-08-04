@@ -72,4 +72,25 @@ export interface Puzzle {
    * enumerations). Authored puzzles set it explicitly; source-based puzzles
    * fall back to inferring it from their source's type. */
   cryptic?: boolean;
+  /** Coarse category driving the feed's Type filter, mirroring the three
+   * SourceMeta.type buckets syndicated puzzles get. Written by the builder
+   * on export; puzzles saved before it existed are categorised by
+   * `puzzleTypeOf` below (and its SQL twin `community_puzzle_type`). */
+  type?: PuzzleType;
+}
+
+export type PuzzleType = "mini" | "regular" | "cryptic";
+
+/** Largest grid dimension that still counts as a Mini — NYT-style minis run
+ * 5×5 to 7×7, while the smallest "full" grids (midis) start around 9. */
+export const MINI_MAX_SIZE = 7;
+
+/** Categorises a puzzle whose data predates the explicit `type` field: the
+ * cryptic flag wins, then small grids are minis, everything else is regular.
+ * Must stay in lockstep with `community_puzzle_type` on the SQL side, which
+ * applies the same rules inside the feed query. */
+export function puzzleTypeOf(p: Pick<Puzzle, "type" | "cryptic" | "width" | "height">): PuzzleType {
+  if (p.type === "mini" || p.type === "regular" || p.type === "cryptic") return p.type;
+  if (p.cryptic) return "cryptic";
+  return Math.max(p.width, p.height) <= MINI_MAX_SIZE ? "mini" : "regular";
 }

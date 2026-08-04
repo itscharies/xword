@@ -8,7 +8,7 @@
 // is driven by the dev-only switcher in App.tsx via mockSignIn/mockSignOut,
 // not by real OAuth (there's nothing to redirect to in mock mode).
 
-import type { Cell, Clue, Puzzle } from "../types.ts";
+import { puzzleTypeOf, type Cell, type Clue, type Puzzle } from "../types.ts";
 import { SOURCE_ORDER, type PuzzleSource } from "./sources.ts";
 import type { AccentId } from "./theme.ts";
 
@@ -420,6 +420,7 @@ interface RawFeedRow {
   completions: number | null;
   neg_date: number;
   tie: number;
+  puzzle_type: string | null;
   mutual_progress: ReturnType<typeof mockListMutualProgress>;
 }
 
@@ -470,6 +471,8 @@ function mockListArchiveFeed(params: {
       completions: p.completions,
       neg_date: -Date.parse(`${pubDate(p)}T00:00:00Z`),
       tie: -Date.parse(p.created_at),
+      // Mirrors community_puzzle_type() — explicit type, else cryptic/size.
+      puzzle_type: puzzleTypeOf(p.data),
       mutual_progress: mockListMutualProgress({
         p_puzzle_id: p.id,
         p_source: null,
@@ -491,6 +494,7 @@ function mockListArchiveFeed(params: {
       completions: null,
       neg_date: -Date.parse(`${s.iso_date}T00:00:00Z`),
       tie: s.source_priority,
+      puzzle_type: null, // syndicated type derives from `source` client-side
       mutual_progress: mockListMutualProgress({
         p_puzzle_id: null,
         p_source: s.source,
