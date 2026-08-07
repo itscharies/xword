@@ -150,6 +150,9 @@ export function ThemeControls() {
         </div>
       )}
 
+      {/* One group for everything that moves the cursor as you fill,
+          ordered by scale — square, then word, then clue. The old
+          Typing/Clues split filed the same journey under two headings. */}
       <div className="setting-row">
         <span className="setting-label">Typing</span>
         <PrefRow
@@ -162,20 +165,6 @@ export function ThemeControls() {
           set={setBackfillGaps}
           label="Jump back to the first blank in the word"
         />
-        <PrefRow
-          get={getSpaceClears}
-          set={setSpaceClears}
-          label="Space clears the square (instead of switching direction)"
-        />
-        <PrefRow
-          get={getBackspacePrevWord}
-          set={setBackspacePrevWord}
-          label="Backspace into the previous word"
-        />
-      </div>
-
-      <div className="setting-row">
-        <span className="setting-label">Clues</span>
         <CheckRow
           checked={advance}
           onChange={changeAdvance}
@@ -197,9 +186,14 @@ export function ThemeControls() {
           label="Skip clues that are already filled"
         />
         <PrefRow
-          get={getStrikeFilledClues}
-          set={setStrikeFilledClues}
-          label="Strike through clues that are already filled"
+          get={getSpaceClears}
+          set={setSpaceClears}
+          label="Space clears the square (instead of switching direction)"
+        />
+        <PrefRow
+          get={getBackspacePrevWord}
+          set={setBackspacePrevWord}
+          label="Backspace into the previous word"
         />
       </div>
 
@@ -212,8 +206,14 @@ export function ThemeControls() {
         />
       </div>
 
+      {/* What's shown, not how the cursor behaves. */}
       <div className="setting-row">
-        <span className="setting-label">Timer</span>
+        <span className="setting-label">Display</span>
+        <PrefRow
+          get={getStrikeFilledClues}
+          set={setStrikeFilledClues}
+          label="Strike through clues that are already filled"
+        />
         <PrefRow get={getShowTimer} set={setShowTimer} label="Show the timer" />
       </div>
 
