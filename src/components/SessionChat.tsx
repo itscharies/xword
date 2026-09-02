@@ -9,10 +9,10 @@ import { SessionChatThread } from "./SessionChatThread.tsx";
  *  chat button now, not one of its own — this component only renders the
  *  panel itself and, while closed, the transient "new message" popups
  *  (unaffected by any of this — they float near this same corner on every
- *  viewport size). Mobile uses SessionChatOverlay for the expanded view
- *  instead: a real <input> inside a position: fixed box fights the iOS
- *  keyboard's own resizing of the visual viewport, so the composer needs to
- *  live in normal scrollable flow there. */
+ *  viewport size, and are the only thing this renders while the chat is
+ *  closed). Mobile's expanded view is SessionChatOverlay instead — a
+ *  full-screen sheet, because a small floating panel can't stay glued to the
+ *  keyboard's edge on a phone. */
 export function SessionChat({
   session,
   userId,

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { SessionApi } from "../hooks/useSession.ts";
 import type { SessionComment } from "../lib/comments.ts";
 import { Avatar } from "./Avatar.tsx";
+import { SendIcon } from "./icons.tsx";
 
 /** Consecutive messages from the same sender collapse into one block (one
  *  avatar/name), the way chat apps do — a new block starts only when the
@@ -140,6 +141,21 @@ export function SessionChatThread({
           placeholder="Message…"
           maxLength={500}
         />
+        {/* preventDefault on mousedown so the button never takes focus: on a
+            phone, letting it steal focus from the input dismisses the keyboard
+            on every send, and the sheet then resizes twice per message. The
+            click still fires. */}
+        <button
+          type="button"
+          className="sc-send"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={submit}
+          disabled={!draft.trim()}
+          aria-label="Send message"
+          title="Send"
+        >
+          <SendIcon />
+        </button>
       </div>
     </>
   );

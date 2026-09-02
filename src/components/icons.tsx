@@ -94,6 +94,14 @@ export const CommentIcon = () => (
   </svg>
 );
 
+// Send: a paper plane (Feather "send").
+export const SendIcon = () => (
+  <svg {...base}>
+    <path d="M22 2L11 13" />
+    <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+  </svg>
+);
+
 // Delete: a trash can (Feather "trash-2").
 export const DeleteIcon = () => (
   <svg {...base}>

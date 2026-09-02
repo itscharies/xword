@@ -1667,14 +1667,61 @@ select.text-input.compact {
    matches the .savedata-actions convention of a flat field inside its own
    already-lifted surface. */
 .sc-composer {
+  display: flex;
+  align-items: stretch;
   border-top: var(--bw) solid var(--line);
 }
 .sc-input {
-  width: 100%;
+  flex: 1 1 auto;
+  /* min-width: 0 or the input's default intrinsic width stops the row from
+     ever shrinking, and the send key gets pushed out of the panel. */
+  min-width: 0;
+  width: auto;
   border: 0;
   box-shadow: none;
   padding: 10px 12px;
   font-size: 13px;
+}
+
+/* Send. Enter already submits; this is the affordance for the case where
+   there's no Enter key to reach for. Disabled — rather than hidden — on an
+   empty draft, so the row never changes width as you type. */
+.sc-send {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 0;
+  background: var(--surface);
+  color: var(--fg);
+}
+.sc-send:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.sc-send svg {
+  display: block;
+  /* The plane reads as pointing at the corner it's flying to. */
+  transform: translate(-1px, 1px);
+}
+
+/* Desktop panel: the composer is already flush inside a lifted card, so the
+   send key is a divider and a glyph rather than a control with chrome of its
+   own — same reasoning as .sc-input being borderless here. */
+.sc-panel .sc-send {
+  width: 40px;
+  border-left: var(--bw) solid var(--line);
+}
+@media (hover: hover) {
+  .sc-panel .sc-send:not(:disabled):hover {
+    background: var(--accent-2);
+    color: #000;
+  }
+}
+.sc-panel .sc-send:not(:disabled):active {
+  background: var(--accent);
+  color: #000;
 }
 .sc-input:focus-visible {
   outline: none;
@@ -1906,11 +1953,37 @@ html.sc-locked {
    which stays true after dismissal on Android. */
 .sc-sheet .sc-composer {
   flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
   border-top: 2px solid var(--line);
   background: var(--bg);
   padding: 10px calc(14px + env(safe-area-inset-right, 0px))
     calc(10px + env(safe-area-inset-bottom, 0px) * var(--sc-safe-bot, 1))
     calc(14px + env(safe-area-inset-left, 0px));
+}
+
+/* On the sheet the send key sits on --bg beside a bordered field rather than
+   inside a card, so it takes the same 2px/3px weight every other control has
+   at this width — and the accent, since sending is the one primary action
+   here. 44px square: the field's own height at 16px text, and a comfortable
+   touch target. */
+.sc-sheet .sc-send {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--line);
+  background: var(--accent);
+  color: #000;
+  box-shadow: 3px 3px 0 var(--shadow-col);
+}
+.sc-sheet .sc-send:disabled {
+  background: var(--surface);
+  color: var(--muted);
+}
+/* .btn's own :active offset is var(--sh) (5px), which overshoots a 3px
+   shadow — same override .sc-sheet-head's button takes. */
+.sc-sheet .sc-send:not(:disabled):active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--shadow-col);
 }
 /* On the sheet the field sits on --bg, not flush inside an already-lifted
    --surface card the way .sc-panel's does, so it carries its own border to
