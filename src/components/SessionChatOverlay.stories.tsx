@@ -42,9 +42,11 @@ function makeSession(comments: SessionComment[]): SessionApi {
 }
 
 /** Stands in for .app — a bounded, scrollable flex column — so .sc-overlay's
- *  `flex: 1 0 auto` has something to grow into and .sc-composer's
- *  `position: sticky; bottom: 0` sticks to *this* box's edge, the same way
- *  it sticks to the real page's edge in place of .mobile-bar. */
+ *  `flex: 1 0 auto` has something to grow into and the message list scrolls
+ *  the same way it scrolls the real page. The composer itself is
+ *  position: fixed (see the Note below), so it escapes this box entirely
+ *  and pins to the *story's own* viewport edge instead — same deal as
+ *  .session-chat's Stage in its own stories. */
 const Stage = ({ children }: { children: React.ReactNode }) => (
   <div
     style={{
@@ -64,12 +66,14 @@ export const Default: Story = () => (
   <>
     <Note>
       Mobile's expanded chat view — replaces .main and .mobile-bar outright
-      (App.tsx renders one or the other) rather than layering over them, and
-      scrolls with the page instead of in its own bounded region: a real
-      &lt;input&gt; inside a nested scroll container (or worse, position:
-      fixed) fights the iOS keyboard's own resizing of the visual viewport.
-      No close button of its own: closed by tapping the same Toolbar chat
-      button again, same as AnagramOverlay.
+      (App.tsx renders one or the other) rather than layering over them.
+      The message list scrolls with the page; the composer is pinned via
+      `pinComposer` (position: fixed, tracked against
+      window.visualViewport — see useKeyboardInset) rather than trusting
+      position: sticky or a dvh/svh trick to follow the keyboard, which
+      doesn't happen reliably on iOS Safari in practice. No close button of
+      its own: closed by tapping the same Toolbar chat button again, same
+      as AnagramOverlay.
     </Note>
     <Stage>
       <SessionChatOverlay session={makeSession(HISTORY)} userId="user-ada" />
@@ -81,8 +85,8 @@ export const LongHistory: Story = () => (
   <>
     <Note>
       Enough messages to scroll — the page (this dashed box, standing in for
-      it) scrolls past them while the composer stays pinned to its bottom
-      edge, same as .mobile-bar always has.
+      it) scrolls past them while the composer stays pinned to the visual
+      viewport's bottom edge regardless.
     </Note>
     <Stage>
       <SessionChatOverlay session={makeSession(LONG_HISTORY)} userId="user-ada" />

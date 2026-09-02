@@ -20,7 +20,7 @@ export function SessionChatOverlay({
 }) {
   return (
     <div className="sc-overlay" role="dialog" aria-label="Session chat">
-      <SessionChatThread session={session} userId={userId} />
+      <SessionChatThread session={session} userId={userId} autoFocus={false} pinComposer />
     </div>
   );
 }

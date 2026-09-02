@@ -1747,13 +1747,18 @@ select.text-input.compact {
    open (App.tsx renders one or the other, never both) rather than layering
    over them — full-bleed past .app's side padding like those two, but
    (unlike them) doesn't re-add it: the composer should sit flush against
-   the real screen edges, not inset behind a gutter. Scrolls with the whole
-   page instead of in a nested region of its own: a real <input> inside a
-   bounded scroll container (or worse, position: fixed) fights the iOS
-   keyboard's own resizing of the visual viewport as it opens, so
-   .sc-messages here drops its shared rule's internal scroll and just grows
-   in normal flow, and .sc-composer sticks to the viewport bottom exactly
-   like .mobile-bar did in its place. */
+   the real screen edges, not inset behind a gutter. The message list
+   scrolls with the whole page rather than in a nested region of its own
+   (.sc-messages here drops its shared rule's internal scroll and just
+   grows in normal flow) — but the composer itself is pinned via
+   SessionChatThread's `pinComposer` (position: fixed, JS-tracked against
+   window.visualViewport — see useKeyboardInset): plain CSS (position:
+   sticky, dvh/svh, the interactive-widget viewport meta) doesn't reliably
+   follow the keyboard on iOS Safari in practice, leaving the composer
+   stranded behind a gap or behind the keyboard entirely. This rule only
+   covers what the inline style doesn't: background (so scrolled-past
+   messages don't show through) and the safe-area inset for the home
+   indicator once the keyboard's closed. */
 .sc-overlay {
   display: flex;
   flex-direction: column;
@@ -1762,18 +1767,17 @@ select.text-input.compact {
   margin: 0 -14px;
 }
 .sc-overlay .sc-messages {
-  /* Same formula as .main: grow to fill leftover space when short (so the
-     composer still lands at the visual bottom), but never shrink below
-     content's own height — a short list doesn't clip, a long one just
-     grows the page past the viewport for the document to scroll. */
+  /* Same formula as .main: grow to fill leftover space when short, but
+     never shrink below content's own height — a short list doesn't clip,
+     a long one just grows the page past the viewport for the document to
+     scroll. */
   flex: 1 0 auto;
   min-height: 0;
   overflow-y: visible;
 }
 .sc-overlay .sc-composer {
-  position: sticky;
-  bottom: 0;
   background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* How-to-play guide. */

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionApi } from "../hooks/useSession.ts";
 import type { SessionComment } from "../lib/comments.ts";
+import { useKeyboardInset } from "../hooks/useKeyboardInset.ts";
 import { Avatar } from "./Avatar.tsx";
 
 /** Consecutive messages from the same sender collapse into one block (one
@@ -28,11 +29,24 @@ export function SessionChatThread({
   session,
   userId,
   onEscape,
+  autoFocus = true,
+  pinComposer = false,
 }: {
   session: SessionApi;
   userId: string;
   /** Esc in the composer closes whichever shell is showing. */
   onEscape?: () => void;
+  /** Mobile overlay disables this — focusing the instant the overlay opens
+   *  pops the keyboard immediately, compounding the overlay's own layout
+   *  swap into one janky double-shift. Left on for the desktop panel,
+   *  which has no keyboard to pop. */
+  autoFocus?: boolean;
+  /** Mobile overlay only: pins the composer to the *visual* viewport's
+   *  bottom edge via useKeyboardInset (position: fixed, JS-tracked) rather
+   *  than trusting position: sticky to follow the keyboard — it doesn't
+   *  reliably on iOS, leaving the composer stranded above a gap or behind
+   *  the keyboard entirely. */
+  pinComposer?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -42,14 +56,31 @@ export function SessionChatThread({
   // `scrollIntoView` finds whichever scrolling ancestor actually applies
   // instead of the two shells needing different scroll logic.
   const bottomRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [composerHeight, setComposerHeight] = useState(0);
+  const keyboardInset = useKeyboardInset(pinComposer);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [session.comments.length]);
+
+  // Pinning the composer takes it out of flow (position: fixed) — measure
+  // its real height so the message list can pad its own bottom by exactly
+  // that much and never sit hidden underneath it.
+  useEffect(() => {
+    if (!pinComposer) return;
+    const el = composerRef.current;
+    if (!el) return;
+    const update = () => setComposerHeight(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pinComposer]);
 
   const participantFor = (authorId: string) =>
     session.participants.find((p) => p.user_id === authorId);
@@ -62,7 +93,10 @@ export function SessionChatThread({
 
   return (
     <>
-      <div className="sc-messages">
+      <div
+        className="sc-messages"
+        style={pinComposer ? { paddingBottom: composerHeight } : undefined}
+      >
         {session.comments.length === 0 ? (
           <p className="sc-empty">No messages yet — say hello.</p>
         ) : (
@@ -94,7 +128,11 @@ export function SessionChatThread({
         )}
         <div ref={bottomRef} />
       </div>
-      <div className="sc-composer">
+      <div
+        className="sc-composer"
+        ref={composerRef}
+        style={pinComposer ? { position: "fixed", left: 0, right: 0, bottom: keyboardInset } : undefined}
+      >
         <input
           ref={inputRef}
           className="text-input sc-input"
