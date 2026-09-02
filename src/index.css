@@ -954,7 +954,7 @@ select.text-input.compact {
   min-height: 0;
 }
 
-.board { display: flex; flex-direction: column; gap: 12px; }
+.board { position: relative; display: flex; flex-direction: column; gap: 12px; }
 /* The banner-above-grid wrapper (desktop) and the anchored bottom bar (mobile)
    each show only at their breakpoint. */
 .mobile-bar { display: none; }
@@ -1532,12 +1532,16 @@ select.text-input.compact {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-bottom: 12px;
+  /* .main bleeds full-bleed at this width (like .actionbar/.mobile-bar), so
+     the overlay re-adds their same 14px side gutter itself. */
+  padding: 0 14px 12px;
   overflow-y: auto;
 }
-/* While the overlay covers the board, drop the grid's hard shadow — it extends
-   past the board box and would otherwise poke out from behind the overlay. */
-.main.ana-open .grid {
+/* While the anagram overlay covers the board, drop the grid's hard shadow —
+   it extends past the board box and would otherwise poke out from behind
+   the overlay. (Session chat's mobile shell doesn't need this: it replaces
+   .main entirely rather than covering it — see .sc-overlay.) */
+.main.overlay-open .grid {
   box-shadow: none;
 }
 .ana-overlay .ana-tiles {
@@ -1577,6 +1581,199 @@ select.text-input.compact {
 .ana-tile.ana-floating {
   box-shadow: 4px 5px 0 var(--shadow-col);
   cursor: grabbing;
+}
+
+/* Session-wide chat's desktop panel + toast popups (co-op sessions): pinned
+   to the viewport's bottom-left, not the canvas or any clue — panning/
+   zooming the grid or scrolling the page never moves it. The toggle button
+   itself lives in the Toolbar now, not here. `bottom` is set inline
+   (SessionChat measures .mobile-bar's real height) so it always clears the
+   on-screen keyboard on mobile instead of sitting under it; on desktop that
+   bar is 0-height, so it just sits at a fixed 12px inset. z-index sits
+   above .actionbar/.mobile-bar (both 30, sticky) so the panel and its
+   popups never end up rendering under either bar at the boundary — but
+   below Modal's overlay (50), so an actual dialog still wins if one opens
+   on top of it. */
+.session-chat {
+  position: fixed;
+  left: 12px;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+.session-chat > * {
+  pointer-events: auto;
+}
+
+/* The open panel: same surface/border/shadow as every other popover
+   (.solves-panel, .tip-panel, .def-popover) — a fixed box with the whole
+   scrollable history above a persistent composer, not a per-message
+   float. */
+.sc-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(84vw, 300px);
+  max-height: 360px;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+}
+.sc-messages {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+.sc-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+.sc-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.sc-avatar {
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: block;
+}
+.sc-body-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sc-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.sc-body {
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--fg);
+}
+/* Flush inside the panel, not a separately shadowed control next to it —
+   matches the .savedata-actions convention of a flat field inside its own
+   already-lifted surface. */
+.sc-composer {
+  border-top: var(--bw) solid var(--line);
+}
+.sc-input {
+  width: 100%;
+  border: 0;
+  box-shadow: none;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.sc-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  background: var(--surface-2);
+}
+
+/* Transient "new message" popups, shown only while the panel is closed —
+   pop up near the button and slide back off to the left after a few
+   seconds (see the .leaving animation, driven by useSession's notice
+   timers). Compact card weight (2px/3px), matching .session-notice, since
+   several can stack with only a small gap between them. */
+.sc-popups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.sc-popup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(80vw, 280px);
+  padding: 5px 8px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--shadow-col);
+  font-size: 12px;
+  line-height: 1.35;
+  animation: sc-popup-in 0.2s ease-out;
+}
+.sc-popup.leaving {
+  animation: sc-popup-out 0.25s ease-in forwards;
+}
+@keyframes sc-popup-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes sc-popup-out {
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+/* Overlaid on the Toolbar's chat button (itself a plain .btn, so it already
+   carries the same border/shadow as its neighbours) — the wrapping .tb-group
+   is already position: relative for Dropdown's own menu, so this only needs
+   its own absolute placement. */
+.sc-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+  background: var(--accent-2);
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Session chat's mobile shell replaces .main + .mobile-bar entirely while
+   open (App.tsx renders one or the other, never both) rather than layering
+   over them — full-bleed past .app's side padding like those two, but
+   (unlike them) doesn't re-add it: the composer should sit flush against
+   the real screen edges, not inset behind a gutter. Scrolls with the whole
+   page instead of in a nested region of its own: a real <input> inside a
+   bounded scroll container (or worse, position: fixed) fights the iOS
+   keyboard's own resizing of the visual viewport as it opens, so
+   .sc-messages here drops its shared rule's internal scroll and just grows
+   in normal flow, and .sc-composer sticks to the viewport bottom exactly
+   like .mobile-bar did in its place. */
+.sc-overlay {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+  margin: 0 -14px;
+}
+.sc-overlay .sc-messages {
+  /* Same formula as .main: grow to fill leftover space when short (so the
+     composer still lands at the visual bottom), but never shrink below
+     content's own height — a short list doesn't clip, a long one just
+     grows the page past the viewport for the document to scroll. */
+  flex: 1 0 auto;
+  min-height: 0;
+  overflow-y: visible;
+}
+.sc-overlay .sc-composer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
 }
 
 /* How-to-play guide. */
@@ -2522,8 +2719,16 @@ select.text-input.compact {
   }
 
   /* The whole page scrolls; the grid area grows so the bar is pushed to the
-     bottom when content is short. */
-  .app { min-height: 100dvh; }
+     bottom when content is short. svh, not dvh: dvh changes value as the
+     browser chrome shrinks/grows mid-scroll (see the canvas-fit comment
+     below for the same reasoning) — .app's height feeding that back into
+     layout while the sticky .actionbar is mid-scroll is what let Safari
+     lose track of it and stop re-engaging sticky partway down a long
+     scroll (easiest to reach once the session chat overlay gave mobile a
+     scroll long enough to cross the chrome-collapse point). svh is the
+     small, worst-case size and never changes during scroll, so nothing
+     feeds back. */
+  .app { min-height: 100svh; }
   .main { flex: 1 0 auto; min-height: 0; }
 
   /* Only the clue bar + keyboard stay put — position: sticky keeps it spaced
@@ -2735,7 +2940,15 @@ select.text-input.compact {
     transform: translateY(-4px);
   }
 }
-
+.session-notice.leaving {
+  animation: session-notice-out 0.18s ease-in forwards;
+}
+@keyframes session-notice-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
 /* Online dot in the session roster flyout. */
 .session-dot {
   width: 8px;

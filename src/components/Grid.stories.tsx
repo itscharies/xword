@@ -4,13 +4,7 @@ import { Grid } from "./Grid.tsx";
 import { useCrossword } from "../hooks/useCrossword.ts";
 import type { Puzzle } from "../types.ts";
 import type { Progress } from "../lib/storage.ts";
-import {
-  KITCHEN_SINK,
-  MINI,
-  PEERS,
-  PEER_POOL,
-  SINK_PROGRESS,
-} from "../stories/fixtures.ts";
+import { KITCHEN_SINK, MINI, PEERS, PEER_POOL, SINK_PROGRESS } from "../stories/fixtures.ts";
 import { Note } from "../stories/helpers.tsx";
 
 export default {

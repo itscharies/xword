@@ -3,7 +3,7 @@ import type { Crossword, RevealScope } from "../hooks/useCrossword.ts";
 import { getAutocheck } from "../lib/theme.ts";
 import { RebusIcon } from "./RebusIcon.tsx";
 import { Tip } from "./Tip.tsx";
-import { AnagramIcon, CheckIcon, ChevronDownIcon, EyeIcon, ResetIcon } from "./icons.tsx";
+import { AnagramIcon, CheckIcon, ChevronDownIcon, CommentIcon, EyeIcon, ResetIcon } from "./icons.tsx";
 
 function Dropdown({
   label,
@@ -64,6 +64,7 @@ export function Toolbar({
   onRequestReset,
   onAnagram,
   hideReset,
+  chat,
 }: {
   xw: Crossword;
   onRequestReset: () => void;
@@ -71,6 +72,9 @@ export function Toolbar({
   /** Co-op sessions: reset would blow away everyone's shared grid (and the
    *  sync protocol has no way to express it), so the button goes away. */
   hideReset?: boolean;
+  /** Present only in a co-op session — toggles the session-wide chat, which
+   *  replaces the (session-only) Reset slot above. */
+  chat?: { open: boolean; unread: number; onToggle: () => void };
 }) {
   return (
     <div className="toolbar">
@@ -121,6 +125,22 @@ export function Toolbar({
           </span>
           <span className="btn-label">Reset</span>
         </button>
+      )}
+      {chat && (
+        <div className="tb-group">
+          <button
+            className={`btn chat-btn ${chat.open ? "active" : ""}`}
+            onClick={chat.onToggle}
+            aria-label={chat.open ? "Close chat" : "Open chat"}
+            title={chat.open ? "Close chat" : "Open chat"}
+          >
+            <span className="btn-icon">
+              <CommentIcon />
+            </span>
+            <span className="btn-label">Chat</span>
+          </button>
+          {!chat.open && chat.unread > 0 && <span className="sc-badge">{chat.unread}</span>}
+        </div>
       )}
     </div>
   );

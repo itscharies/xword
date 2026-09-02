@@ -10,5 +10,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: Number(process.env.PORT) || 5173,
+    // Vite only binds to localhost by default — unreachable from a phone on
+    // the same network. This exposes it on the LAN too (Vite prints the
+    // actual IP to use on startup).
+    host: true,
   },
 });

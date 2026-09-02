@@ -15,6 +15,7 @@ import {
   SESSION_IDLE_MS,
   type PeerMeta,
   type RemoteCursorState,
+  type WireComment,
   type WireOp,
 } from "../lib/coop.ts";
 import {
@@ -27,8 +28,28 @@ import {
   type SessionParticipant,
   type SessionStatus,
 } from "../lib/session.ts";
+import { createComment, listComments, type SessionComment } from "../lib/comments.ts";
 import { accentSwatch } from "../lib/theme.ts";
 import type { Direction } from "../types.ts";
+
+function commentToWire(row: SessionComment): WireComment {
+  return {
+    id: row.id,
+    authorId: row.author_id,
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
+
+function commentFromWire(msg: WireComment, sessionId: string): SessionComment {
+  return {
+    id: msg.id,
+    session_id: sessionId,
+    author_id: msg.authorId,
+    body: msg.body,
+    created_at: msg.createdAt,
+  };
+}
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -59,10 +80,9 @@ export function cursorClue(xw: Crossword, cur: RemoteCursor) {
   );
 }
 
-export interface SessionNotice {
-  id: number;
-  text: string;
-}
+export type SessionNotice =
+  | { id: number; kind: "text"; text: string; leaving?: boolean }
+  | { id: number; kind: "comment"; authorId: string; body: string; leaving?: boolean };
 
 /** Solver passes stable closures into useCrossword that forward through
  *  this ref; useSession fills the handlers in once the client exists. */
@@ -84,6 +104,10 @@ export interface SessionApi {
   elapsed: number;
   ended: boolean;
   inviteUrl: string;
+  /** The session's whole chat log, chronological — global, not per-clue;
+   *  append-only, no edit or delete. */
+  comments: SessionComment[];
+  postComment: (body: string) => Promise<void>;
 }
 
 const NOTICE_TTL_MS = 4000;
@@ -121,9 +145,24 @@ export function useSession(
   const [participants, setParticipants] = useState<SessionParticipant[]>(
     join?.participants ?? [],
   );
+
   const [online, setOnline] = useState<Set<string>>(new Set());
   const [cursors, setCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const [notices, setNotices] = useState<SessionNotice[]>([]);
+  const [comments, setComments] = useState<SessionComment[]>([]);
+
+  // Shared by the live wire handler and the optimistic local writers below —
+  // upserts by id so a hydration refetch and a broadcast racing each other
+  // never produce a duplicate row.
+  const applyComment = (row: SessionComment) => {
+    setComments((prev) => {
+      const idx = prev.findIndex((c) => c.id === row.id);
+      if (idx === -1) return [...prev, row];
+      const next = prev.slice();
+      next[idx] = row;
+      return next;
+    });
+  };
   const [status, setStatus] = useState<SessionStatus>(join?.session.status ?? "open");
   const [ended, setEnded] = useState(join?.session.status === "ended");
   const [doneAtMs, setDoneAtMs] = useState<number | null>(() => {
@@ -139,12 +178,21 @@ export function useSession(
     const id = join.session.id;
     const me = join.participants.find((p) => p.user_id === user.id);
 
+    // Two-phase removal so a notice fades out (not just in) — mark it
+    // `leaving` for one animation frame, then drop it from the array.
+    const dismissNotice = (noticeId: number) => {
+      setNotices((n) => n.map((x) => (x.id === noticeId ? { ...x, leaving: true } : x)));
+      setTimeout(() => setNotices((n) => n.filter((x) => x.id !== noticeId)), 180);
+    };
     const pushNotice = (text: string) => {
       const noticeId = ++noticeIdRef.current;
-      setNotices((n) => [...n, { id: noticeId, text }]);
-      setTimeout(() => {
-        setNotices((n) => n.filter((x) => x.id !== noticeId));
-      }, NOTICE_TTL_MS);
+      setNotices((n) => [...n, { id: noticeId, kind: "text", text }]);
+      setTimeout(() => dismissNotice(noticeId), NOTICE_TTL_MS);
+    };
+    const pushCommentNotice = (payload: { authorId: string; body: string }) => {
+      const noticeId = ++noticeIdRef.current;
+      setNotices((n) => [...n, { id: noticeId, kind: "comment", ...payload }]);
+      setTimeout(() => dismissNotice(noticeId), NOTICE_TTL_MS);
     };
 
     const client = new CoopClient({
@@ -248,6 +296,16 @@ export function useSession(
           setEnded(true);
           setStatus((s) => (s === "completed" ? s : "ended"));
         },
+        onComment: (wire: WireComment) => {
+          const row = commentFromWire(wire, id);
+          applyComment(row);
+          if (wire.authorId !== user.id) {
+            pushCommentNotice({ authorId: wire.authorId, body: wire.body });
+          }
+        },
+        onReconnected: () => {
+          void listComments(id).then(setComments);
+        },
       },
     });
 
@@ -260,15 +318,27 @@ export function useSession(
         ),
     };
     client.connect();
+    void listComments(id).then(setComments);
 
     return () => {
       bridge.current = {};
       clientRef.current = null;
       client.destroy();
+      setComments([]);
     };
     // join/user identity is stable for the life of a mounted session Solver.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, user?.id]);
+
+  // ---- comments --------------------------------------------------------------
+
+  const postComment = async (body: string) => {
+    if (!join || !user) return;
+    const row = await createComment({ sessionId: join.session.id, authorId: user.id, body });
+    if (!row) return;
+    applyComment(row);
+    clientRef.current?.announceComment(commentToWire(row));
+  };
 
   // ---- cursor broadcasts --------------------------------------------------------
 
@@ -344,5 +414,7 @@ export function useSession(
     elapsed,
     ended,
     inviteUrl: `${window.location.origin}${BASE}s/${join.session.id}`,
+    comments,
+    postComment,
   };
 }

@@ -122,6 +122,17 @@ interface EndMsg extends Env {
   reason: string;
 }
 
+export interface WireComment {
+  id: string;
+  authorId: string;
+  body: string;
+  createdAt: string;
+}
+
+interface CommentMsg extends Env {
+  comment: WireComment;
+}
+
 // ---- clocks & merge --------------------------------------------------------
 
 class Hlc {
@@ -232,6 +243,12 @@ export interface CoopEvents {
   onDone(atT: number): void;
   /** The session was ended (inactivity). */
   onEnded(): void;
+  /** A chat message was posted to the session. */
+  onComment(comment: WireComment): void;
+  /** A genuine reconnect (not the initial connect) just resynced — the
+   *  moment to refetch anything durable that might have been missed while
+   *  offline (comments have no merge story like cells do). */
+  onReconnected?(): void;
 }
 
 export interface CoopDeps {
@@ -440,6 +457,7 @@ export class CoopClient {
     ch.on("broadcast", { event: "snap" }, ({ payload }) => this.recvSnap(payload as SnapMsg));
     ch.on("broadcast", { event: "done" }, ({ payload }) => this.recvDone(payload as DoneMsg));
     ch.on("broadcast", { event: "end" }, ({ payload }) => this.recvEnd(payload as EndMsg));
+    ch.on("broadcast", { event: "comment" }, ({ payload }) => this.recvComment(payload as CommentMsg));
 
     ch.on("presence", { event: "sync" }, () => this.syncPresence());
     ch.on("presence", { event: "join" }, ({ newPresences }) => {
@@ -511,6 +529,7 @@ export class CoopClient {
         return;
       }
       snapshot = row.state;
+      this.deps.events.onReconnected?.();
     }
     const watermark = snapshot.hlcMax ?? 0;
     this.applySnapshot(snapshot);
@@ -677,6 +696,20 @@ export class CoopClient {
 
   broadcastEnd(): void {
     this.sendReliable("end", { reason: "inactivity" } as Partial<EndMsg>);
+  }
+
+  /** Comments are written to Postgres first (through RLS), then announced —
+   *  unlike cell edits there's no merge story, so a dropped broadcast just
+   *  means a delayed local update, not a lost edit. Still sent reliably
+   *  (retried/acked) since a missed comment notice is a real UX gap. */
+  announceComment(comment: WireComment): void {
+    if (this.ended) return;
+    this.sendReliable("comment", { comment } as Partial<CommentMsg>);
+  }
+
+  private recvComment(msg: CommentMsg): void {
+    if (!this.checkEnvelope(msg, true)) return;
+    this.deps.events.onComment(msg.comment);
   }
 
   // ---- presence ------------------------------------------------------------------

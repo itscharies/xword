@@ -40,3 +40,26 @@ export const Cryptic: Story = () => {
     </>
   );
 };
+
+export const WithChat: Story = () => {
+  const xw = useCrossword(MINI, null);
+  return (
+    <>
+      <Note>
+        A co-op session adds the chat toggle in place of Reset (sessions
+        can't reset the shared grid) — the badge shows unread messages that
+        arrived while it was closed.
+      </Note>
+      <WithGrid>
+        <Toolbar
+          xw={xw}
+          onRequestReset={() => xw.reset()}
+          onAnagram={() => {}}
+          hideReset
+          chat={{ open: false, unread: 3, onToggle: () => {} }}
+        />
+        <Grid puzzle={MINI} xw={xw} />
+      </WithGrid>
+    </>
+  );
+};

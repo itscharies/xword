@@ -9,7 +9,7 @@ export default {
 } satisfies StoryDefault;
 
 export const Default: Story = () => {
-  const pool = useAnagramPool(true);
+  const pool = useAnagramPool();
   const seeded = useRef(false);
   const { add } = pool;
   useEffect(() => {

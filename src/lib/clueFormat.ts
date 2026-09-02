@@ -23,3 +23,8 @@ export function formatClue(html: string): string {
 export function clueEnumeration(clue: { len: number; enumeration?: string }): string {
   return clue.enumeration ?? String(clue.len);
 }
+
+/** Short display label for a clue, e.g. "1D" / "12A". */
+export function clueLabel(number: number, direction: "across" | "down"): string {
+  return `${number}${direction === "across" ? "A" : "D"}`;
+}

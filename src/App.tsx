@@ -78,6 +78,8 @@ import { Logo } from "./components/Logo.tsx";
 import { Sk, SolverSkeleton } from "./components/Skeleton.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
 import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
+import { SessionChat } from "./components/SessionChat.tsx";
+import { SessionChatOverlay } from "./components/SessionChatOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
 import {
   EditIcon,
@@ -824,6 +826,11 @@ function Solver({
     () => !!session && session.session.created_by === user?.id && session.participants.length === 1,
   );
   const [showCoopStart, setShowCoopStart] = useState(false);
+  // The session chat isn't a Modal (no backdrop, floats over the page), but
+  // its input still needs to suspend the grid's own keydown handler while
+  // typing — so its open state joins modalOpen below just like every other
+  // dialog's.
+  const [sessionChatOpen, setSessionChatOpen] = useState(false);
   const [endedDismissed, setEndedDismissed] = useState(false);
   const [celebrated, setCelebrated] = useState(
     (saved?.completed ?? false) || session?.session.status === "completed",
@@ -834,10 +841,20 @@ function Solver({
   const [conflict, setConflict] = useState<Progress | null>(null);
 
   const isMobile = useMediaQuery("(max-width: 820px)");
+  // Frozen while the chat is closed (so unseen messages accumulate into the
+  // Toolbar badge), refreshed to the live count whenever it's open — on
+  // either shell — so the badge clears instead of ticking up behind your
+  // back.
+  const [chatSeenCount, setChatSeenCount] = useState(0);
+  useEffect(() => {
+    if (sessionChatOpen) setChatSeenCount(sApi?.comments.length ?? 0);
+  }, [sessionChatOpen, sApi?.comments.length]);
+  const chatUnread = Math.max(0, (sApi?.comments.length ?? 0) - chatSeenCount);
+  const chatOverlayOpen = !!sApi && !!user && sessionChatOpen && isMobile;
   const gridFit = useGridFit();
   const actionbarRef = useStuck<HTMLDivElement>();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
-  const anagramPool = useAnagramPool(showAnagram && isMobile);
+  const anagramPool = useAnagramPool();
   const anagramHelperStore = useAnagramHelperStore();
 
   const sessionEnded = !!sApi?.ended && !endedDismissed;
@@ -846,7 +863,7 @@ function Solver({
   // the overlay routes keys into its own answer entry rather than the grid.
   const modalOpen =
     showModal || showSettings || showReset || showAnagram || !!conflict ||
-    showInvite || showCoopStart || sessionEnded;
+    showInvite || showCoopStart || sessionEnded || sessionChatOpen;
 
   // The updatedAt of the newest version of this puzzle's progress we've
   // already pushed or accounted for — anything newer we see from Supabase
@@ -1038,6 +1055,15 @@ function Solver({
             onRequestReset={() => setShowReset(true)}
             onAnagram={() => setShowAnagram(true)}
             hideReset={!!session}
+            chat={
+              sApi
+                ? {
+                    open: sessionChatOpen,
+                    unread: chatUnread,
+                    onToggle: () => setSessionChatOpen((v) => !v),
+                  }
+                : undefined
+            }
           />
           <div className="actionbar-controls">
             {getShowTimer() && (
@@ -1098,52 +1124,80 @@ function Solver({
           </div>
         </div>
 
-        {sApi && sApi.notices.length > 0 && (
+        {sApi && sApi.notices.some((n) => n.kind === "text") && (
           <div className="session-notices" aria-live="polite">
-            {sApi.notices.map((n) => (
-              <div className="session-notice" key={n.id}>
-                {n.text}
-              </div>
-            ))}
+            {sApi.notices
+              .filter((n) => n.kind === "text")
+              .map((n) => (
+                <div className={`session-notice ${n.leaving ? "leaving" : ""}`} key={n.id}>
+                  {n.text}
+                </div>
+              ))}
           </div>
         )}
 
-        <div
-          className={`main ${showAnagram && isMobile ? "ana-open" : ""}`}
-          onPointerDown={resume}
-        >
-          <div className="board">
-            {/* Banner above the grid on desktop; hidden on mobile (shown in the
-                sticky bottom bar instead). */}
-            <div className="banner-desktop">
-              <ClueBanner xw={xw} />
-            </div>
-            {/* Canvas mode swaps the plain grid for the pan/zoom viewport.
-                The .grid-fit wrapper is inert outside fullscreen; in
-                fullscreen it's the size container the grid measures its
-                available height against. */}
-            {gridFit === "canvas" ? (
-              <GridCanvas puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
-            ) : (
-              <div className="grid-fit">
-                <Grid puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+        {chatOverlayOpen && sApi && user ? (
+          // The on-screen keyboard is irrelevant to a real chat <input>, and
+          // there's no board worth keeping visible underneath either — so
+          // this replaces .main + .mobile-bar outright rather than layering
+          // over them (see SessionChatOverlay for why: a real <input> needs
+          // the page's own scroll, not a bounded region of its own).
+          <SessionChatOverlay session={sApi} userId={user.id} />
+        ) : (
+          <>
+            <div
+              className={`main ${showAnagram && isMobile ? "overlay-open" : ""}`}
+              onPointerDown={resume}
+            >
+              <div className="board">
+                {/* Banner above the grid on desktop; hidden on mobile (shown in the
+                    sticky bottom bar instead). */}
+                <div className="banner-desktop">
+                  <ClueBanner xw={xw} />
+                </div>
+                {/* Canvas mode swaps the plain grid for the pan/zoom viewport.
+                    The .grid-fit wrapper is inert outside fullscreen; in
+                    fullscreen it's the size container the grid measures its
+                    available height against. */}
+                {gridFit === "canvas" ? (
+                  <GridCanvas puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+                ) : (
+                  <div className="grid-fit">
+                    <Grid puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <ClueList puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
-          {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
-        </div>
+              <ClueList puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+              {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
+            </div>
 
-        {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
-            while the rest of the page scrolls. */}
-        <div className="mobile-bar" onPointerDown={resume}>
-          <ClueBanner xw={xw} />
-          <MobileKeyboard
-            xw={xw}
-            onAnagram={() => setShowAnagram((v) => !v)}
-            anagramPool={showAnagram && isMobile ? anagramPool : null}
+            {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
+                while the rest of the page scrolls. */}
+            <div className="mobile-bar" onPointerDown={resume}>
+              <ClueBanner xw={xw} />
+              <MobileKeyboard
+                xw={xw}
+                onAnagram={() => setShowAnagram((v) => !v)}
+                anagramPool={showAnagram && isMobile ? anagramPool : null}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Session-wide chat's desktop shell + the toast popups, which float
+            over the whole page (not the board) on every viewport size — it's
+            global, not tied to any clue, so it doesn't live inside the
+            board's positioning context. Mobile's expanded view is the
+            SessionChatOverlay above instead. */}
+        {sApi && user && (
+          <SessionChat
+            session={sApi}
+            userId={user.id}
+            open={sessionChatOpen}
+            isMobile={isMobile}
+            onClose={() => setSessionChatOpen(false)}
           />
-        </div>
+        )}
       </div>
 
       {showModal && (

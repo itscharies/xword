@@ -10,7 +10,7 @@ export default {
 
 /** The real pool hook, pre-seeded so the story doesn't open empty. */
 function useSeededPool(letters: string): AnagramPool {
-  const pool = useAnagramPool(true);
+  const pool = useAnagramPool();
   const seeded = useRef(false);
   const { add } = pool;
   useEffect(() => {

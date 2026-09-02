@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { shuffleTiles } from "../lib/anagram.ts";
 
 export interface AnagramTile {
@@ -54,16 +54,13 @@ export function useAnagramHelperStore(): AnagramHelperStore {
 /**
  * A scratch pool of letters for the simplified mobile anagram overlay: you type
  * letters in (from the on-screen keyboard), shuffle them, drag to reorder, and
- * lay them out in a circle or grid. Starts empty each time the overlay opens.
+ * lay them out in a circle or grid. Persists across closing and reopening the
+ * overlay, same as the desktop helper's per-clue store.
  */
-export function useAnagramPool(open: boolean): AnagramPool {
+export function useAnagramPool(): AnagramPool {
   const [tiles, setTiles] = useState<AnagramTile[]>([]);
   const [view, setView] = useState<"circle" | "grid">("circle");
   const idRef = useRef(0);
-
-  useEffect(() => {
-    if (open) setTiles([]);
-  }, [open]);
 
   const add = useCallback((ch: string) => {
     const c = ch.toUpperCase();
