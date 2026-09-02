@@ -1136,59 +1136,53 @@ function Solver({
           </div>
         )}
 
-        {chatOverlayOpen && sApi && user ? (
-          // The on-screen keyboard is irrelevant to a real chat <input>, and
-          // there's no board worth keeping visible underneath either — so
-          // this replaces .main + .mobile-bar outright rather than layering
-          // over them (see SessionChatOverlay for why: a real <input> needs
-          // the page's own scroll, not a bounded region of its own).
-          <SessionChatOverlay session={sApi} userId={user.id} />
-        ) : (
-          <>
-            <div
-              className={`main ${showAnagram && isMobile ? "overlay-open" : ""}`}
-              onPointerDown={resume}
-            >
-              <div className="board">
-                {/* Banner above the grid on desktop; hidden on mobile (shown in the
-                    sticky bottom bar instead). */}
-                <div className="banner-desktop">
-                  <ClueBanner xw={xw} />
-                </div>
-                {/* Canvas mode swaps the plain grid for the pan/zoom viewport.
-                    The .grid-fit wrapper is inert outside fullscreen; in
-                    fullscreen it's the size container the grid measures its
-                    available height against. */}
-                {gridFit === "canvas" ? (
-                  <GridCanvas puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
-                ) : (
-                  <div className="grid-fit">
-                    <Grid puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
-                  </div>
-                )}
-              </div>
-              <ClueList puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
-              {showAnagram && isMobile && <AnagramOverlay pool={anagramPool} />}
-            </div>
-
-            {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
-                while the rest of the page scrolls. */}
-            <div className="mobile-bar" onPointerDown={resume}>
+        <div
+          className={`main ${showAnagram && isMobile ? "overlay-open" : ""}`}
+          onPointerDown={resume}
+        >
+          <div className="board">
+            {/* Banner above the grid on desktop; hidden on mobile (shown in the
+                sticky bottom bar instead). */}
+            <div className="banner-desktop">
               <ClueBanner xw={xw} />
-              <MobileKeyboard
-                xw={xw}
-                onAnagram={() => setShowAnagram((v) => !v)}
-                anagramPool={showAnagram && isMobile ? anagramPool : null}
-              />
             </div>
-          </>
-        )}
+            {/* Canvas mode swaps the plain grid for the pan/zoom viewport.
+                The .grid-fit wrapper is inert outside fullscreen; in
+                fullscreen it's the size container the grid measures its
+                available height against. */}
+            {gridFit === "canvas" ? (
+              <GridCanvas puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+            ) : (
+              <div className="grid-fit">
+                <Grid puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+              </div>
+            )}
+          </div>
+          <ClueList puzzle={puzzle} xw={xw} remoteCursors={sApi?.cursors} />
+          {/* Not while the chat sheet is up: .main stays mounted behind it
+              now, and AnagramOverlay keeps a window keydown listener that
+              would otherwise still be feeding its letter pool. */}
+          {showAnagram && isMobile && !chatOverlayOpen && (
+            <AnagramOverlay pool={anagramPool} />
+          )}
+        </div>
+
+        {/* Mobile only: clue bar + keyboard, stuck to the bottom of the viewport
+            while the rest of the page scrolls. */}
+        <div className="mobile-bar" onPointerDown={resume}>
+          <ClueBanner xw={xw} />
+          <MobileKeyboard
+            xw={xw}
+            onAnagram={() => setShowAnagram((v) => !v)}
+            anagramPool={showAnagram && isMobile ? anagramPool : null}
+          />
+        </div>
 
         {/* Session-wide chat's desktop shell + the toast popups, which float
             over the whole page (not the board) on every viewport size — it's
             global, not tied to any clue, so it doesn't live inside the
             board's positioning context. Mobile's expanded view is the
-            SessionChatOverlay above instead. */}
+            full-screen SessionChatOverlay below. */}
         {sApi && user && (
           <SessionChat
             session={sApi}
@@ -1199,6 +1193,18 @@ function Solver({
           />
         )}
       </div>
+
+      {/* Mobile chat, layered over everything above rather than swapped in
+          for it: .main and .mobile-bar stay mounted underneath, so the
+          document's height — and with it the page's scroll position —
+          never changes when the chat opens or closes. */}
+      {chatOverlayOpen && sApi && user && (
+        <SessionChatOverlay
+          session={sApi}
+          userId={user.id}
+          onClose={() => setSessionChatOpen(false)}
+        />
+      )}
 
       {showModal && (
         <CompletionModal

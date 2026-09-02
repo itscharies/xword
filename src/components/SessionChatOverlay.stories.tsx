@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Story, StoryDefault } from "@ladle/react";
 import { SessionChatOverlay } from "./SessionChatOverlay.tsx";
 import type { SessionApi } from "../hooks/useSession.ts";
@@ -28,7 +29,7 @@ const HISTORY: SessionComment[] = [
   comment("c3", "user-ada", "Nice, thanks!"),
 ];
 
-const LONG_HISTORY: SessionComment[] = Array.from({ length: 20 }, (_, i) =>
+const LONG_HISTORY: SessionComment[] = Array.from({ length: 30 }, (_, i) =>
   comment(`c${i}`, i % 2 === 0 ? "user-ada" : "user-grace", `Message number ${i + 1}.`),
 );
 
@@ -41,55 +42,71 @@ function makeSession(comments: SessionComment[]): SessionApi {
   } as unknown as SessionApi;
 }
 
-/** Stands in for .app — a bounded, scrollable flex column — so .sc-overlay's
- *  `flex: 1 0 auto` has something to grow into and the message list scrolls
- *  the same way it scrolls the real page. The composer itself is
- *  position: fixed (see the Note below), so it escapes this box entirely
- *  and pins to the *story's own* viewport edge instead — same deal as
- *  .session-chat's Stage in its own stories. */
-const Stage = ({ children }: { children: React.ReactNode }) => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      height: 400,
-      maxWidth: 400,
-      border: "1px dashed var(--muted)",
-      overflowY: "auto",
-    }}
-  >
-    {children}
-  </div>
-);
+/** A phone-sized stage. The transform is load-bearing, not decoration: a
+ *  transformed element becomes the containing block for a position: fixed
+ *  descendant, so passing this as `portalTo` scopes the sheet to the frame
+ *  instead of letting it cover all of Ladle. It also skips the page scroll
+ *  lock, which would otherwise freeze the story browser itself. */
+function SheetDemo({ comments }: { comments: SessionComment[] }) {
+  const [open, setOpen] = useState(true);
+  // State, not a ref: the sheet portals *into* this node, so the render that
+  // mounts it has to be the one after the node exists.
+  const [stage, setStage] = useState<HTMLDivElement | null>(null);
+  return (
+    <div
+      ref={setStage}
+      style={{
+        position: "relative",
+        transform: "translateZ(0)",
+        width: 375,
+        height: 640,
+        maxWidth: "100%",
+        border: "1px dashed var(--muted)",
+        overflow: "hidden",
+      }}
+    >
+      {!open && (
+        <button
+          className="btn btn-accent"
+          style={{ margin: 12 }}
+          onClick={() => setOpen(true)}
+        >
+          Open the chat sheet
+        </button>
+      )}
+      {open && stage && (
+        <SessionChatOverlay
+          session={makeSession(comments)}
+          userId="user-ada"
+          onClose={() => setOpen(false)}
+          portalTo={stage}
+        />
+      )}
+    </div>
+  );
+}
 
 export const Default: Story = () => (
   <>
     <Note>
-      Mobile's expanded chat view — replaces .main and .mobile-bar outright
-      (App.tsx renders one or the other) rather than layering over them.
-      The message list scrolls with the page; the composer is pinned via
-      `pinComposer` (position: fixed, tracked against
-      window.visualViewport — see useKeyboardInset) rather than trusting
-      position: sticky or a dvh/svh trick to follow the keyboard, which
-      doesn't happen reliably on iOS Safari in practice. No close button of
-      its own: closed by tapping the same Toolbar chat button again, same
-      as AnagramOverlay.
+      Mobile's chat view: a full-screen sheet laid over the solver, which stays
+      mounted underneath — so opening and closing it can't change the document's
+      height, and the page keeps its scroll position. Its box is sized from
+      window.visualViewport rather than any CSS viewport unit, which is what
+      keeps the composer on the keyboard's edge (see useVisualViewport). Best
+      viewed at a phone width.
     </Note>
-    <Stage>
-      <SessionChatOverlay session={makeSession(HISTORY)} userId="user-ada" />
-    </Stage>
+    <SheetDemo comments={HISTORY} />
   </>
 );
 
 export const LongHistory: Story = () => (
   <>
     <Note>
-      Enough messages to scroll — the page (this dashed box, standing in for
-      it) scrolls past them while the composer stays pinned to the visual
-      viewport's bottom edge regardless.
+      Enough messages to scroll. The list is its own scroll container and opens
+      pinned to the newest message — deliberately not scrollIntoView, which
+      would reach past the sheet and scroll the page behind it.
     </Note>
-    <Stage>
-      <SessionChatOverlay session={makeSession(LONG_HISTORY)} userId="user-ada" />
-    </Stage>
+    <SheetDemo comments={LONG_HISTORY} />
   </>
 );

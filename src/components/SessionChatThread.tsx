@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { SessionApi } from "../hooks/useSession.ts";
 import type { SessionComment } from "../lib/comments.ts";
-import { useKeyboardInset } from "../hooks/useKeyboardInset.ts";
 import { Avatar } from "./Avatar.tsx";
 
 /** Consecutive messages from the same sender collapse into one block (one
@@ -21,66 +20,70 @@ function groupConsecutive(comments: SessionComment[]): SessionComment[][] {
 }
 
 /** The message list + composer shared by the desktop floating panel
- *  (SessionChat) and the mobile full-bleed overlay (SessionChatOverlay) —
- *  only the surrounding shell differs between the two. Always mounted only
- *  while its shell is actually showing, so autofocus/autoscroll can just
- *  fire on mount rather than reacting to an `open` flag. */
+ *  (SessionChat) and the mobile full-screen sheet (SessionChatOverlay) — only
+ *  the surrounding shell differs. Both shells now give .sc-messages its own
+ *  overflow, so there is finally one scroll model instead of two. Mounted only
+ *  while its shell is showing, so autofocus/autoscroll can just fire on mount
+ *  rather than reacting to an `open` flag. */
 export function SessionChatThread({
   session,
   userId,
   onEscape,
   autoFocus = true,
-  pinComposer = false,
 }: {
   session: SessionApi;
   userId: string;
   /** Esc in the composer closes whichever shell is showing. */
   onEscape?: () => void;
-  /** Mobile overlay disables this — focusing the instant the overlay opens
-   *  pops the keyboard immediately, compounding the overlay's own layout
-   *  swap into one janky double-shift. Left on for the desktop panel,
-   *  which has no keyboard to pop. */
+  /** The mobile sheet disables this — focusing the instant the sheet opens
+   *  pops the keyboard immediately, a second motion on top of the open that
+   *  the user didn't ask for. Left on for the desktop panel, which has no
+   *  keyboard to pop. */
   autoFocus?: boolean;
-  /** Mobile overlay only: pins the composer to the *visual* viewport's
-   *  bottom edge via useKeyboardInset (position: fixed, JS-tracked) rather
-   *  than trusting position: sticky to follow the keyboard — it doesn't
-   *  reliably on iOS, leaving the composer stranded above a gap or behind
-   *  the keyboard entirely. */
-  pinComposer?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  // A sentinel scrolled into view rather than a hardcoded `scrollTop` — the
-  // desktop panel scrolls internally (.sc-messages has its own overflow),
-  // while the mobile overlay scrolls with the page itself, and
-  // `scrollIntoView` finds whichever scrolling ancestor actually applies
-  // instead of the two shells needing different scroll logic.
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const composerRef = useRef<HTMLDivElement>(null);
-  const [composerHeight, setComposerHeight] = useState(0);
-  const keyboardInset = useKeyboardInset(pinComposer);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Only follow new messages when the reader is already at the bottom — yanking
+  // someone out of scrollback because a message arrived is its own kind of jank.
+  const pinned = useRef(true);
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
+    // preventScroll: focusing an input is enough to make iOS scroll (and,
+    // under 16px, zoom) to "reveal" it even when it's already fully visible.
+    // Honoured by WebKit for programmatic focus since iOS 15.5.
+    if (autoFocus) inputRef.current?.focus({ preventScroll: true });
   }, [autoFocus]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+  // Was `bottomRef.scrollIntoView({ block: "end" })`, which walks to whichever
+  // scrolling ancestor applies — in the old mobile shell .sc-messages had
+  // `overflow-y: visible`, so that ancestor was the *document* and this yanked
+  // the whole page to its bottom on open and again on every incoming message.
+  // Setting scrollTop on the list itself can't touch an ancestor, on either
+  // shell. useLayoutEffect, not useEffect: otherwise the first painted frame
+  // shows the thread scrolled to the top and it snaps a frame later.
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
   }, [session.comments.length]);
 
-  // Pinning the composer takes it out of flow (position: fixed) — measure
-  // its real height so the message list can pad its own bottom by exactly
-  // that much and never sit hidden underneath it.
+  // The keyboard opening shortens the list's box (the sheet's padding-bottom
+  // grows). Re-pin across that reflow so the newest message stays visible
+  // instead of sliding up out of sight.
   useEffect(() => {
-    if (!pinComposer) return;
-    const el = composerRef.current;
+    const el = listRef.current;
     if (!el) return;
-    const update = () => setComposerHeight(el.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
+    const ro = new ResizeObserver(() => {
+      if (pinned.current) el.scrollTop = el.scrollHeight;
+    });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [pinComposer]);
+  }, []);
+
+  const onListScroll = () => {
+    const el = listRef.current;
+    if (el) pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+  };
 
   const participantFor = (authorId: string) =>
     session.participants.find((p) => p.user_id === authorId);
@@ -93,10 +96,7 @@ export function SessionChatThread({
 
   return (
     <>
-      <div
-        className="sc-messages"
-        style={pinComposer ? { paddingBottom: composerHeight } : undefined}
-      >
+      <div className="sc-messages" ref={listRef} onScroll={onListScroll}>
         {session.comments.length === 0 ? (
           <p className="sc-empty">No messages yet — say hello.</p>
         ) : (
@@ -126,13 +126,8 @@ export function SessionChatThread({
             );
           })
         )}
-        <div ref={bottomRef} />
       </div>
-      <div
-        className="sc-composer"
-        ref={composerRef}
-        style={pinComposer ? { position: "fixed", left: 0, right: 0, bottom: keyboardInset } : undefined}
-      >
+      <div className="sc-composer">
         <input
           ref={inputRef}
           className="text-input sc-input"

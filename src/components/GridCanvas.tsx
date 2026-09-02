@@ -175,6 +175,14 @@ export function GridCanvas({
    *  the page never scrolls). */
   const scrollHeaderAway = () => {
     if (!matchMedia("(max-width: 820px)").matches) return;
+    // The chat sheet freezes the page scroll (html.sc-locked) and, on iOS,
+    // lays itself out against that frozen offset — scrollIntoView still moves
+    // an overflow: hidden viewport, and moving it out from under the sheet
+    // would both misplace the sheet and lose the solver's scroll position.
+    // Nothing should reach here while the sheet is up (it covers the canvas,
+    // and the grid's keydown handler is suspended by modalOpen), but this is
+    // the only programmatic page scroll left in the app, so it says so.
+    if (document.documentElement.classList.contains("sc-locked")) return;
     const body = viewportRef.current?.closest(".solve-body");
     if (body && body.getBoundingClientRect().top > 1) {
       body.scrollIntoView({ block: "start" });

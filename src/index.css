@@ -1539,8 +1539,9 @@ select.text-input.compact {
 }
 /* While the anagram overlay covers the board, drop the grid's hard shadow —
    it extends past the board box and would otherwise poke out from behind
-   the overlay. (Session chat's mobile shell doesn't need this: it replaces
-   .main entirely rather than covering it — see .sc-overlay.) */
+   the overlay. (Session chat's mobile sheet doesn't need this: it's an
+   opaque full-viewport layer at z-index 32, above everything in .main —
+   see .sc-sheet.) */
 .main.overlay-open .grid {
   box-shadow: none;
 }
@@ -1743,41 +1744,193 @@ select.text-input.compact {
   line-height: 1;
 }
 
-/* Session chat's mobile shell replaces .main + .mobile-bar entirely while
-   open (App.tsx renders one or the other, never both) rather than layering
-   over them — full-bleed past .app's side padding like those two, but
-   (unlike them) doesn't re-add it: the composer should sit flush against
-   the real screen edges, not inset behind a gutter. The message list
-   scrolls with the whole page rather than in a nested region of its own
-   (.sc-messages here drops its shared rule's internal scroll and just
-   grows in normal flow) — but the composer itself is pinned via
-   SessionChatThread's `pinComposer` (position: fixed, JS-tracked against
-   window.visualViewport — see useKeyboardInset): plain CSS (position:
-   sticky, dvh/svh, the interactive-widget viewport meta) doesn't reliably
-   follow the keyboard on iOS Safari in practice, leaving the composer
-   stranded behind a gap or behind the keyboard entirely. This rule only
-   covers what the inline style doesn't: background (so scrolled-past
-   messages don't show through) and the safe-area inset for the home
-   indicator once the keyboard's closed. */
-.sc-overlay {
+/* Page scroll lock, live only while the sheet is open (useScrollLock adds the
+   class). overflow: hidden on the documentElement *retains* the current scroll
+   offset instead of moving it, so unlocking is a pure class removal with
+   nothing to restore and therefore no restoration jump — unlike the classic
+   `position: fixed; top: -scrollY` body lock, which *is* that jump and which
+   additionally falls apart across the viewport resize a keyboard guarantees.
+   iOS ignores this for touch (that's what useScrollLock's capture-phase
+   touchmove blocker is for) but it still stops wheel and programmatic
+   scrolling; on Android it's sufficient on its own, and overscroll-behavior:
+   none additionally kills pull-to-refresh, which a thread scrolled to its top
+   would otherwise trigger. Declared statically here rather than injected on
+   open: as of iOS 26 overscroll-behavior has to already be in the stylesheet
+   before the touchstart to take effect at all. */
+html.sc-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Session chat's mobile shell: a full-screen sheet layered *over* .main and
+   .mobile-bar, which stay mounted (App.tsx renders both, plus this — never one
+   or the other). That's the whole fix: the old shell was rendered *instead of*
+   them, which removed ~520px of in-flow content, collapsed the document below
+   `.app { min-height: 100svh }`, and made every engine clamp window.scrollY to
+   0 — the "page scrolls up" symptom, and unrecoverable, since you can't
+   restore to an offset a shorter document doesn't have. Nothing behind the
+   sheet changes now, so there's no clamp and nothing to restore.
+
+   Portalled to <body>, because [data-grid-fit="canvas"] makes .solve-body
+   position: sticky — a stacking context that would trap a fixed child.
+
+   Geometry: the sheet's *border* box is the layout viewport (inset: 0), so its
+   background covers the screen at all times and nothing behind it can flash
+   through while the keyboard animates. Its *content* box is moved onto the
+   visual viewport by two JS-written lengths (useVisualViewport.ts):
+   --sc-vvtop is visualViewport.offsetTop, how far iOS has pushed the visible
+   region down — which it does instead of scrolling the document once the
+   document can't scroll — and --sc-kb is the pixels covered at the bottom
+   edge by the keyboard, plus the browser's own bottom chrome when it's
+   showing (both want the same treatment, so they're deliberately not
+   separated). With padding-top: T and padding-bottom: K the content spans
+   exactly [T, T+V] — precisely what the user can see. The header lands on the
+   visible top edge and the composer lands on the keyboard's top edge as the
+   plain last child of a flex column: no sticky, no per-element keyboard
+   inset, no composer height measurement, nothing to keep in sync.
+
+   No transition on either padding, deliberately. WebKit derives visualViewport
+   geometry from discrete UIKit notifications that already carry the keyboard's
+   *final* frame, so there's nothing to smooth — an easing here races the
+   keyboard's own animation instead. No entrance animation either: the sheet
+   has to be opaque and full-bleed on its first painted frame or the solver
+   page shows through it.
+
+   z-index 32 takes the slot just above .session-chat (31), itself above the
+   sticky .actionbar/.mobile-bar (30), and still below Modal's .overlay (50) so
+   a real dialog opening on top still wins. */
+.sc-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
-  min-height: 0;
-  margin: 0 -14px;
-}
-.sc-overlay .sc-messages {
-  /* Same formula as .main: grow to fill leftover space when short, but
-     never shrink below content's own height — a short list doesn't clip,
-     a long one just grows the page past the viewport for the document to
-     scroll. */
-  flex: 1 0 auto;
-  min-height: 0;
-  overflow-y: visible;
-}
-.sc-overlay .sc-composer {
   background: var(--bg);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Resting values: the keyboard-closed, viewport-unshifted case. Also what a
+     browser with no VisualViewport gets, and the fallback if the first
+     render's inline style were ever missing. */
+  --sc-vvtop: 0px;
+  --sc-kb: 0px;
+  --sc-safe-top: 1;
+  --sc-safe-bot: 1;
+  padding-top: var(--sc-vvtop, 0px);
+  padding-bottom: var(--sc-kb, 0px);
+  /* Focused on mount for dialog semantics and as the Escape/Tab target, not
+     for show. */
+  outline: none;
+}
+
+/* Modelled on .actionbar — the bar this sheet covers — not on .modal:
+   full-bleed, --bg, a 2px rule underneath, no shadow of its own. The status-bar
+   inset is gated for the same reason .actionbar gates it behind .stuck: once
+   the visual viewport is shifted down (--sc-vvtop > 0) the sheet's content top
+   is no longer under the status bar and the inset would read as a dead gap.
+   Unlike .actionbar this needs no useStuck — the sheet's content top is always
+   the visible top edge, so the gate is purely the offsetTop question. */
+.sc-sheet-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top, 0px) * var(--sc-safe-top, 1))
+    calc(14px + env(safe-area-inset-right, 0px)) 8px
+    calc(14px + env(safe-area-inset-left, 0px));
+  background: var(--bg);
+  border-bottom: 2px solid var(--line);
+}
+
+/* The app's own h1 is 14px/600/muted on purpose — the grid is the focal point
+   — so a bar header uses the section-header register (.account-section-head,
+   .archive-day-head, .builder-suggest-head), not .modal-title's 24px/800. */
+.sc-sheet-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* Compact chrome weight, matching .actionbar .btn — a 3px/5px control next to
+   2px/3px toolbar buttons looks bolted on. Sizes restated rather than relying
+   on the 820px media query, since the sheet is mounted from JS (and the Ladle
+   stories render it at desktop width). */
+.sc-sheet-head .btn.icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-width: 2px;
+  box-shadow: 3px 3px 0 var(--shadow-col);
+}
+/* .btn's own :active translates by var(--sh) (5px), which overshoots a 3px
+   shadow — same override .kb-key uses, so the key lands flat on its shadow. */
+.sc-sheet-head .btn.icon-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--shadow-col);
+}
+/* The literal × at .modal-close's weight — icons.tsx has no X, and this keeps
+   the app's two close affordances identical. */
+.sc-sheet-head .btn.icon-btn.sc-sheet-close {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* The one scroll container in the sheet — no `overflow-y: visible` override
+   this time, which is what keeps the autoscroll inside the sheet instead of
+   moving the page. overscroll-behavior stops chaining out, but it's only half
+   the story: it's a partial implementation on iOS 16+ with no effect on a
+   container that doesn't actually overflow (webkit.org/b/243452), i.e. exactly
+   a short thread — useScrollLock's touchmove blocker covers that case by
+   testing scrollHeight > clientHeight itself. */
+.sc-sheet .sc-messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px calc(14px + env(safe-area-inset-right, 0px)) 12px
+    calc(14px + env(safe-area-inset-left, 0px));
+}
+
+/* The bottom edge of a box whose bottom edge is already the keyboard's top
+   edge — so it needs no keyboard inset at all, only the home-indicator one,
+   and only while that edge really is the physical screen bottom.
+   env(safe-area-inset-bottom) doesn't change when the keyboard is up (WebKit
+   never folds the keyboard rect into safe-area insets), so applied
+   unconditionally it opens a ~34px dead gap between the composer and the keys.
+   --sc-safe-bot is exactly the test "--sc-kb is 0" — no threshold, and no need
+   to know whether the occlusion is a keyboard or the browser's own toolbar.
+   Driven by measurement rather than the popular :has(:focus-visible) trick,
+   which stays true after dismissal on Android. */
+.sc-sheet .sc-composer {
+  flex: 0 0 auto;
+  border-top: 2px solid var(--line);
+  background: var(--bg);
+  padding: 10px calc(14px + env(safe-area-inset-right, 0px))
+    calc(10px + env(safe-area-inset-bottom, 0px) * var(--sc-safe-bot, 1))
+    calc(14px + env(safe-area-inset-left, 0px));
+}
+/* On the sheet the field sits on --bg, not flush inside an already-lifted
+   --surface card the way .sc-panel's does, so it carries its own border to
+   read as a field at all (in the light theme --surface and --bg are both
+   #ffffff). 16px minimum, computed and post-transform: below that iOS
+   auto-zooms on focus, which changes visualViewport.scale and width and
+   invalidates every measurement the sheet depends on. index.html's
+   maximum-scale=1 masks that today, but this rule is what makes the sheet
+   independent of it. */
+.sc-sheet .sc-input {
+  border: 2px solid var(--line);
+  background: var(--surface);
+  box-shadow: none;
+  padding: 10px 12px;
+  font-size: 16px;
+}
+.sc-sheet .sc-input:focus-visible {
+  outline: none;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* How-to-play guide. */
