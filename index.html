@@ -2,7 +2,14 @@
 <html lang="en" data-theme="dark" data-accent="yellow">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- interactive-widget=resizes-content: without it, iOS Safari shrinks
+         only the *visual* viewport for the keyboard and scroll-compensates
+         instead, which fights position: sticky (the sticky composer
+         recalculates against a scroll offset the layout itself doesn't
+         know shrank, leaving a gap of dead space where the pre-keyboard
+         layout still thinks there's room). This makes the keyboard resize
+         the actual layout viewport instead, like a normal reflow. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#1c1c1c" />
     <title>The Daily Grid — every day's crosswords in one place</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
