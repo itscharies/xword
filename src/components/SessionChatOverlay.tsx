@@ -84,15 +84,14 @@ export function SessionChatOverlay({
     closeRef.current();
   }, []);
 
-  // Focus the dialog itself, not the composer: popping the keyboard the
-  // instant the sheet appears is a second motion nobody asked for (which is
-  // also why SessionChatThread's autoFocus stays off here). preventScroll is
-  // honoured for *programmatic* focus on iOS 15.5+, so this one really is
-  // suppressed — a raw tap on the composer isn't, but it doesn't need to be:
-  // the reveal shows up as visualViewport.offsetTop and .sc-sheet's
-  // padding-top absorbs it.
+  // The composer focuses itself (SessionChatThread's autoFocus), which is what
+  // brings the keyboard up together with the sheet instead of a tap later —
+  // and the two land as one motion rather than two, because focusing a text
+  // field arms useVisualViewport's remembered keyboard height, so the composer
+  // has already moved to where the keys are about to be before they animate
+  // in. Nothing is focused here, then: this effect exists only to hand focus
+  // back on the way out.
   useLayoutEffect(() => {
-    sheetRef.current?.focus({ preventScroll: true });
     return () => {
       // Hand focus back so keyboard users land where they left off, rather
       // than stranded on <body>. The opener can be gone by now.
@@ -165,12 +164,7 @@ export function SessionChatOverlay({
           ×
         </button>
       </div>
-      <SessionChatThread
-        session={session}
-        userId={userId}
-        onEscape={requestClose}
-        autoFocus={false}
-      />
+      <SessionChatThread session={session} userId={userId} onEscape={requestClose} />
     </div>,
     portalTo ?? document.body,
   );

@@ -36,10 +36,9 @@ export function SessionChatThread({
   userId: string;
   /** Esc in the composer closes whichever shell is showing. */
   onEscape?: () => void;
-  /** The mobile sheet disables this — focusing the instant the sheet opens
-   *  pops the keyboard immediately, a second motion on top of the open that
-   *  the user didn't ask for. Left on for the desktop panel, which has no
-   *  keyboard to pop. */
+  /** Focus the composer on mount. On the mobile sheet this is what brings the
+   *  keyboard up with the sheet rather than a tap later — see the
+   *  useLayoutEffect below for why the timing matters there. */
   autoFocus?: boolean;
 }) {
   const [draft, setDraft] = useState("");
@@ -49,10 +48,17 @@ export function SessionChatThread({
   // someone out of scrollback because a message arrived is its own kind of jank.
   const pinned = useRef(true);
 
-  useEffect(() => {
+  // useLayoutEffect, not useEffect, and this is the load-bearing difference on
+  // iOS: WebKit only raises the keyboard for a programmatic focus() that is
+  // still inside the call stack of the user gesture that caused it. A layout
+  // effect runs synchronously in the commit, which for a discrete event like
+  // the Toolbar tap is still that same task; a passive effect can be deferred
+  // past it, and then the input focuses but no keyboard appears.
+  useLayoutEffect(() => {
     // preventScroll: focusing an input is enough to make iOS scroll (and,
     // under 16px, zoom) to "reveal" it even when it's already fully visible.
-    // Honoured by WebKit for programmatic focus since iOS 15.5.
+    // Honoured by WebKit for programmatic focus since iOS 15.5. The sheet
+    // absorbs the reveal it would otherwise do via padding-top anyway.
     if (autoFocus) inputRef.current?.focus({ preventScroll: true });
   }, [autoFocus]);
 

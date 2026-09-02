@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Puzzle } from "./types.ts";
 import { isSource } from "./lib/sources.ts";
 import type { PuzzleSource } from "./lib/sources.ts";
@@ -1060,7 +1061,19 @@ function Solver({
                 ? {
                     open: sessionChatOpen,
                     unread: chatUnread,
-                    onToggle: () => setSessionChatOpen((v) => !v),
+                    onToggle: () => {
+                      if (sessionChatOpen) {
+                        setSessionChatOpen(false);
+                        return;
+                      }
+                      // flushSync so the sheet mounts — and its composer
+                      // focuses — inside this tap's own call stack. iOS only
+                      // raises the keyboard for a programmatic focus() that is
+                      // still part of the user gesture, and React would
+                      // otherwise commit in a microtask after the handler has
+                      // returned.
+                      flushSync(() => setSessionChatOpen(true));
+                    },
                   }
                 : undefined
             }
