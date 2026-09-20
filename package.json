@@ -21,7 +21,8 @@
     "fetch:independent": "tsx scripts/fetch-independent.ts",
     "parse:test": "tsx scripts/parse.test.ts",
     "og": "tsx scripts/make-og.ts",
-    "icons": "tsx scripts/make-icons.ts"
+    "icons": "tsx scripts/make-icons.ts",
+    "fetch:fonts": "tsx scripts/fetch-fonts.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",

@@ -1,0 +1,15 @@
+@font-face {
+  font-family: 'SN Pro';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('./sn-pro.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Jaro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./jaro.woff2') format('woff2');
+}

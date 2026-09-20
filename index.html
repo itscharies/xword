@@ -48,17 +48,12 @@
     />
     <meta name="twitter:image" content="https://itscharies.github.io/xword/og.png" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=SN+Pro:wght@200;300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <!-- Display font for the "The Daily Grid" brand title. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Jaro:opsz@6..72&display=swap"
-      rel="stylesheet"
-    />
+    <!-- SN Pro (body) and Jaro (the "The Daily Grid" brand title), self-hosted
+         rather than loaded from Google Fonts — a cross-origin stylesheet
+         can't be listed in the service worker's precache manifest the way a
+         same-origin one can, so this is what actually makes the fonts work
+         on a cold boot with no connectivity. See scripts/fetch-fonts.ts. -->
+    <link href="./fonts/fonts.css" rel="stylesheet" />
     <script>
       // Decode the path that 404.html stashed in the query string, so deep
       // links (/xword/gdn-cryptic/20260615) restore to a clean URL before the

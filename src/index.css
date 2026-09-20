@@ -2374,6 +2374,7 @@ html.sc-locked {
   color: var(--muted);
 }
 .archive-empty p { margin: 0; font-size: 15px; }
+.archive-offline-notice { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
 
 /* One section per date. */
 .archive-day { margin-bottom: 22px; }

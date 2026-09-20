@@ -32,7 +32,6 @@ import {
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
 import { Card } from "./Card.tsx";
-import { OfflinePuzzlesControls } from "./OfflinePuzzlesControls.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -268,10 +267,23 @@ export function Archive({
     return { items: acc, cursor: cur, hasMore: more };
   };
 
+  // Whether the *last completed* fetch came back empty because it couldn't
+  // reach the feed at all — set once, when that fetch settles, rather than
+  // read live off `online` at render time. `online` can flip back to true
+  // later (e.g. the periodic reachability probe in lib/online.ts) without a
+  // new fetch ever having run, and reading it directly at render time made
+  // the offline puzzle list flash back to the misleading "No puzzles match
+  // these filters" message a while after it first appeared, even though
+  // nothing had actually been re-fetched.
+  const [feedUnavailable, setFeedUnavailable] = useState(false);
+
   // (Re)load from the top whenever sign-in state or the Following/Your
   // puzzles chips change — all of these affect which rows the backend even
   // returns, so a client-side re-filter of already-loaded pages isn't
-  // enough. The generation counter also invalidates any in-flight Show more.
+  // enough. Also reloads on an online/offline transition, so coming back
+  // online automatically retries a feed that couldn't be reached, instead of
+  // leaving the offline list showing indefinitely. The generation counter
+  // also invalidates any in-flight Show more.
   const genRef = useRef(0);
   useEffect(() => {
     const gen = ++genRef.current;
@@ -282,10 +294,11 @@ export function Archive({
       setItems(next.items);
       setCursor(next.cursor);
       setHasMore(next.hasMore);
+      setFeedUnavailable(next.items.length === 0 && getConnState() === "offline");
       setLoading(false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeFollowing, includeMine, user]);
+  }, [includeFollowing, includeMine, user, online]);
 
   // The ref guards against double-clicks synchronously; the state drives the
   // in-flight placeholder.
@@ -458,20 +471,19 @@ export function Archive({
       ) : (
         <>
           {days.length === 0 &&
-            (online ? (
+            (feedUnavailable ? (
+              // The feed fetch came back empty because it couldn't be
+              // reached, not because nothing matched — showing the usual
+              // "no matches" message would misreport a connectivity problem
+              // as a filter problem. Show what's actually available instead.
+              <OfflineFallback puzzles={offlinePuzzles} onPick={onPick} onOpenPuzzle={onOpenPuzzle} />
+            ) : (
               <div className="archive-empty">
                 <p>No puzzles match these filters.</p>
                 <button className="btn" onClick={clearFilters}>
                   Clear filters
                 </button>
               </div>
-            ) : (
-              // Offline, the feed fetch above comes back empty rather than
-              // throwing (Supabase's client normalizes a network failure
-              // into an empty result) — showing the same "no matches"
-              // message here would misreport a connectivity problem as a
-              // filter problem. Show what's actually available instead.
-              <OfflineFallback puzzles={offlinePuzzles} onPick={onPick} onOpenPuzzle={onOpenPuzzle} />
             ))}
 
           {days.map(([iso, dayItems]) => (
@@ -545,7 +557,6 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
-          <OfflinePuzzlesControls onChange={refreshOffline} />
           {/* Signed-in progress lives in Supabase, not a local JSON backup. */}
           {!user && <SaveDataControls />}
         </Modal>
@@ -603,6 +614,21 @@ function OfflineFallback({
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenPuzzle: (id: string) => void;
 }) {
+  // Same grouping convention as the live feed above (a Map built in sorted
+  // order, so insertion order is display order) — newest day first, one
+  // section per date, so this reads as the same list rather than a
+  // different, bolted-on view.
+  const days = useMemo(() => {
+    const sorted = [...puzzles].sort((a, b) => b.puzzle.isoDate.localeCompare(a.puzzle.isoDate));
+    const byDate = new Map<string, CachedPuzzle[]>();
+    for (const p of sorted) {
+      const arr = byDate.get(p.puzzle.isoDate);
+      if (arr) arr.push(p);
+      else byDate.set(p.puzzle.isoDate, [p]);
+    }
+    return [...byDate.entries()];
+  }, [puzzles]);
+
   if (puzzles.length === 0) {
     return (
       <div className="archive-empty">
@@ -613,23 +639,34 @@ function OfflineFallback({
       </div>
     );
   }
+
   return (
-    <section className="archive-day">
-      <h2 className="archive-day-head">You're offline — saved puzzles</h2>
-      <ul className="card-list">
-        {puzzles.map((p) => (
-          <Card
-            key={p.key}
-            onPress={() => (p.kind === "syndicated" ? onPick(p.source!, p.date!) : onOpenPuzzle(p.puzzleId!))}
-          >
-            <span className="ai-source">{p.puzzle.title}</span>
-            <span className="ai-author">
-              {p.kind === "syndicated" ? `${SOURCES[p.source!].label} · ${p.date}` : "Community puzzle"}
-            </span>
-          </Card>
-        ))}
-      </ul>
-    </section>
+    <>
+      <p className="archive-offline-notice">You're offline — here's what you've saved for later.</p>
+      {days.map(([iso, dayPuzzles]) => (
+        <section className="archive-day" key={iso}>
+          <h2 className="archive-day-head">{formatDate(iso)}</h2>
+          <ul className="card-list">
+            {dayPuzzles.map((p) => (
+              <Card
+                key={p.key}
+                onPress={() => (p.kind === "syndicated" ? onPick(p.source!, p.date!) : onOpenPuzzle(p.puzzleId!))}
+              >
+                <span className="ai-source">
+                  {p.kind === "syndicated" ? SOURCES[p.source!].label : p.puzzle.title}
+                </span>
+                {p.kind === "syndicated" && p.puzzle.title !== SOURCES[p.source!].label && (
+                  <span className="ai-theme">{p.puzzle.title}</span>
+                )}
+                <span className="ai-author">
+                  {p.kind === "syndicated" ? `By ${p.puzzle.author || "Anonymous"}` : "Community puzzle"}
+                </span>
+              </Card>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
   );
 }
 

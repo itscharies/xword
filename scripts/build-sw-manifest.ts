@@ -22,8 +22,9 @@ function walk(dir: string): string[] {
   return out;
 }
 
-// The app shell: index.html plus everything Vite emitted under assets/
-// (content-hashed JS/CSS/worker chunks, so cache-first is always safe) —
+// The app shell: index.html, everything Vite emitted under assets/
+// (content-hashed JS/CSS/worker chunks, so cache-first is always safe), and
+// the self-hosted font files under fonts/ (see scripts/fetch-fonts.ts) —
 // not 404.html (the GitHub-Pages-only SPA redirect trick, never loaded by
 // this app itself) or sw.js (the service worker manages its own script
 // caching; it doesn't belong in Cache Storage too). Plus the handful of
@@ -35,7 +36,7 @@ const EXTRA_FILES = ["manifest.webmanifest", "favicon.svg", "apple-touch-icon.pn
 
 const shellAssets = walk(dist)
   .map((f) => relative(dist, f).split(sep).join("/"))
-  .filter((p) => p === "index.html" || p.startsWith("assets/"));
+  .filter((p) => p === "index.html" || p.startsWith("assets/") || p.startsWith("fonts/"));
 
 const extraAssets = EXTRA_FILES.filter((f) => existsSync(join(dist, f)));
 
