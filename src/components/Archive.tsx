@@ -17,6 +17,7 @@ import { useFlyout } from "../hooks/useFlyout.ts";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { useConnState } from "../hooks/useConnState.ts";
+import { getConnState } from "../lib/online.ts";
 import { listArchivePage, getPuzzleById, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { getSyndicatedPuzzle } from "../lib/syndicated.ts";
 import {
@@ -26,6 +27,7 @@ import {
   saveSyndicatedOffline,
   syndicatedOfflineKey,
   communityOfflineKey,
+  type CachedPuzzle,
 } from "../lib/offlineCache.ts";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
@@ -151,13 +153,16 @@ export function Archive({
 
   // Which puzzles are saved for offline play, loaded once (a batch scan)
   // rather than per-tile — tiles just read `offlineKeys.has(key)` and call
-  // `refreshOfflineKeys` after saving/removing, instead of each doing its own
-  // async IndexedDB round-trip.
-  const [offlineKeys, setOfflineKeys] = useState<Set<string>>(new Set());
-  const refreshOfflineKeys = () => {
-    listOfflinePuzzles().then((saved) => setOfflineKeys(new Set(saved.map((p) => p.key))));
+  // `refreshOffline` after saving/removing, instead of each doing its own
+  // async IndexedDB round-trip. The full list doubles as the offline
+  // fallback view below, when the feed itself couldn't be fetched.
+  const [offlinePuzzles, setOfflinePuzzles] = useState<CachedPuzzle[]>([]);
+  const offlineKeys = useMemo(() => new Set(offlinePuzzles.map((p) => p.key)), [offlinePuzzles]);
+  const refreshOffline = () => {
+    listOfflinePuzzles().then(setOfflinePuzzles);
   };
-  useEffect(refreshOfflineKeys, []);
+  useEffect(refreshOffline, []);
+  const online = useConnState() === "online";
 
   // Kept as one state object (rather than separate useState calls per field)
   // so every update — including "toggle one item in an array" — reads and
@@ -243,6 +248,10 @@ export function Archive({
     target: number,
     from: { items: ArchiveFeedItem[]; cursor: string | null; hasMore: boolean },
   ) => {
+    // Skip the doomed round-trip when already known offline — listArchivePage
+    // would otherwise still attempt (and wait out) a network request that
+    // Supabase's client normalizes into an empty result anyway.
+    if (getConnState() === "offline") return { ...from, hasMore: false };
     let { items: acc, cursor: cur, hasMore: more } = from;
     while (more && completeDayCount(acc, more) < target) {
       const { items: page, nextCursor } = await listArchivePage({
@@ -448,14 +457,22 @@ export function Archive({
         <ArchiveSkeleton />
       ) : (
         <>
-          {days.length === 0 && (
-            <div className="archive-empty">
-              <p>No puzzles match these filters.</p>
-              <button className="btn" onClick={clearFilters}>
-                Clear filters
-              </button>
-            </div>
-          )}
+          {days.length === 0 &&
+            (online ? (
+              <div className="archive-empty">
+                <p>No puzzles match these filters.</p>
+                <button className="btn" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              // Offline, the feed fetch above comes back empty rather than
+              // throwing (Supabase's client normalizes a network failure
+              // into an empty result) — showing the same "no matches"
+              // message here would misreport a connectivity problem as a
+              // filter problem. Show what's actually available instead.
+              <OfflineFallback puzzles={offlinePuzzles} onPick={onPick} onOpenPuzzle={onOpenPuzzle} />
+            ))}
 
           {days.map(([iso, dayItems]) => (
             <section className="archive-day" key={iso}>
@@ -468,7 +485,7 @@ export function Archive({
                       item={it}
                       onOpen={onOpenPuzzle}
                       offlineKeys={offlineKeys}
-                      onOfflineChange={refreshOfflineKeys}
+                      onOfflineChange={refreshOffline}
                     />
                   ) : (
                     <SyndicatedItem
@@ -476,7 +493,7 @@ export function Archive({
                       item={it}
                       onPick={onPick}
                       offlineKeys={offlineKeys}
-                      onOfflineChange={refreshOfflineKeys}
+                      onOfflineChange={refreshOffline}
                     />
                   ),
                 )}
@@ -528,7 +545,7 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
-          <OfflinePuzzlesControls onChange={refreshOfflineKeys} />
+          <OfflinePuzzlesControls onChange={refreshOffline} />
           {/* Signed-in progress lives in Supabase, not a local JSON backup. */}
           {!user && <SaveDataControls />}
         </Modal>
@@ -570,6 +587,49 @@ export function Archive({
         </Modal>
       )}
     </div>
+  );
+}
+
+/** Shown in place of the archive feed when it's offline and the feed fetch
+ *  came back empty — the puzzles saved via "Save offline" (the download icon
+ *  on any tile, or in the Solver) are still openable even though the feed
+ *  itself isn't reachable. */
+function OfflineFallback({
+  puzzles,
+  onPick,
+  onOpenPuzzle,
+}: {
+  puzzles: CachedPuzzle[];
+  onPick: (source: PuzzleSource, date: string) => void;
+  onOpenPuzzle: (id: string) => void;
+}) {
+  if (puzzles.length === 0) {
+    return (
+      <div className="archive-empty">
+        <p>You're offline, and don't have any puzzles saved for offline play yet.</p>
+        <p className="ai-author">
+          Next time you're online, look for the download icon on a puzzle to save it for later.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <section className="archive-day">
+      <h2 className="archive-day-head">You're offline — saved puzzles</h2>
+      <ul className="card-list">
+        {puzzles.map((p) => (
+          <Card
+            key={p.key}
+            onPress={() => (p.kind === "syndicated" ? onPick(p.source!, p.date!) : onOpenPuzzle(p.puzzleId!))}
+          >
+            <span className="ai-source">{p.puzzle.title}</span>
+            <span className="ai-author">
+              {p.kind === "syndicated" ? `${SOURCES[p.source!].label} · ${p.date}` : "Community puzzle"}
+            </span>
+          </Card>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -683,7 +743,7 @@ function OfflineToggle({
             : "Save for offline play"
       }
     >
-      {saved ? <CheckIcon /> : <DownloadIcon />}
+      <DownloadIcon />
     </button>
   );
 }

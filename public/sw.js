@@ -15,6 +15,17 @@
 const MANIFEST_URL = "./sw-manifest.json";
 const CACHE_PREFIX = "xword-shell-";
 
+// The app's actual typefaces (SN Pro, Jaro) come from Google Fonts, not this
+// origin — index.html loads them straight from fonts.googleapis.com/
+// fonts.gstatic.com. They can't be listed in the precache manifest (the
+// gstatic file URLs are generated per-request, keyed off the requesting
+// browser's Accept header, so there's no fixed set to know at build time),
+// so instead they're cached the first time they're actually requested (any
+// online visit) and served from that cache on every later request,
+// including offline ones.
+const FONT_ORIGINS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
+const FONT_CACHE = "xword-fonts";
+
 async function loadManifest() {
   // no-store: this file itself is tiny and must never come from the HTTP
   // cache, or a re-deploy with an unchanged sw.js could keep installing an
@@ -51,6 +62,28 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return; // never intercept a mutating request
 
   const url = new URL(request.url);
+
+  if (FONT_ORIGINS.includes(url.origin)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(FONT_CACHE);
+        const cached = await cache.match(request, { ignoreVary: true });
+        if (cached) return cached;
+        try {
+          const res = await fetch(request);
+          // Cache a clone regardless of exact status — Google Fonts' CSS
+          // responses are effectively immutable per URL, so there's nothing
+          // to revalidate later.
+          if (res.ok) event.waitUntil(cache.put(request, res.clone()));
+          return res;
+        } catch {
+          return Response.error();
+        }
+      })(),
+    );
+    return;
+  }
+
   if (url.origin !== self.location.origin) return; // Supabase etc. — network only
 
   // A page navigation (opening/reloading a route, deep-linked or not) — try

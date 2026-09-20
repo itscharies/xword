@@ -95,7 +95,6 @@ import { SessionChatOverlay } from "./components/SessionChatOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
 import { UpdateToast } from "./components/UpdateToast.tsx";
 import {
-  CheckIcon,
   DownloadIcon,
   EditIcon,
   FullscreenExitIcon,
@@ -1239,7 +1238,7 @@ function Solver({
                       : "Save for offline play"
                 }
               >
-                {offlineSaved ? <CheckIcon /> : <DownloadIcon />}
+                <DownloadIcon />
               </button>
             )}
             <button
