@@ -8,7 +8,7 @@
     "dev:mock": "VITE_MOCK_BACKEND=1 vite",
     "ladle": "ladle serve",
     "ladle:build": "ladle build",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx scripts/build-sw-manifest.ts",
     "preview": "vite preview",
     "migrate:puzzles": "tsx scripts/migrate-puzzles-to-supabase.ts",
     "seed:local": "tsx scripts/seed-local-puzzles.ts",

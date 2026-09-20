@@ -50,6 +50,17 @@ import {
   type PublishedPuzzle,
 } from "./lib/puzzles.ts";
 import { getSyndicatedPuzzle, getSyndicatedWithSolves } from "./lib/syndicated.ts";
+import { getConnState } from "./lib/online.ts";
+import {
+  getPuzzleOffline,
+  isPuzzleSavedOffline,
+  removePuzzleOffline,
+  saveCommunityOffline,
+  saveSyndicatedOffline,
+  syndicatedOfflineKey,
+  communityOfflineKey,
+} from "./lib/offlineCache.ts";
+import { useConnState } from "./hooks/useConnState.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
@@ -82,7 +93,10 @@ import { AnagramOverlay } from "./components/AnagramOverlay.tsx";
 import { SessionChat } from "./components/SessionChat.tsx";
 import { SessionChatOverlay } from "./components/SessionChatOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
+import { UpdateToast } from "./components/UpdateToast.tsx";
 import {
+  CheckIcon,
+  DownloadIcon,
   EditIcon,
   FullscreenExitIcon,
   FullscreenIcon,
@@ -158,6 +172,7 @@ export default function App() {
       {/* Only mounted for `npm run dev:mock` — flips the mock backend's
           "signed in as" state. See MockAuthSwitcher.tsx. */}
       {MOCK_MODE && <MockAuthSwitcher />}
+      <UpdateToast />
     </>
   );
 }
@@ -325,19 +340,49 @@ function PuzzleView({
     setNotFound(false);
     let cancelled = false;
     (async () => {
-      // Mutuals' solves ride along on the same fetch (see the migration) —
-      // no separate request for the solves segment to pop in from.
-      const res = await getSyndicatedWithSolves(source, date);
+      // Skip the doomed network round-trip when already known offline; a
+      // fetch attempted anyway (captive portal, Supabase down) is caught
+      // below and falls back the same way. getSyndicatedWithSolves only
+      // catches a Postgrest-level error, not a thrown network one — without
+      // this try/catch a genuinely offline fetch would reject uncaught and
+      // leave the view stuck on its loading skeleton forever.
+      let res: { puzzle: Puzzle; mutualProgress: MutualProgress[] } | null = null;
+      if (getConnState() === "online") {
+        // Mutuals' solves ride along on the same fetch (see the migration) —
+        // no separate request for the solves segment to pop in from.
+        try {
+          res = await getSyndicatedWithSolves(source, date);
+        } catch (err) {
+          console.error("[PuzzleView] fetch failed", err);
+        }
+      }
       if (cancelled) return;
+
       // The backend's merged feed already excludes puzzles fetched ahead of
       // their real publish date; this closes the same gap for someone
       // guessing the direct /<source>/<date> URL. Deliberately not applied
       // in EditPuzzleView below — an admin fixing a bad parse needs to
-      // reach it before publish day too.
-      if (!res || isFutureIso(res.puzzle.isoDate)) {
+      // reach it before publish day too. A future puzzle is a real "not
+      // found", not a network problem, so it never falls back to the cache.
+      if (res && isFutureIso(res.puzzle.isoDate)) {
         setNotFound(true);
         return;
       }
+
+      if (!res) {
+        // Offline (or the fetch above failed anyway) — fall back to a copy
+        // saved via "Save offline" before giving up. No mutual-progress data
+        // offline; Solver already treats an empty list as "no one's started".
+        const cached = await getPuzzleOffline(syndicatedOfflineKey(source, date));
+        if (cancelled) return;
+        if (cached) {
+          setLoaded({ puzzle: cached.puzzle, mutualProgress: [] });
+          return;
+        }
+        setNotFound(true);
+        return;
+      }
+
       if (user) {
         const remote = await pullProgress(user.id, source, date);
         if (remote) {
@@ -347,7 +392,7 @@ function PuzzleView({
           }
         }
       }
-      if (!cancelled) setLoaded(res);
+      setLoaded(res);
     })();
     return () => {
       cancelled = true;
@@ -389,13 +434,42 @@ function CommunityPuzzleView({
     setNotFound(false);
     let cancelled = false;
 
-    // Mutuals' solves ride along on the same fetch — see PuzzleView.
-    getPuzzleWithSolves(id).then(async (res) => {
+    (async () => {
+      // See PuzzleView's fetch effect for why this skips the network attempt
+      // while offline and catches a thrown (not just returned) failure.
+      let res: { puzzle: PublishedPuzzle; mutualProgress: MutualProgress[] } | null = null;
+      if (getConnState() === "online") {
+        // Mutuals' solves ride along on the same fetch — see PuzzleView.
+        try {
+          res = await getPuzzleWithSolves(id);
+        } catch (err) {
+          console.error("[CommunityPuzzleView] fetch failed", err);
+        }
+      }
       if (cancelled) return;
+
       if (!res) {
+        const cached = await getPuzzleOffline(communityOfflineKey(id));
+        if (cancelled) return;
+        if (cached) {
+          setLoaded({
+            puzzle: {
+              id,
+              author_id: cached.authorId ?? "",
+              title: cached.puzzle.title,
+              data: cached.puzzle,
+              visibility: "unlisted",
+              completions: 0,
+              created_at: "",
+            },
+            mutualProgress: [],
+          });
+          return;
+        }
         setNotFound(true);
         return;
       }
+
       if (user) {
         const remote = await pullCommunityProgress(user.id, id);
         if (remote) {
@@ -405,8 +479,8 @@ function CommunityPuzzleView({
           }
         }
       }
-      if (!cancelled) setLoaded(res);
-    });
+      setLoaded(res);
+    })();
 
     return () => {
       cancelled = true;
@@ -883,6 +957,39 @@ function Solver({
     return onSaveStatus(saveKey, setSaveStatus);
   }, [saveKey]);
 
+  // "Save offline" toggle in the actionbar — the puzzle is already loaded in
+  // memory here, so unlike the same toggle on an Archive tile this needs no
+  // extra fetch. Multiplayer sessions don't offer this (see the `!session`
+  // guard where the button renders below) — live co-op is online-only.
+  const offlineKey = communityId ? communityOfflineKey(communityId) : syndicatedOfflineKey(source, puzzle.date);
+  const isOnline = useConnState() === "online";
+  const [offlineSaved, setOfflineSaved] = useState(false);
+  const [offlineSaving, setOfflineSaving] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    isPuzzleSavedOffline(offlineKey).then((v) => {
+      if (!cancelled) setOfflineSaved(v);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [offlineKey]);
+  const toggleOfflineSave = async () => {
+    if (offlineSaving) return;
+    setOfflineSaving(true);
+    if (offlineSaved) {
+      await removePuzzleOffline(offlineKey);
+      setOfflineSaved(false);
+    } else {
+      const result = communityId
+        ? await saveCommunityOffline(communityId, puzzle, authorId ?? "")
+        : await saveSyndicatedOffline(source, puzzle.date, puzzle);
+      if (result.ok) setOfflineSaved(true);
+      else window.alert(result.error);
+    }
+    setOfflineSaving(false);
+  };
+
   const buildProgress = (): Progress => ({
     entries: xw.entries,
     revealed: [...xw.revealed],
@@ -1029,6 +1136,17 @@ function Solver({
                   </Tip>
                 </span>
               )}
+              {saveStatus === "queued" && (
+                <span className="save-status save-status-queued">
+                  {" · "}
+                  <Tip
+                    className="tip-text"
+                    tip="You're offline — this will sync automatically once you're back online."
+                  >
+                    Saved offline
+                  </Tip>
+                </span>
+              )}
             </div>
             {session && sApi ? (
               <SessionBar
@@ -1104,6 +1222,24 @@ function Solver({
                 title="Solve together"
               >
                 <PeopleIcon />
+              </button>
+            )}
+            {!session && (
+              <button
+                className={`btn icon-btn ${offlineSaved ? "on" : ""}`}
+                onClick={() => void toggleOfflineSave()}
+                disabled={offlineSaving || (!isOnline && !offlineSaved)}
+                aria-pressed={offlineSaved}
+                aria-label={offlineSaved ? "Remove from offline puzzles" : "Save for offline play"}
+                title={
+                  !isOnline && !offlineSaved
+                    ? "Go online to save this for offline play"
+                    : offlineSaved
+                      ? "Saved for offline play — tap to remove"
+                      : "Save for offline play"
+                }
+              >
+                {offlineSaved ? <CheckIcon /> : <DownloadIcon />}
               </button>
             )}
             <button

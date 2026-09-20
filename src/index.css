@@ -433,6 +433,8 @@ summary,
   align-items: center;
   justify-content: center;
 }
+/* Toggled-on state (e.g. the actionbar's "Save offline", once saved). */
+.btn.icon-btn.on { background: var(--accent-2); color: #000; }
 
 /* ---- settings (cog button + modal body) -------------------------------- */
 
@@ -451,8 +453,10 @@ summary,
 /* Capped so a lone sign-in/claim-profile prompt on the (otherwise wide)
    Account page doesn't stretch its input/button edge to edge. */
 .setting-row { display: flex; flex-direction: column; gap: 8px; max-width: 400px; }
-/* The save-data row follows the theme settings block — set it off with a rule. */
-.settings + .setting-row {
+/* A settings row (save-data, offline puzzles) follows either the theme
+   settings block or another bare row — set each off with a rule. */
+.settings + .setting-row,
+.setting-row + .setting-row {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 2px solid var(--line);
@@ -473,7 +477,27 @@ summary,
 .savedata-actions .text-input { flex: 1; min-width: 120px; }
 .savedata-status { font-size: 12px; color: var(--muted); }
 
+.offline-puzzle-list { display: flex; flex-direction: column; gap: 8px; }
+.offline-puzzle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+}
+.offline-puzzle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.offline-puzzle-title {
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .save-status-error { color: var(--fg); font-weight: 700; }
+.save-status-queued { color: var(--muted); }
 
 /* The one base look for every text input and select — surface fill, thick
    border, no browser chrome. Specialized fields stack a modifier on top:
@@ -2487,6 +2511,62 @@ html.sc-locked {
   .card.interactive:hover .ai-pct { background: var(--surface); color: var(--fg); }
 }
 
+/* Groups the "Save offline" toggle with the .ai-done/.ai-pct badge in one
+   top-right corner instead of giving the toggle a corner of its own — the
+   title text is left-aligned flush with the card's edge, so a top-left
+   badge collides with it, while top-right is already established as
+   reserved/badge space. .ai-done/.ai-pct keep their own position:absolute
+   for their other (non-grouped) uses (e.g. AccountPage's Following list);
+   the higher-specificity override below just turns that off for the copies
+   living inside this group, where the group itself is positioned instead. */
+.ai-corner-group {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+}
+.ai-corner-group > .ai-done,
+.ai-corner-group > .ai-pct {
+  position: static;
+}
+/* Hidden until hover/focus (like .account-tile-actions) except once already
+   saved, when the check stays visible as a persistent "available offline"
+   indicator. */
+.ai-offline {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: var(--bw) solid var(--line);
+  border-bottom: var(--bw) solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.ai-offline svg { width: 15px; height: 15px; }
+.ai-offline.on { background: var(--accent-2); color: #000; opacity: 1; }
+.ai-offline:disabled { cursor: not-allowed; opacity: 0.5; }
+.card.interactive:hover .ai-offline,
+.card.interactive:focus-within .ai-offline {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ai-offline { opacity: 1; }
+}
+@media (hover: hover) {
+  .ai-offline:not(:disabled):hover { background: var(--accent-2); color: #000; }
+  .card.interactive:has(.ai-offline:hover) {
+    background: var(--surface);
+    color: var(--fg);
+  }
+  .card.interactive:has(.ai-offline:hover) .ai-author { color: var(--muted); }
+}
+.ai-offline:active:not(:disabled) { background: var(--accent); color: #000; }
+
 /* Mutuals on this puzzle — stacked mini avatars in the tile's bottom-right
    corner (who/at-what-% lives in its .tip-panel flyout, reusing .solves-row).
    Same .solves-avatar tiles as the solver page's flyout trigger. Position
@@ -3236,6 +3316,26 @@ html.sc-locked {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Service-worker "a new version is ready" banner — see lib/swUpdate.ts.
+   Fixed to the bottom so it never displaces the grid, above everything else
+   including a fullscreen solve. */
+.update-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
   font-size: 13px;
   font-weight: 600;
 }

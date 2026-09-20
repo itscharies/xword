@@ -7,7 +7,7 @@ import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { AboutPuzzles } from "./AboutPuzzles.tsx";
-import { CheckIcon, FilterIcon, InfoIcon, PeopleIcon, SettingsIcon, UserIcon } from "./icons.tsx";
+import { CheckIcon, DownloadIcon, FilterIcon, InfoIcon, PeopleIcon, SettingsIcon, UserIcon } from "./icons.tsx";
 import { JoinSessionDialog } from "./JoinSessionDialog.tsx";
 import { sessionsEnabled } from "../lib/session.ts";
 import { ArchiveDaySkeleton, ArchiveSkeleton, Sk } from "./Skeleton.tsx";
@@ -16,10 +16,21 @@ import { useAuth } from "../hooks/useAuthContext.tsx";
 import { useFlyout } from "../hooks/useFlyout.ts";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
-import { listArchivePage, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
+import { useConnState } from "../hooks/useConnState.ts";
+import { listArchivePage, getPuzzleById, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
+import { getSyndicatedPuzzle } from "../lib/syndicated.ts";
+import {
+  listOfflinePuzzles,
+  removePuzzleOffline,
+  saveCommunityOffline,
+  saveSyndicatedOffline,
+  syndicatedOfflineKey,
+  communityOfflineKey,
+} from "../lib/offlineCache.ts";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
 import { Card } from "./Card.tsx";
+import { OfflinePuzzlesControls } from "./OfflinePuzzlesControls.tsx";
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -137,6 +148,16 @@ export function Archive({
   const { user } = useAuth();
   const profile = useProfile();
   useDocumentTitle("");
+
+  // Which puzzles are saved for offline play, loaded once (a batch scan)
+  // rather than per-tile — tiles just read `offlineKeys.has(key)` and call
+  // `refreshOfflineKeys` after saving/removing, instead of each doing its own
+  // async IndexedDB round-trip.
+  const [offlineKeys, setOfflineKeys] = useState<Set<string>>(new Set());
+  const refreshOfflineKeys = () => {
+    listOfflinePuzzles().then((saved) => setOfflineKeys(new Set(saved.map((p) => p.key))));
+  };
+  useEffect(refreshOfflineKeys, []);
 
   // Kept as one state object (rather than separate useState calls per field)
   // so every update — including "toggle one item in an array" — reads and
@@ -442,9 +463,21 @@ export function Archive({
               <ul className="card-list">
                 {dayItems.map((it) =>
                   it.kind === "community" ? (
-                    <CommunityItem key={it.id} item={it} onOpen={onOpenPuzzle} />
+                    <CommunityItem
+                      key={it.id}
+                      item={it}
+                      onOpen={onOpenPuzzle}
+                      offlineKeys={offlineKeys}
+                      onOfflineChange={refreshOfflineKeys}
+                    />
                   ) : (
-                    <SyndicatedItem key={it.id} item={it} onPick={onPick} />
+                    <SyndicatedItem
+                      key={it.id}
+                      item={it}
+                      onPick={onPick}
+                      offlineKeys={offlineKeys}
+                      onOfflineChange={refreshOfflineKeys}
+                    />
                   ),
                 )}
               </ul>
@@ -495,6 +528,7 @@ export function Archive({
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
           <ThemeControls />
+          <OfflinePuzzlesControls onChange={refreshOfflineKeys} />
           {/* Signed-in progress lives in Supabase, not a local JSON backup. */}
           {!user && <SaveDataControls />}
         </Modal>
@@ -609,14 +643,63 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
   );
 }
 
+/** "Save offline" toggle, grouped with the .ai-done/.ai-pct progress badge
+ *  in the tile's top-right corner (.ai-corner-group) rather than a corner of
+ *  its own — the title text is left-aligned and flush with the card's edge,
+ *  so a top-left badge collides with it, but the top-right corner is already
+ *  established as reserved/badge space. Cards here are pressable (Card's
+ *  onPress opens the puzzle), so this has to be a real nested <button>
+ *  inside Card's default <li role="button"> rather than Card's as="button"
+ *  variant — see the comment on Card.tsx — and its own click must stop
+ *  propagation so tapping it doesn't also open the puzzle. */
+function OfflineToggle({
+  saved,
+  saving,
+  online,
+  onToggle,
+}: {
+  saved: boolean;
+  saving: boolean;
+  online: boolean;
+  onToggle: () => void;
+}) {
+  const disabled = saving || (!online && !saved);
+  return (
+    <button
+      type="button"
+      className={`ai-offline ${saved ? "on" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      disabled={disabled}
+      aria-pressed={saved}
+      aria-label={saved ? "Remove from offline puzzles" : "Save for offline play"}
+      title={
+        !online && !saved
+          ? "Go online to save this for offline play"
+          : saved
+            ? "Saved for offline play — tap to remove"
+            : "Save for offline play"
+      }
+    >
+      {saved ? <CheckIcon /> : <DownloadIcon />}
+    </button>
+  );
+}
+
 /** One syndicated puzzle row — its own component only so the per-item
  *  progress lookup below doesn't get lost among the community-item JSX. */
 function SyndicatedItem({
   item,
   onPick,
+  offlineKeys,
+  onOfflineChange,
 }: {
   item: ArchiveFeedItem;
   onPick: (source: PuzzleSource, date: string) => void;
+  offlineKeys: Set<string>;
+  onOfflineChange: () => void;
 }) {
   const source = item.source!;
   const date = item.puzzleDate!;
@@ -633,13 +716,35 @@ function SyndicatedItem({
   // 100% filled but not "done", and showing 100% would look solved. 100%/the
   // tick is reserved for a correct solve.
   const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+
+  const offlineKey = syndicatedOfflineKey(source, date);
+  const saved = offlineKeys.has(offlineKey);
+  const [saving, setSaving] = useState(false);
+  const online = useConnState() === "online";
+  const toggleOffline = async () => {
+    if (saving) return;
+    setSaving(true);
+    if (saved) {
+      await removePuzzleOffline(offlineKey);
+    } else {
+      const puzzle = await getSyndicatedPuzzle(source, date);
+      const result = puzzle
+        ? await saveSyndicatedOffline(source, date, puzzle)
+        : { ok: false as const, error: "Couldn't fetch this puzzle to save — try again once you're online." };
+      if (!result.ok) window.alert(result.error);
+    }
+    setSaving(false);
+    onOfflineChange();
+  };
+
   return (
-    <li>
-      <Card as="button" onPress={() => onPick(source, date)}>
-        <span className="ai-source">{mainLabel}</span>
-        {theme && <span className="ai-theme">{theme}</span>}
-        <span className="ai-author">By {item.author || "Anonymous"}</span>
-        <MutualStack mutuals={item.mutualProgress} />
+    <Card onPress={() => onPick(source, date)}>
+      <span className="ai-source">{mainLabel}</span>
+      {theme && <span className="ai-theme">{theme}</span>}
+      <span className="ai-author">By {item.author || "Anonymous"}</span>
+      <MutualStack mutuals={item.mutualProgress} />
+      <div className="ai-corner-group">
+        <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
@@ -649,8 +754,8 @@ function SyndicatedItem({
             {pct}%
           </span>
         ) : null}
-      </Card>
-    </li>
+      </div>
+    </Card>
   );
 }
 
@@ -660,38 +765,64 @@ function SyndicatedItem({
 function CommunityItem({
   item,
   onOpen,
+  offlineKeys,
+  onOfflineChange,
 }: {
   item: ArchiveFeedItem;
   onOpen: (id: string) => void;
+  offlineKeys: Set<string>;
+  onOfflineChange: () => void;
 }) {
   const { user } = useAuth();
   const isMine = !!user && item.authorProfile?.user_id === user.id;
   const prog = loadCommunityProgress(item.id);
   const done = prog?.completed ?? false;
   const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+
+  const offlineKey = communityOfflineKey(item.id);
+  const saved = offlineKeys.has(offlineKey);
+  const [saving, setSaving] = useState(false);
+  const online = useConnState() === "online";
+  const toggleOffline = async () => {
+    if (saving) return;
+    setSaving(true);
+    if (saved) {
+      await removePuzzleOffline(offlineKey);
+    } else {
+      const published = await getPuzzleById(item.id);
+      const result = published
+        ? await saveCommunityOffline(item.id, published.data, published.author_id)
+        : { ok: false as const, error: "Couldn't fetch this puzzle to save — try again once you're online." };
+      if (!result.ok) window.alert(result.error);
+    }
+    setSaving(false);
+    onOfflineChange();
+  };
+
   return (
-    <li>
-      <Card as="button" onPress={() => onOpen(item.id)}>
-        <div className="ai-row">
-          {item.authorProfile && (
-            <Avatar
-              username={item.authorProfile.username}
-              displayName={item.authorProfile.display_name}
-              accent={item.authorProfile.accent}
-              size={36}
-            />
-          )}
-          <div className="ai-row-text">
-            <span className="ai-source">{item.title}</span>
-            <span className="ai-author">
-              {isMine ? "By you" : `By ${item.authorProfile?.display_name} · @${item.authorProfile?.username}`}
-              {/* Only the non-default types get a tag — "Crossword" on every
-                  regular row would just be noise. */}
-              {(item.type === "mini" || item.type === "cryptic") && ` · ${TYPE_LABEL[item.type]}`}
-            </span>
-          </div>
+    <Card onPress={() => onOpen(item.id)}>
+      <div className="ai-row">
+        {item.authorProfile && (
+          <Avatar
+            username={item.authorProfile.username}
+            displayName={item.authorProfile.display_name}
+            accent={item.authorProfile.accent}
+            size={36}
+          />
+        )}
+        <div className="ai-row-text">
+          <span className="ai-source">{item.title}</span>
+          <span className="ai-author">
+            {isMine ? "By you" : `By ${item.authorProfile?.display_name} · @${item.authorProfile?.username}`}
+            {/* Only the non-default types get a tag — "Crossword" on every
+                regular row would just be noise. */}
+            {(item.type === "mini" || item.type === "cryptic") && ` · ${TYPE_LABEL[item.type]}`}
+          </span>
         </div>
-        <MutualStack mutuals={item.mutualProgress} />
+      </div>
+      <MutualStack mutuals={item.mutualProgress} />
+      <div className="ai-corner-group">
+        <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
@@ -701,7 +832,7 @@ function CommunityItem({
             {pct}%
           </span>
         ) : null}
-      </Card>
-    </li>
+      </div>
+    </Card>
   );
 }
