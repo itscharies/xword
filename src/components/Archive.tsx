@@ -942,6 +942,7 @@ function SwipeTile({
       data-phase={s.phase}
       data-dir={s.panel?.dir}
       data-armed={s.armed || undefined}
+      data-pressed={s.pressed || undefined}
       {...s.rootProps}
     >
       {a && (

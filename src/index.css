@@ -2632,14 +2632,20 @@ html.sc-locked {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  /* Press feedback is data-pressed below, so iOS's own grey tap flash would
+     only double it. */
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.08s, box-shadow 0.08s;
 }
 /* Clip only mid-gesture: at rest nothing overflows, and the mutuals flyout
    (.tip-panel hangs below the card) must stay visible. */
 .swipe-tile:not([data-phase="idle"]) { overflow: hidden; }
-/* The tap press-down moves from the (now shadowless) card to the slot, and
-   never fires mid-swipe. */
-.swipe-tile[data-phase="idle"]:active {
+/* The tap press-down moves from the (now shadowless) card to the slot. It is
+   driven by the hook (data-pressed: a finger resting ~60 ms, dropped the
+   moment it moves) rather than :active — WebKit applies :active on touch
+   start, so every swipe used to open with the tile sitting down and the card
+   flashing accent before the slide began. */
+.swipe-tile[data-pressed] {
   transform: translate(var(--sh), var(--sh));
   box-shadow: 0 0 0 var(--shadow-col);
 }
@@ -2653,9 +2659,11 @@ html.sc-locked {
 /* Durations must match COMMIT_OUT_MS / RETURN_MS in hooks/useSwipeActions.ts. */
 .swipe-tile[data-phase="commit"] .swipe-face { transition: transform 0.2s ease-in; will-change: transform; }
 .swipe-tile[data-phase="return"] .swipe-face { transition: transform 0.25s ease-out; will-change: transform; }
-/* A drag isn't a press: no accent flash while the card slides. */
-.swipe-tile:not([data-phase="idle"]) .card.interactive:active { background: var(--surface); color: var(--fg); }
-.swipe-tile:not([data-phase="idle"]) .card.interactive:active .ai-author { color: var(--muted); }
+/* Inside a swipe tile the card's own :active is inert (a drag isn't a press)
+   and the accent flash follows data-pressed instead. */
+.swipe-tile .card.interactive:active { background: var(--surface); color: var(--fg); }
+.swipe-tile .card.interactive:active .ai-author { color: var(--muted); }
+.swipe-tile[data-pressed] .card.interactive { background: var(--accent); color: #000; }
 
 /* Full-size panel behind the face, bordered like the card so the uncovered
    part of the slot still reads as a bordered box. The body is a fixed
