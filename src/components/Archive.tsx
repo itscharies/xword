@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import type { PuzzleSource } from "../lib/sources.ts";
 import { SOURCES, PAPERS, TYPES, TYPE_LABEL } from "../lib/sources.ts";
 import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
@@ -7,7 +7,16 @@ import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { AboutPuzzles } from "./AboutPuzzles.tsx";
-import { CheckIcon, DownloadIcon, FilterIcon, InfoIcon, PeopleIcon, SettingsIcon, UserIcon } from "./icons.tsx";
+import {
+  CheckIcon,
+  DeleteIcon,
+  DownloadIcon,
+  FilterIcon,
+  InfoIcon,
+  PeopleIcon,
+  SettingsIcon,
+  UserIcon,
+} from "./icons.tsx";
 import { JoinSessionDialog } from "./JoinSessionDialog.tsx";
 import { sessionsEnabled } from "../lib/session.ts";
 import { ArchiveDaySkeleton, ArchiveSkeleton, Sk } from "./Skeleton.tsx";
@@ -17,6 +26,9 @@ import { useFlyout } from "../hooks/useFlyout.ts";
 import { useDocumentTitle } from "../hooks/useDocumentTitle.ts";
 import { useProfile } from "../hooks/useProfile.ts";
 import { useConnState } from "../hooks/useConnState.ts";
+import { useMediaQuery } from "../hooks/useMediaQuery.ts";
+import { TOUCH_QUERY, useSwipeActions, type SwipeAction } from "../hooks/useSwipeActions.ts";
+import { markSolved } from "../lib/markSolved.ts";
 import { getConnState } from "../lib/online.ts";
 import { listArchivePage, getPuzzleById, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { getSyndicatedPuzzle } from "../lib/syndicated.ts";
@@ -162,6 +174,14 @@ export function Archive({
   };
   useEffect(refreshOffline, []);
   const online = useConnState() === "online";
+
+  // Touch devices swipe tiles instead of tapping a hover-revealed toggle; one
+  // matchMedia listener here, passed down, rather than one per tile.
+  const swipe = useMediaQuery(TOUCH_QUERY);
+  // Bumped after a tile flips its solved flag. Tiles and the progress filter
+  // read localStorage synchronously during render, so without this nothing
+  // would re-run until the next unrelated re-render.
+  const [progressVersion, bumpProgress] = useReducer((n: number) => n + 1, 0);
 
   // Kept as one state object (rather than separate useState calls per field)
   // so every update — including "toggle one item in an array" — reads and
@@ -382,7 +402,9 @@ export function Archive({
       }
       return matchesProgress(loadCommunityProgress(it.id));
     });
-  }, [visibleItems, papers, types, progress, user]);
+    // progressVersion is a cache-buster: the progress reads above hit
+    // localStorage, which a mark-solved swipe changes without any prop moving.
+  }, [visibleItems, papers, types, progress, user, progressVersion]);
 
   // Group by date — items arrive from the server already sorted newest-day
   // first, community-before-syndicated within a day, so insertion order into
@@ -498,6 +520,8 @@ export function Archive({
                       onOpen={onOpenPuzzle}
                       offlineKeys={offlineKeys}
                       onOfflineChange={refreshOffline}
+                      swipe={swipe}
+                      onProgressChange={bumpProgress}
                     />
                   ) : (
                     <SyndicatedItem
@@ -506,6 +530,8 @@ export function Archive({
                       onPick={onPick}
                       offlineKeys={offlineKeys}
                       onOfflineChange={refreshOffline}
+                      swipe={swipe}
+                      onProgressChange={bumpProgress}
                     />
                   ),
                 )}
@@ -748,7 +774,8 @@ function MutualStack({ mutuals }: { mutuals: MutualProgress[] }) {
  *  onPress opens the puzzle), so this has to be a real nested <button>
  *  inside Card's default <li role="button"> rather than Card's as="button"
  *  variant — see the comment on Card.tsx — and its own click must stop
- *  propagation so tapping it doesn't also open the puzzle. */
+ *  propagation so tapping it doesn't also open the puzzle. On touch devices
+ *  it isn't rendered at all — swiping the tile left (SwipeTile) replaces it. */
 function OfflineToggle({
   saved,
   saving,
@@ -785,6 +812,67 @@ function OfflineToggle({
   );
 }
 
+/** Touch devices have no hover toggle (swiping the tile left saves/removes
+ *  instead), but a puzzle that *is* saved still needs to say so — this is
+ *  the same corner badge, inert, shown only once the download exists. */
+function OfflineBadge() {
+  return (
+    <span className="ai-offline on ai-offline-badge" title="Available offline" aria-label="Available offline">
+      <DownloadIcon />
+    </span>
+  );
+}
+
+/** The archive tile on touch devices: the li is a "slot" that casts the one
+ *  hard shadow and stays put while the card slides inside it over an action
+ *  panel — swipe left to save/remove offline, right to mark solved/unsolved
+ *  (lib/markSolved.ts). On everything else it is the plain Card, DOM-identical
+ *  to before. */
+function SwipeTile({
+  enabled,
+  onPress,
+  swipeLeft,
+  swipeRight,
+  children,
+}: {
+  enabled: boolean;
+  onPress: () => void;
+  swipeLeft: SwipeAction;
+  swipeRight: SwipeAction;
+  children: ReactNode;
+}) {
+  const s = useSwipeActions({ swipeLeft, swipeRight });
+  if (!enabled) return <Card onPress={onPress}>{children}</Card>;
+  const a = s.panel?.action;
+  return (
+    <li
+      ref={s.rootRef}
+      className="swipe-tile"
+      data-phase={s.phase}
+      data-dir={s.panel?.dir}
+      data-armed={s.armed || undefined}
+      {...s.rootProps}
+    >
+      {a && (
+        <div
+          className={`swipe-panel tone-${a.tone ?? "accent"}${a.disabled ? " is-disabled" : ""}`}
+          aria-hidden="true"
+        >
+          <span className="swipe-panel-body">
+            {a.icon}
+            <span className="swipe-panel-label">{a.label}</span>
+          </span>
+        </div>
+      )}
+      <div ref={s.faceRef} className="swipe-face" {...s.faceProps}>
+        <Card as="div" onPress={onPress}>
+          {children}
+        </Card>
+      </div>
+    </li>
+  );
+}
+
 /** One syndicated puzzle row — its own component only so the per-item
  *  progress lookup below doesn't get lost among the community-item JSX. */
 function SyndicatedItem({
@@ -792,12 +880,17 @@ function SyndicatedItem({
   onPick,
   offlineKeys,
   onOfflineChange,
+  swipe,
+  onProgressChange,
 }: {
   item: ArchiveFeedItem;
   onPick: (source: PuzzleSource, date: string) => void;
   offlineKeys: Set<string>;
   onOfflineChange: () => void;
+  swipe: boolean;
+  onProgressChange: () => void;
 }) {
+  const { user } = useAuth();
   const source = item.source!;
   const date = item.puzzleDate!;
   // NYT bakes the theme into a long title; the AmuseLabs sets use the theme
@@ -834,14 +927,40 @@ function SyndicatedItem({
     onOfflineChange();
   };
 
+  const downloadAction: SwipeAction = {
+    label: saved ? "Remove download" : online ? "Save offline" : "Go online to save",
+    icon: saved ? <DeleteIcon /> : <DownloadIcon />,
+    tone: saved ? "neutral" : "accent",
+    disabled: saving || (!online && !saved),
+    onCommit: toggleOffline,
+  };
+  const solvedAction: SwipeAction = {
+    label: done ? "Mark unsolved" : "Mark solved",
+    icon: <CheckIcon />,
+    tone: done ? "neutral" : "accent",
+    onCommit: () => {
+      markSolved({ kind: "syndicated", source, date }, !done, user?.id ?? null);
+      onProgressChange();
+    },
+  };
+
   return (
-    <Card onPress={() => onPick(source, date)}>
+    <SwipeTile
+      enabled={swipe}
+      onPress={() => onPick(source, date)}
+      swipeLeft={downloadAction}
+      swipeRight={solvedAction}
+    >
       <span className="ai-source">{mainLabel}</span>
       {theme && <span className="ai-theme">{theme}</span>}
       <span className="ai-author">By {item.author || "Anonymous"}</span>
       <MutualStack mutuals={item.mutualProgress} />
       <div className="ai-corner-group">
-        <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
+        {swipe ? (
+          saved && <OfflineBadge />
+        ) : (
+          <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
+        )}
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
@@ -852,7 +971,7 @@ function SyndicatedItem({
           </span>
         ) : null}
       </div>
-    </Card>
+    </SwipeTile>
   );
 }
 
@@ -864,11 +983,15 @@ function CommunityItem({
   onOpen,
   offlineKeys,
   onOfflineChange,
+  swipe,
+  onProgressChange,
 }: {
   item: ArchiveFeedItem;
   onOpen: (id: string) => void;
   offlineKeys: Set<string>;
   onOfflineChange: () => void;
+  swipe: boolean;
+  onProgressChange: () => void;
 }) {
   const { user } = useAuth();
   const isMine = !!user && item.authorProfile?.user_id === user.id;
@@ -896,8 +1019,30 @@ function CommunityItem({
     onOfflineChange();
   };
 
+  const downloadAction: SwipeAction = {
+    label: saved ? "Remove download" : online ? "Save offline" : "Go online to save",
+    icon: saved ? <DeleteIcon /> : <DownloadIcon />,
+    tone: saved ? "neutral" : "accent",
+    disabled: saving || (!online && !saved),
+    onCommit: toggleOffline,
+  };
+  const solvedAction: SwipeAction = {
+    label: done ? "Mark unsolved" : "Mark solved",
+    icon: <CheckIcon />,
+    tone: done ? "neutral" : "accent",
+    onCommit: () => {
+      markSolved({ kind: "community", puzzleId: item.id }, !done, user?.id ?? null);
+      onProgressChange();
+    },
+  };
+
   return (
-    <Card onPress={() => onOpen(item.id)}>
+    <SwipeTile
+      enabled={swipe}
+      onPress={() => onOpen(item.id)}
+      swipeLeft={downloadAction}
+      swipeRight={solvedAction}
+    >
       <div className="ai-row">
         {item.authorProfile && (
           <Avatar
@@ -919,7 +1064,11 @@ function CommunityItem({
       </div>
       <MutualStack mutuals={item.mutualProgress} />
       <div className="ai-corner-group">
-        <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
+        {swipe ? (
+          saved && <OfflineBadge />
+        ) : (
+          <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
+        )}
         {done ? (
           <span className="ai-done" title="Solved" aria-label="Solved">
             <CheckIcon />
@@ -930,6 +1079,6 @@ function CommunityItem({
           </span>
         ) : null}
       </div>
-    </Card>
+    </SwipeTile>
   );
 }

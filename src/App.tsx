@@ -51,20 +51,12 @@ import {
 } from "./lib/puzzles.ts";
 import { getSyndicatedPuzzle, getSyndicatedWithSolves } from "./lib/syndicated.ts";
 import { getConnState } from "./lib/online.ts";
-import {
-  getPuzzleOffline,
-  isPuzzleSavedOffline,
-  removePuzzleOffline,
-  saveCommunityOffline,
-  saveSyndicatedOffline,
-  syndicatedOfflineKey,
-  communityOfflineKey,
-} from "./lib/offlineCache.ts";
-import { useConnState } from "./hooks/useConnState.ts";
+import { getPuzzleOffline, syndicatedOfflineKey, communityOfflineKey } from "./lib/offlineCache.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
 import { useFullscreen } from "./hooks/useFullscreen.ts";
+import { useMediaQuery } from "./hooks/useMediaQuery.ts";
 import { useGridFit } from "./hooks/useGridFit.ts";
 import { useStuck } from "./hooks/useStuck.ts";
 import { useWakeLock } from "./hooks/useWakeLock.ts";
@@ -95,7 +87,6 @@ import { SessionChatOverlay } from "./components/SessionChatOverlay.tsx";
 import { MockAuthSwitcher } from "./components/MockAuthSwitcher.tsx";
 import { UpdateToast } from "./components/UpdateToast.tsx";
 import {
-  DownloadIcon,
   EditIcon,
   FullscreenExitIcon,
   FullscreenIcon,
@@ -108,19 +99,6 @@ import {
 const MOCK_MODE = import.meta.env.VITE_MOCK_BACKEND === "1";
 
 const BASE = import.meta.env.BASE_URL; // e.g. "/xword/"
-
-/** Track a CSS media query (used to switch the anagram helper's layout). */
-function useMediaQuery(query: string): boolean {
-  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const m = window.matchMedia(query);
-    const on = () => setMatch(m.matches);
-    m.addEventListener("change", on);
-    setMatch(m.matches);
-    return () => m.removeEventListener("change", on);
-  }, [query]);
-  return match;
-}
 
 /** The route path after the base, e.g. "" (archive) or "gdn-cryptic/20260615". */
 const readRoute = () => {
@@ -826,6 +804,12 @@ function Solver({
     [session],
   );
   const xw = useCrossword(puzzle, saved, coopOptions);
+  // The archive's swipe can flag a puzzle solved without solving it (see
+  // lib/markSolved.ts). The flag isn't derivable from the grid, so it rides
+  // along here and is OR'd into every save/push — otherwise the first
+  // autosave (which runs on mount) would recompute completed from the
+  // entries and silently un-flag it. Reset clears it.
+  const [manuallyMarked, setManuallyMarked] = useState(() => saved?.completed ?? false);
   const { user } = useAuth();
   const sApi = useSession(session ?? null, xw, user, coopBridge);
   const profile = useProfile();
@@ -906,8 +890,11 @@ function Solver({
   // dialog's.
   const [sessionChatOpen, setSessionChatOpen] = useState(false);
   const [endedDismissed, setEndedDismissed] = useState(false);
+  // From the grid's actual state, not the saved flag: a puzzle merely marked
+  // solved from the archive should still get its celebration when genuinely
+  // finished, while a truly solved one still doesn't re-celebrate.
   const [celebrated, setCelebrated] = useState(
-    (saved?.completed ?? false) || session?.session.status === "completed",
+    () => xw.completed || session?.session.status === "completed",
   );
   const [rating, setRating] = useState(saved?.rating ?? 0);
   // Progress fetched from another tab/device that's newer than anything we've
@@ -956,44 +943,11 @@ function Solver({
     return onSaveStatus(saveKey, setSaveStatus);
   }, [saveKey]);
 
-  // "Save offline" toggle in the actionbar — the puzzle is already loaded in
-  // memory here, so unlike the same toggle on an Archive tile this needs no
-  // extra fetch. Multiplayer sessions don't offer this (see the `!session`
-  // guard where the button renders below) — live co-op is online-only.
-  const offlineKey = communityId ? communityOfflineKey(communityId) : syndicatedOfflineKey(source, puzzle.date);
-  const isOnline = useConnState() === "online";
-  const [offlineSaved, setOfflineSaved] = useState(false);
-  const [offlineSaving, setOfflineSaving] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    isPuzzleSavedOffline(offlineKey).then((v) => {
-      if (!cancelled) setOfflineSaved(v);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [offlineKey]);
-  const toggleOfflineSave = async () => {
-    if (offlineSaving) return;
-    setOfflineSaving(true);
-    if (offlineSaved) {
-      await removePuzzleOffline(offlineKey);
-      setOfflineSaved(false);
-    } else {
-      const result = communityId
-        ? await saveCommunityOffline(communityId, puzzle, authorId ?? "")
-        : await saveSyndicatedOffline(source, puzzle.date, puzzle);
-      if (result.ok) setOfflineSaved(true);
-      else window.alert(result.error);
-    }
-    setOfflineSaving(false);
-  };
-
   const buildProgress = (): Progress => ({
     entries: xw.entries,
     revealed: [...xw.revealed],
     elapsed,
-    completed: xw.completed,
+    completed: xw.completed || manuallyMarked,
     filled: xw.openCells.reduce((n, p) => n + (xw.entries[p.row][p.col] ? 1 : 0), 0),
     total: xw.openCells.length,
     rating: rating || undefined,
@@ -1006,7 +960,7 @@ function Solver({
     const progress = buildProgress();
     if (communityId) saveCommunityProgress(communityId, progress);
     else saveProgress(source, puzzle.date, progress);
-  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, elapsed, xw.openCells, rating]);
+  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, manuallyMarked, elapsed, xw.openCells, rating]);
 
   // The Supabase push is debounced 1.5s after the *content* actually
   // changes — deliberately excludes `elapsed`. That ticks every second, and
@@ -1030,7 +984,7 @@ function Solver({
     lastSyncedAtRef.current = progress.updatedAt!;
     if (communityId) pushCommunityProgress(user.id, communityId, progress);
     else pushProgress(user.id, source, puzzle.date, progress);
-  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, xw.openCells, rating, user]);
+  }, [communityId, source, puzzle.date, xw.entries, xw.revealed, xw.completed, manuallyMarked, xw.openCells, rating, user]);
 
   // Periodically check whether another tab or device has pushed newer
   // progress for this puzzle — catches the case where the solver
@@ -1071,6 +1025,9 @@ function Solver({
     xw.loadExternal(conflict.entries, conflict.revealed);
     setElapsed(conflict.elapsed ?? 0);
     setRating(conflict.rating ?? 0);
+    // The remote row is adopted wholesale below; its solved flag comes with
+    // it, or the next autosave would re-apply the stale local one.
+    setManuallyMarked(conflict.completed);
     lastSyncedAtRef.current = conflict.updatedAt ?? Date.now();
     if (communityId) saveCommunityProgress(communityId, conflict);
     else saveProgress(source, puzzle.date, conflict);
@@ -1223,24 +1180,6 @@ function Solver({
                 <PeopleIcon />
               </button>
             )}
-            {!session && (
-              <button
-                className={`btn icon-btn ${offlineSaved ? "on" : ""}`}
-                onClick={() => void toggleOfflineSave()}
-                disabled={offlineSaving || (!isOnline && !offlineSaved)}
-                aria-pressed={offlineSaved}
-                aria-label={offlineSaved ? "Remove from offline puzzles" : "Save for offline play"}
-                title={
-                  !isOnline && !offlineSaved
-                    ? "Go online to save this for offline play"
-                    : offlineSaved
-                      ? "Saved for offline play — tap to remove"
-                      : "Save for offline play"
-                }
-              >
-                <DownloadIcon />
-              </button>
-            )}
             <button
               className="btn icon-btn desktop-only"
               onClick={toggleFullscreen}
@@ -1384,6 +1323,7 @@ function Solver({
                 setElapsed(0);
                 setPaused(false);
                 setCelebrated(false);
+                setManuallyMarked(false);
                 setRating(0);
                 setShowReset(false);
               }}

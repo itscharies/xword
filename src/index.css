@@ -2555,9 +2555,18 @@ html.sc-locked {
 .card.interactive:focus-within .ai-offline {
   opacity: 1;
 }
-@media (hover: none) {
-  .ai-offline { opacity: 1; }
+/* No hover to reveal it: keep it visible. */
+@media (hover: none) { .ai-offline { opacity: 1; } }
+/* …except on coarse-pointer devices, which swipe left to save instead
+   (Archive's SwipeTile) — the same query the JS gates on, so the icon and
+   the swipe swap in step. display, not opacity: .on, :disabled and
+   :focus-within all set opacity and would otherwise bring the button back. */
+@media (hover: none) and (pointer: coarse) {
+  .ai-offline:not(.ai-offline-badge) { display: none; }
 }
+/* The inert "available offline" badge a touch tile shows once saved — same
+   look as the toggle's on state, but it isn't a control. */
+.ai-offline-badge { cursor: default; pointer-events: none; }
 @media (hover: hover) {
   .ai-offline:not(:disabled):hover { background: var(--accent-2); color: #000; }
   .card.interactive:has(.ai-offline:hover) {
@@ -2598,6 +2607,94 @@ html.sc-locked {
 @media (hover: hover) {
   /* Match the username's hover treatment on the inverted card. */
   .card.interactive:hover .ai-mutual-pct { color: #000; }
+}
+
+/* ---- swipe tiles (touch archive) -------------------------------------- */
+
+/* The li is the slot: it casts the one hard shadow and stays put while the
+   card slides inside it over an action panel. The card goes flat through
+   the nested-shadow contract (.card reads --nested-shadow/--nested-press
+   itself), so at rest a swipe tile is pixel-identical to a plain card, and
+   clipping during a swipe can't shave the shadow (an element's own
+   box-shadow isn't subject to its own overflow). */
+.swipe-tile {
+  position: relative;
+  /* grid so the face, and the card inside it, stretch to the row height the
+     slot gets from .card-list — otherwise on a multi-column (tablet) grid
+     the shadow would be cast from a taller box than the card's border. */
+  display: grid;
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  --nested-shadow: none;
+  --nested-press: none;
+  /* Vertical panning and pinch-zoom stay the browser's; only a clearly
+     horizontal drag is ours. */
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+/* Clip only mid-gesture: at rest nothing overflows, and the mutuals flyout
+   (.tip-panel hangs below the card) must stay visible. */
+.swipe-tile:not([data-phase="idle"]) { overflow: hidden; }
+/* The tap press-down moves from the (now shadowless) card to the slot, and
+   never fires mid-swipe. */
+.swipe-tile[data-phase="idle"]:active {
+  transform: translate(var(--sh), var(--sh));
+  box-shadow: 0 0 0 var(--shadow-col);
+}
+
+/* No z-index: the face sits over the absolutely-positioned panel by tree
+   order alone, and must not become a stacking context or the mutuals
+   flyout's z-index would stop escaping to the list and the next tile
+   would paint over it. */
+.swipe-face { position: relative; display: grid; }
+.swipe-tile[data-phase="drag"] .swipe-face { transition: none; will-change: transform; }
+/* Durations must match COMMIT_OUT_MS / RETURN_MS in hooks/useSwipeActions.ts. */
+.swipe-tile[data-phase="commit"] .swipe-face { transition: transform 0.2s ease-in; will-change: transform; }
+.swipe-tile[data-phase="return"] .swipe-face { transition: transform 0.25s ease-out; will-change: transform; }
+/* A drag isn't a press: no accent flash while the card slides. */
+.swipe-tile:not([data-phase="idle"]) .card.interactive:active { background: var(--surface); color: var(--fg); }
+.swipe-tile:not([data-phase="idle"]) .card.interactive:active .ai-author { color: var(--muted); }
+
+/* Full-size panel behind the face, bordered like the card so the uncovered
+   part of the slot still reads as a bordered box. The body is a fixed
+   96px column (the commit minimum) anchored to the revealing edge — the
+   right edge for a leftward swipe — so it never reflows under the finger. */
+.swipe-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: var(--bw) solid var(--line);
+  background: var(--surface-2);
+  color: var(--fg);
+  transition: background 0.12s;
+}
+.swipe-tile[data-dir="left"] .swipe-panel { justify-content: flex-end; }
+.swipe-panel.tone-accent { background: var(--accent-2); color: #000; }
+.swipe-tile[data-armed] .swipe-panel.tone-accent { background: var(--accent); }
+.swipe-tile[data-armed] .swipe-panel.tone-neutral { background: var(--surface); }
+.swipe-panel.is-disabled { background: var(--surface-2); color: var(--muted); }
+.swipe-panel-body {
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.14s ease-out;
+}
+.swipe-panel-body svg { width: 20px; height: 20px; }
+.swipe-tile[data-armed] .swipe-panel-body { transform: scale(1.1); }
+.swipe-panel-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.15;
+  max-width: 76px; /* "REMOVE DOWNLOAD" / "GO ONLINE TO SAVE" wrap to two lines */
 }
 
 /* ---- responsive --------------------------------------------------------- */
