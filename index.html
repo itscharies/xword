@@ -11,7 +11,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1c1c1c" />
     <title>The Daily Grid — every day's crosswords in one place</title>
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <!-- Root-relative public/ paths (Vite prefixes the /xword/ base in dev
+         and build), not "./": offline, the service worker answers a deep
+         link such as /xword/nyt/20261002 with this same cached shell, so a
+         relative URL would resolve under /xword/nyt/ and miss the precache. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Install to home screen (PWA) -->
     <link rel="manifest" href="/xword/manifest.webmanifest" />
@@ -53,7 +57,7 @@
          can't be listed in the service worker's precache manifest the way a
          same-origin one can, so this is what actually makes the fonts work
          on a cold boot with no connectivity. See scripts/fetch-fonts.ts. -->
-    <link href="./fonts/fonts.css" rel="stylesheet" />
+    <link href="/fonts/fonts.css" rel="stylesheet" />
     <script>
       // Decode the path that 404.html stashed in the query string, so deep
       // links (/xword/gdn-cryptic/20260615) restore to a clean URL before the
