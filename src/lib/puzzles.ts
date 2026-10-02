@@ -1,13 +1,22 @@
 // Publishing/fetching community puzzles (the `puzzles` table) — plain
 // wrapper, no-ops if Supabase isn't configured, matching lib/auth.ts.
 
-import { supabase } from "./supabase.ts";
+import { supabase, mockMode } from "./supabase.ts";
 import type { Puzzle, PuzzleType } from "../types.ts";
 import type { Profile } from "./profile.ts";
 import type { PuzzleSource } from "./sources.ts";
 import type { AccentId } from "./theme.ts";
 
 export type Visibility = "public" | "mutual" | "unlisted" | "draft";
+
+/** Attaches a request deadline to a query. Only the request itself — the
+ *  client's pre-request token refresh isn't covered, which is why callers
+ *  also wrap the whole call in `withTimeout` (lib/timeout.ts). Skipped in
+ *  mock mode: the in-memory stand-in's builders (and its `rpc`, a plain
+ *  promise) don't implement `.abortSignal()`. */
+export function bounded<T extends { abortSignal(signal: AbortSignal): T }>(query: T, ms: number): T {
+  return mockMode ? query : query.abortSignal(AbortSignal.timeout(ms));
+}
 
 export const VISIBILITY_LABEL: Record<Visibility, string> = {
   public: "Public to followers",
@@ -127,40 +136,49 @@ export function localIsoDate(): string {
  *  ones. `includeFollowing = false` drops community puzzles from the feed
  *  entirely rather than just hiding them client-side, so pages stay full —
  *  see `list_archive_feed`'s migration comment for why that matters.
- *  `includeMine` does the same for the viewer's own published puzzles. */
+ *  `includeMine` does the same for the viewer's own published puzzles.
+ *  `failed` distinguishes "the feed couldn't be fetched" from a genuinely
+ *  empty page, so the Archive can show saved puzzles instead of "no
+ *  matches". */
 export async function listArchivePage(opts: {
   cursor?: string | null;
   pageSize?: number;
   includeFollowing?: boolean;
   includeMine?: boolean;
-} = {}): Promise<{ items: ArchiveFeedItem[]; nextCursor: string | null }> {
-  if (!supabase) return { items: [], nextCursor: null };
+} = {}): Promise<{ items: ArchiveFeedItem[]; nextCursor: string | null; failed: boolean }> {
+  if (!supabase) return { items: [], nextCursor: null, failed: false };
   const { cursor = null, pageSize = 24, includeFollowing = true, includeMine = true } = opts;
   const c = cursor ? decodeCursor(cursor) : null;
 
-  const { data, error } = await supabase.rpc("list_archive_feed", {
-    p_include_following: includeFollowing,
-    p_include_mine: includeMine,
-    p_cursor_neg_date: c?.negDate ?? null,
-    p_cursor_kind: c?.kind ?? null,
-    p_cursor_tie: c?.tie ?? null,
-    p_cursor_id: c?.itemId ?? null,
-    p_page_size: pageSize,
-    // The DB's own current_date runs in UTC, which lags a viewer ahead of
-    // UTC (e.g. AEST) by up to 11 hours — send their local date instead, so
-    // a puzzle dated for their "today" isn't hidden until UTC catches up.
-    p_viewer_date: localIsoDate(),
-  });
+  const { data, error } = await bounded(
+    supabase.rpc("list_archive_feed", {
+      p_include_following: includeFollowing,
+      p_include_mine: includeMine,
+      p_cursor_neg_date: c?.negDate ?? null,
+      p_cursor_kind: c?.kind ?? null,
+      p_cursor_tie: c?.tie ?? null,
+      p_cursor_id: c?.itemId ?? null,
+      p_page_size: pageSize,
+      // The DB's own current_date runs in UTC, which lags a viewer ahead of
+      // UTC (e.g. AEST) by up to 11 hours — send their local date instead, so
+      // a puzzle dated for their "today" isn't hidden until UTC catches up.
+      p_viewer_date: localIsoDate(),
+    }),
+    8000,
+  );
   if (error) {
     console.error("[archive] listArchivePage failed", error);
-    return { items: [], nextCursor: null };
+    return { items: [], nextCursor: null, failed: true };
   }
   const rows = (data ?? []) as RawFeedRow[];
 
   const authorIds = [...new Set(rows.map((r) => r.author_id).filter((id): id is string => !!id))];
   const { data: profiles } =
     authorIds.length > 0
-      ? await supabase.from("profiles").select("user_id, username, display_name, accent").in("user_id", authorIds)
+      ? await bounded(
+          supabase.from("profiles").select("user_id, username, display_name, accent").in("user_id", authorIds),
+          8000,
+        )
       : { data: [] as Profile[] };
   const byId = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
@@ -182,7 +200,7 @@ export async function listArchivePage(opts: {
   const last = rows[rows.length - 1];
   const nextCursor = rows.length === pageSize && last ? encodeCursor(last) : null;
 
-  return { items, nextCursor };
+  return { items, nextCursor, failed: false };
 }
 
 /** One mutual's progress summary on a puzzle — what the solves projection
@@ -207,7 +225,7 @@ export async function getPuzzleWithSolves(
   id: string,
 ): Promise<{ puzzle: PublishedPuzzle; mutualProgress: MutualProgress[] } | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("get_puzzle_with_solves", { p_id: id });
+  const { data, error } = await bounded(supabase.rpc("get_puzzle_with_solves", { p_id: id }), 6000);
   if (error) {
     console.error("[puzzles] getPuzzleWithSolves failed", error);
     return null;

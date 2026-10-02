@@ -21,13 +21,17 @@ export function isValidUsername(username: string): boolean {
   return USERNAME_RE.test(username);
 }
 
+/** Null means "no profile claimed"; a request that failed (offline, aborted)
+ *  throws instead, so callers can't mistake an unreachable backend for a
+ *  user who never set up a username. */
 export async function getProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("user_id, username, display_name, accent, is_admin")
     .eq("user_id", userId)
     .maybeSingle();
+  if (error) throw error;
   return data;
 }
 

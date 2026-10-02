@@ -170,7 +170,9 @@ export function Builder({
     if (warnings.length && !window.confirm(`Heads up: ${warnings.join(" and ")}. Publish anyway?`)) {
       return;
     }
-    if (user) getProfile(user.id).then((p) => setHasProfile(Boolean(p)));
+    // A failed lookup leaves `hasProfile` unknown rather than asserting the
+    // user has no profile and sending them to claim one they may well have.
+    if (user) getProfile(user.id).then((p) => setHasProfile(Boolean(p))).catch(() => {});
     setShowPublish(true);
   };
 

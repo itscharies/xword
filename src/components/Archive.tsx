@@ -30,6 +30,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery.ts";
 import { TOUCH_QUERY, useSwipeActions, type SwipeAction } from "../hooks/useSwipeActions.ts";
 import { markSolved } from "../lib/markSolved.ts";
 import { getConnState } from "../lib/online.ts";
+import { withTimeout } from "../lib/timeout.ts";
 import { listArchivePage, getPuzzleById, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
 import { getSyndicatedPuzzle } from "../lib/syndicated.ts";
 import {
@@ -39,7 +40,12 @@ import {
   saveSyndicatedOffline,
   syndicatedOfflineKey,
   communityOfflineKey,
+  getOfflineStoreError,
+  onOfflineStoreError,
+  readOfflineIndex,
+  isOfflineStoreMigrated,
   type CachedPuzzle,
+  type OfflineIndexEntry,
 } from "../lib/offlineCache.ts";
 import { Avatar } from "./Avatar.tsx";
 import { AvatarStack } from "./AvatarStack.tsx";
@@ -165,14 +171,33 @@ export function Archive({
   // Which puzzles are saved for offline play, loaded once (a batch scan)
   // rather than per-tile — tiles just read `offlineKeys.has(key)` and call
   // `refreshOffline` after saving/removing, instead of each doing its own
-  // async IndexedDB round-trip. The full list doubles as the offline
-  // fallback view below, when the feed itself couldn't be fetched.
-  const [offlinePuzzles, setOfflinePuzzles] = useState<CachedPuzzle[]>([]);
-  const offlineKeys = useMemo(() => new Set(offlinePuzzles.map((p) => p.key)), [offlinePuzzles]);
+  // async store round-trip. The full list doubles as the offline fallback
+  // view below, when the feed itself couldn't be fetched. Re-read on resume
+  // too: each read opens the store afresh (lib/cacheStore.ts), so a store
+  // that went away while the app was backgrounded gets a clean retry. Null
+  // until the first read settles — offline that read can take the store's
+  // full 6 s of timeouts, and an empty array in the meantime would have the
+  // fallback tell the user they have nothing saved.
+  const [offlinePuzzles, setOfflinePuzzles] = useState<CachedPuzzle[] | null>(null);
+  const offlineKeys = useMemo(() => new Set((offlinePuzzles ?? []).map((p) => p.key)), [offlinePuzzles]);
+  const [storeError, setStoreError] = useState<string | null>(getOfflineStoreError);
   const refreshOffline = () => {
     listOfflinePuzzles().then(setOfflinePuzzles);
   };
-  useEffect(refreshOffline, []);
+  useEffect(() => {
+    refreshOffline();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshOffline();
+    };
+    window.addEventListener("xword:offline-changed", refreshOffline);
+    document.addEventListener("visibilitychange", onVisible);
+    const unsubscribe = onOfflineStoreError(setStoreError);
+    return () => {
+      window.removeEventListener("xword:offline-changed", refreshOffline);
+      document.removeEventListener("visibilitychange", onVisible);
+      unsubscribe();
+    };
+  }, []);
   const online = useConnState() === "online";
 
   // Touch devices swipe tiles instead of tapping a hover-revealed toggle; one
@@ -266,25 +291,39 @@ export function Archive({
   const fetchDays = async (
     target: number,
     from: { items: ArchiveFeedItem[]; cursor: string | null; hasMore: boolean },
-  ) => {
+  ): Promise<{ items: ArchiveFeedItem[]; cursor: string | null; hasMore: boolean; failed: boolean }> => {
     // Skip the doomed round-trip when already known offline — listArchivePage
     // would otherwise still attempt (and wait out) a network request that
     // Supabase's client normalizes into an empty result anyway.
-    if (getConnState() === "offline") return { ...from, hasMore: false };
+    if (getConnState() === "offline") return { ...from, hasMore: false, failed: true };
     let { items: acc, cursor: cur, hasMore: more } = from;
-    while (more && completeDayCount(acc, more) < target) {
-      const { items: page, nextCursor } = await listArchivePage({
-        cursor: cur,
-        pageSize: FETCH_PAGE_SIZE,
-        includeFollowing,
-        includeMine,
-      });
-      acc = [...acc, ...page];
-      cur = nextCursor;
-      more = nextCursor !== null;
-      if (page.length === 0) break; // a bad page must not spin the loop forever
+    let failed = false;
+    try {
+      while (more && completeDayCount(acc, more) < target) {
+        // Bounded here as well as by the query's own abort signal: the
+        // client awaits a token refresh *before* the request, and offline
+        // that alone can take ~25 s (see lib/timeout.ts).
+        const { items: page, nextCursor, failed: pageFailed } = await withTimeout(
+          listArchivePage({ cursor: cur, pageSize: FETCH_PAGE_SIZE, includeFollowing, includeMine }),
+          8000,
+          "archive feed",
+        );
+        if (pageFailed) {
+          failed = true;
+          break;
+        }
+        acc = [...acc, ...page];
+        cur = nextCursor;
+        more = nextCursor !== null;
+        if (page.length === 0) break; // a bad page must not spin the loop forever
+      }
+    } catch (err) {
+      console.error("[archive] feed fetch failed", err);
+      failed = true;
     }
-    return { items: acc, cursor: cur, hasMore: more };
+    // A failed page mid-feed leaves `hasMore` as it was, so Show more can
+    // retry it; a failure that loaded nothing has no feed to extend.
+    return { items: acc, cursor: cur, hasMore: failed && acc.length === 0 ? false : more, failed };
   };
 
   // Whether the *last completed* fetch came back empty because it couldn't
@@ -314,11 +353,11 @@ export function Archive({
       setItems(next.items);
       setCursor(next.cursor);
       setHasMore(next.hasMore);
-      setFeedUnavailable(next.items.length === 0 && getConnState() === "offline");
+      setFeedUnavailable(next.failed && next.items.length === 0);
       setLoading(false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeFollowing, includeMine, user, online]);
+  }, [includeFollowing, includeMine, user?.id, online]);
 
   // The ref guards against double-clicks synchronously; the state drives the
   // in-flight placeholder.
@@ -498,7 +537,13 @@ export function Archive({
               // reached, not because nothing matched — showing the usual
               // "no matches" message would misreport a connectivity problem
               // as a filter problem. Show what's actually available instead.
-              <OfflineFallback puzzles={offlinePuzzles} onPick={onPick} onOpenPuzzle={onOpenPuzzle} />
+              <OfflineFallback
+                puzzles={offlinePuzzles}
+                storeError={storeError}
+                indexEntries={readOfflineIndex()}
+                onPick={onPick}
+                onOpenPuzzle={onOpenPuzzle}
+              />
             ) : (
               <div className="archive-empty">
                 <p>No puzzles match these filters.</p>
@@ -630,13 +675,24 @@ export function Archive({
 /** Shown in place of the archive feed when it's offline and the feed fetch
  *  came back empty — the puzzles saved via "Save offline" (the download icon
  *  on any tile, or in the Solver) are still openable even though the feed
- *  itself isn't reachable. */
+ *  itself isn't reachable.
+ *
+ *  When the store itself couldn't be read (`storeError`), hasn't been read
+ *  yet (`puzzles` null), or the one-time migration from IndexedDB hasn't
+ *  finished yet, the live list is empty for a reason other than "nothing
+ *  saved" — so the localStorage index mirror (`indexEntries`, titles only)
+ *  is listed instead, with an honest notice, rather than telling the user
+ *  they have no downloads. */
 function OfflineFallback({
   puzzles,
+  storeError,
+  indexEntries,
   onPick,
   onOpenPuzzle,
 }: {
-  puzzles: CachedPuzzle[];
+  puzzles: CachedPuzzle[] | null;
+  storeError: string | null;
+  indexEntries: OfflineIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenPuzzle: (id: string) => void;
 }) {
@@ -645,7 +701,7 @@ function OfflineFallback({
   // section per date, so this reads as the same list rather than a
   // different, bolted-on view.
   const days = useMemo(() => {
-    const sorted = [...puzzles].sort((a, b) => b.puzzle.isoDate.localeCompare(a.puzzle.isoDate));
+    const sorted = [...(puzzles ?? [])].sort((a, b) => b.puzzle.isoDate.localeCompare(a.puzzle.isoDate));
     const byDate = new Map<string, CachedPuzzle[]>();
     for (const p of sorted) {
       const arr = byDate.get(p.puzzle.isoDate);
@@ -655,12 +711,50 @@ function OfflineFallback({
     return [...byDate.entries()];
   }, [puzzles]);
 
+  const openEntry = (e: { kind: "syndicated" | "community"; source?: PuzzleSource; date?: string; puzzleId?: string }) =>
+    e.kind === "syndicated" ? onPick(e.source!, e.date!) : onOpenPuzzle(e.puzzleId!);
+
+  if (puzzles === null || (puzzles.length === 0 && (storeError || !isOfflineStoreMigrated()))) {
+    return (
+      <>
+        <p className="archive-offline-notice">
+          {storeError ?? "You're offline — here's what you've saved for later."}
+        </p>
+        {indexEntries.length > 0 && (
+          <ul className="card-list">
+            {indexEntries.map((e) => (
+              <Card key={e.key} onPress={() => openEntry(e)}>
+                <span className="ai-source">
+                  {e.kind === "syndicated" ? SOURCES[e.source!].label : (e.title ?? "Community puzzle")}
+                </span>
+                {e.kind === "syndicated" && e.title !== SOURCES[e.source!].label && (
+                  <span className="ai-theme">{e.title}</span>
+                )}
+                <span className="ai-author">{e.kind === "syndicated" ? "Saved for offline" : "Community puzzle"}</span>
+              </Card>
+            ))}
+          </ul>
+        )}
+        {storeError && (
+          <div className="archive-empty">
+            <button className="btn" onClick={() => location.reload()}>
+              Reload
+            </button>
+          </div>
+        )}
+      </>
+    );
+  }
+
   if (puzzles.length === 0) {
     return (
       <div className="archive-empty">
         <p>You're offline, and don't have any puzzles saved for offline play yet.</p>
         <p className="ai-author">
           Next time you're online, look for the download icon on a puzzle to save it for later.
+        </p>
+        <p className="ai-author">
+          Downloads are per app — puzzles saved in Safari don't appear in the home-screen app, and vice versa.
         </p>
       </div>
     );
@@ -674,10 +768,7 @@ function OfflineFallback({
           <h2 className="archive-day-head">{formatDate(iso)}</h2>
           <ul className="card-list">
             {dayPuzzles.map((p) => (
-              <Card
-                key={p.key}
-                onPress={() => (p.kind === "syndicated" ? onPick(p.source!, p.date!) : onOpenPuzzle(p.puzzleId!))}
-              >
+              <Card key={p.key} onPress={() => openEntry(p)}>
                 <span className="ai-source">
                   {p.kind === "syndicated" ? SOURCES[p.source!].label : p.puzzle.title}
                 </span>

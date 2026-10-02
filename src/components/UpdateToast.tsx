@@ -10,7 +10,7 @@ export function UpdateToast() {
   if (!show) return null;
   return (
     <div className="update-toast" role="status">
-      <span>A new version is available.</span>
+      <span>A new version is ready.</span>
       <button className="btn" onClick={reloadForUpdate}>
         Reload
       </button>

@@ -51,7 +51,13 @@ import {
 } from "./lib/puzzles.ts";
 import { getSyndicatedPuzzle, getSyndicatedWithSolves } from "./lib/syndicated.ts";
 import { getConnState } from "./lib/online.ts";
-import { getPuzzleOffline, syndicatedOfflineKey, communityOfflineKey } from "./lib/offlineCache.ts";
+import { withTimeout } from "./lib/timeout.ts";
+import {
+  getPuzzleOffline,
+  getOfflineStoreError,
+  syndicatedOfflineKey,
+  communityOfflineKey,
+} from "./lib/offlineCache.ts";
 import { useAuth } from "./hooks/useAuthContext.tsx";
 import { useProfile } from "./hooks/useProfile.ts";
 import { useDocumentTitle } from "./hooks/useDocumentTitle.ts";
@@ -306,6 +312,7 @@ function PuzzleView({
   const { user } = useAuth();
   const [loaded, setLoaded] = useState<{ puzzle: Puzzle; mutualProgress: MutualProgress[] } | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
 
   // Pull this puzzle's remote progress into localStorage *before* mounting
   // Solver (which reads localStorage synchronously on mount) — without this,
@@ -315,20 +322,26 @@ function PuzzleView({
   useEffect(() => {
     setLoaded(null);
     setNotFound(false);
+    setStorageUnavailable(false);
     let cancelled = false;
     (async () => {
+      // Start the saved-copy read now so an offline open doesn't pay for it
+      // after the network attempt settles.
+      const cachedP = getPuzzleOffline(syndicatedOfflineKey(source, date));
       // Skip the doomed network round-trip when already known offline; a
       // fetch attempted anyway (captive portal, Supabase down) is caught
       // below and falls back the same way. getSyndicatedWithSolves only
       // catches a Postgrest-level error, not a thrown network one — without
       // this try/catch a genuinely offline fetch would reject uncaught and
-      // leave the view stuck on its loading skeleton forever.
+      // leave the view stuck on its loading skeleton forever. The timeout
+      // bounds the whole call, auth-js's pre-request token refresh included
+      // (see lib/timeout.ts) — "connected but no internet" must not hang.
       let res: { puzzle: Puzzle; mutualProgress: MutualProgress[] } | null = null;
       if (getConnState() === "online") {
         // Mutuals' solves ride along on the same fetch (see the migration) —
         // no separate request for the solves segment to pop in from.
         try {
-          res = await getSyndicatedWithSolves(source, date);
+          res = await withTimeout(getSyndicatedWithSolves(source, date), 6000, "puzzle fetch");
         } catch (err) {
           console.error("[PuzzleView] fetch failed", err);
         }
@@ -350,10 +363,16 @@ function PuzzleView({
         // Offline (or the fetch above failed anyway) — fall back to a copy
         // saved via "Save offline" before giving up. No mutual-progress data
         // offline; Solver already treats an empty list as "no one's started".
-        const cached = await getPuzzleOffline(syndicatedOfflineKey(source, date));
+        // A store that couldn't be read at all is reported as such, not as
+        // "not found" — the puzzle may well be saved.
+        const cached = await cachedP;
         if (cancelled) return;
         if (cached) {
           setLoaded({ puzzle: cached.puzzle, mutualProgress: [] });
+          return;
+        }
+        if (getOfflineStoreError()) {
+          setStorageUnavailable(true);
           return;
         }
         setNotFound(true);
@@ -361,22 +380,31 @@ function PuzzleView({
       }
 
       if (user) {
-        const remote = await pullProgress(user.id, source, date);
-        if (remote) {
-          const local = loadProgress(source, date);
-          if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
-            saveProgress(source, date, remote);
+        try {
+          const remote = await withTimeout(pullProgress(user.id, source, date), 6000, "progress pull");
+          if (remote) {
+            const local = loadProgress(source, date);
+            if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+              saveProgress(source, date, remote);
+            }
           }
+        } catch (err) {
+          // The puzzle itself arrived; a missed progress pull only means the
+          // Solver's periodic check catches up later.
+          console.error("[PuzzleView] progress pull failed", err);
         }
       }
+      if (cancelled) return;
       setLoaded(res);
     })();
     return () => {
       cancelled = true;
     };
-  }, [source, date, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, date, user?.id]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
+  if (storageUnavailable) return <StorageUnavailable />;
   if (!loaded) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Solver
@@ -384,6 +412,20 @@ function PuzzleView({
       onOpenArchive={onOpenArchive}
       mutualProgress={loaded.mutualProgress}
     />
+  );
+}
+
+/** Shown when a puzzle couldn't be fetched *and* the offline store itself
+ *  couldn't be read (see lib/cacheStore.ts) — distinct from "not found",
+ *  since the copy may well be there. Reloading re-opens the store fresh. */
+function StorageUnavailable() {
+  return (
+    <div className="error">
+      <p>{getOfflineStoreError() ?? "Saved puzzles can't be read right now — close the app fully and reopen it."}</p>
+      <button className="btn" onClick={() => location.reload()}>
+        Reload
+      </button>
+    </div>
   );
 }
 
@@ -405,20 +447,24 @@ function CommunityPuzzleView({
     mutualProgress: MutualProgress[];
   } | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
 
   useEffect(() => {
     setLoaded(null);
     setNotFound(false);
+    setStorageUnavailable(false);
     let cancelled = false;
 
     (async () => {
+      const cachedP = getPuzzleOffline(communityOfflineKey(id));
       // See PuzzleView's fetch effect for why this skips the network attempt
-      // while offline and catches a thrown (not just returned) failure.
+      // while offline, bounds it, and catches a thrown (not just returned)
+      // failure.
       let res: { puzzle: PublishedPuzzle; mutualProgress: MutualProgress[] } | null = null;
       if (getConnState() === "online") {
         // Mutuals' solves ride along on the same fetch — see PuzzleView.
         try {
-          res = await getPuzzleWithSolves(id);
+          res = await withTimeout(getPuzzleWithSolves(id), 6000, "puzzle fetch");
         } catch (err) {
           console.error("[CommunityPuzzleView] fetch failed", err);
         }
@@ -426,7 +472,7 @@ function CommunityPuzzleView({
       if (cancelled) return;
 
       if (!res) {
-        const cached = await getPuzzleOffline(communityOfflineKey(id));
+        const cached = await cachedP;
         if (cancelled) return;
         if (cached) {
           setLoaded({
@@ -443,28 +489,39 @@ function CommunityPuzzleView({
           });
           return;
         }
+        if (getOfflineStoreError()) {
+          setStorageUnavailable(true);
+          return;
+        }
         setNotFound(true);
         return;
       }
 
       if (user) {
-        const remote = await pullCommunityProgress(user.id, id);
-        if (remote) {
-          const local = loadCommunityProgress(id);
-          if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
-            saveCommunityProgress(id, remote);
+        try {
+          const remote = await withTimeout(pullCommunityProgress(user.id, id), 6000, "progress pull");
+          if (remote) {
+            const local = loadCommunityProgress(id);
+            if (!local || (remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+              saveCommunityProgress(id, remote);
+            }
           }
+        } catch (err) {
+          console.error("[CommunityPuzzleView] progress pull failed", err);
         }
       }
+      if (cancelled) return;
       setLoaded(res);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [id, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user?.id]);
 
   if (notFound) return <div className="error">Puzzle not found.</div>;
+  if (storageUnavailable) return <StorageUnavailable />;
   if (!loaded) return <SolverSkeleton onOpenArchive={onOpenArchive} />;
   return (
     <Solver
@@ -1000,6 +1057,9 @@ function Solver({
     // shared grid (worse: our own pushes from a second tab would trip it).
     if (!user || xw.completed || session) return;
     const check = async () => {
+      // Offline the pull can't say anything new, and after the token has
+      // expired each attempt sits in auth-js's refresh retry loop first.
+      if (getConnState() === "offline") return;
       const remote = communityId
         ? await pullCommunityProgress(user.id, communityId)
         : await pullProgress(user.id, source, puzzle.date);

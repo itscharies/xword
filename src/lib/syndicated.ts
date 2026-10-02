@@ -7,7 +7,7 @@
 import { supabase } from "./supabase.ts";
 import type { Puzzle } from "../types.ts";
 import type { PuzzleSource } from "./sources.ts";
-import type { MutualProgress } from "./puzzles.ts";
+import { bounded, type MutualProgress } from "./puzzles.ts";
 import { applyEnumerationBars } from "./enumeration.ts";
 
 export async function getSyndicatedPuzzle(
@@ -35,10 +35,10 @@ export async function getSyndicatedWithSolves(
   date: string,
 ): Promise<{ puzzle: Puzzle; mutualProgress: MutualProgress[] } | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc("get_syndicated_with_solves", {
-    p_source: source,
-    p_puzzle_date: date,
-  });
+  const { data, error } = await bounded(
+    supabase.rpc("get_syndicated_with_solves", { p_source: source, p_puzzle_date: date }),
+    6000,
+  );
   if (error) {
     console.error("[syndicated] getSyndicatedWithSolves failed", error);
     return null;

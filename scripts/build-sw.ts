@@ -1,16 +1,19 @@
-// Generates dist/sw-manifest.json after `vite build` — the list of built
-// app-shell assets for public/sw.js to precache, plus a version string that
-// changes on every build so a deploy gets a fresh cache name instead of
-// silently reusing (and never invalidating) a stale one. Run as part of
-// `npm run build`; see package.json.
+// Stamps dist/sw.js after `vite build` — bakes the list of built app-shell
+// assets for the worker to precache, plus a version string that changes on
+// every build, straight into the worker's source (the `@xword-build` marker
+// line in public/sw.js). Baking rather than emitting a sidecar manifest means
+// the worker never needs the network to know its own cache name, and every
+// deploy changes sw.js's bytes so the browser actually re-installs it. Run
+// as part of `npm run build`; see package.json.
 
 import { createHash } from "node:crypto";
-import { readdirSync, statSync, writeFileSync, existsSync } from "node:fs";
+import { readdirSync, statSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dist = join(__dirname, "..", "dist");
+const swPath = join(dist, "sw.js");
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -31,7 +34,7 @@ function walk(dir: string): string[] {
 // static files the manifest/home-screen icon need. Deliberately not
 // everything in dist/ — puzzle data and social share images don't belong in
 // the shell precache; offline puzzle content is handled per-puzzle by the
-// IndexedDB cache in src/lib/offlineCache.ts.
+// Cache API store in src/lib/offlineCache.ts.
 const EXTRA_FILES = ["manifest.webmanifest", "favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 
 const shellAssets = walk(dist)
@@ -49,5 +52,17 @@ const version =
   process.env.GITHUB_SHA?.slice(0, 12) ??
   createHash("sha256").update(assets.join(",")).digest("hex").slice(0, 12);
 
-writeFileSync(join(dist, "sw-manifest.json"), JSON.stringify({ version, assets }, null, 2));
-console.log(`[build-sw-manifest] wrote sw-manifest.json — version ${version}, ${assets.length} assets`);
+// Exactly one marker line, matched strictly — a worker that shipped without
+// its stamp would install nothing and serve nothing offline, so refuse to
+// produce one.
+const MARKER = /^const BUILD = \/\*@xword-build\*\/ null;$/gm;
+const source = readFileSync(swPath, "utf8");
+const matches = source.match(MARKER) ?? [];
+if (matches.length !== 1) {
+  console.error(`[build-sw] expected exactly one @xword-build marker in ${swPath}, found ${matches.length}`);
+  process.exit(1);
+}
+
+const stamped = source.replace(MARKER, `const BUILD = ${JSON.stringify({ version, assets })};`);
+writeFileSync(swPath, stamped);
+console.log(`[build-sw] stamped sw.js — version ${version}, ${assets.length} assets`);

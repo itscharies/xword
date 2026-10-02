@@ -6,8 +6,8 @@
 import { supabase } from "./supabase.ts";
 import { saveProgress, listAllProgress, type Progress } from "./storage.ts";
 import type { PuzzleSource } from "./sources.ts";
-import { getConnState } from "./online.ts";
-import { idbDelete, idbGetAll, idbPut, STORES } from "./idb.ts";
+import { getConnState, onConnChange } from "./online.ts";
+import { withTimeout } from "./timeout.ts";
 
 type RemoteRow = {
   source: string;
@@ -28,10 +28,11 @@ export async function reconcileAll(userId: string): Promise<void> {
     .from("progress")
     .select("source, puzzle_date, data, client_updated_at")
     .not("source", "is", null);
-  if (error) {
-    console.error("[sync] reconcileAll: fetching remote progress failed", error);
-    return;
-  }
+  // Thrown, not logged-and-swallowed: the caller marks the sign-in reconcile
+  // done only when it resolves, and a returned PostgREST error (captive
+  // portal, outage, a 401 before the refresh lands) must leave it pending for
+  // the reconnect listener, exactly like a network-level failure would.
+  if (error) throw error;
 
   const remoteByKey = new Map<string, RemoteRow>(
     (data ?? []).map((r) => [`${r.source}:${r.puzzle_date}`, r as RemoteRow]),
@@ -65,7 +66,7 @@ export async function reconcileAll(userId: string): Promise<void> {
       toPush.map((r) => ({ user_id: userId, ...r })),
       { onConflict: "user_id,source,puzzle_date" },
     );
-    if (pushError) console.error("[sync] reconcileAll: pushing local progress failed", pushError);
+    if (pushError) throw pushError;
   }
 }
 
@@ -73,10 +74,13 @@ type PushResult = { error: { message: string } | null };
 
 /** One queued progress push — either a syndicated (source, date) puzzle or a
  *  community (puzzle_id) one, carrying everything `doPush` needs to replay
- *  it later without the caller's original closure. Persisted to IndexedDB's
- *  `outbox` store (see lib/idb.ts) whenever a push fails, so a failed write
- *  survives a reload instead of being lost with the in-memory debounce
- *  timer — the one thing the old debounce-only design couldn't do. */
+ *  it later without the caller's original closure. Persisted to
+ *  localStorage (`xword:outbox`, keyed by `key`) whenever a push fails or is
+ *  skipped offline, so a failed write survives a reload instead of being
+ *  lost with the in-memory debounce timer. localStorage rather than
+ *  IndexedDB: it lives in the page's own process, so it survives WebKit
+ *  killing the network process under a backgrounded home-screen app — the
+ *  failure that used to make the old IndexedDB outbox read as empty. */
 interface OutboxEntry {
   key: string;
   kind: "syndicated" | "community";
@@ -89,6 +93,30 @@ interface OutboxEntry {
 
 const pending = new Map<string, { timer: ReturnType<typeof setTimeout>; entry: OutboxEntry }>();
 const DEBOUNCE_MS = 1500;
+const PUSH_TIMEOUT_MS = 8000;
+
+const OUTBOX_KEY = "xword:outbox";
+
+function readOutbox(): Record<string, OutboxEntry> {
+  try {
+    const raw = localStorage.getItem(OUTBOX_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, OutboxEntry>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeOutbox(outbox: Record<string, OutboxEntry>): void {
+  try {
+    if (Object.keys(outbox).length === 0) localStorage.removeItem(OUTBOX_KEY);
+    else localStorage.setItem(OUTBOX_KEY, JSON.stringify(outbox));
+  } catch (err) {
+    console.error("[sync] failed to write outbox", err);
+  }
+}
 
 export type SaveStatus = "saving" | "saved" | "error" | "queued";
 type StatusListener = (status: SaveStatus) => void;
@@ -141,19 +169,19 @@ function doPush(entry: OutboxEntry): PromiseLike<PushResult> {
   );
 }
 
-/** Best-effort — losing a queued entry here is no worse than the old
- *  behavior (nothing was ever persisted at all), so failures are logged, not
- *  thrown, and never block reporting the push's own status. */
-async function enqueueOutbox(entry: OutboxEntry): Promise<void> {
-  try {
-    await idbPut(STORES.outbox, entry);
-  } catch (err) {
-    console.error(`[sync] failed to persist outbox entry for "${entry.key}"`, err);
-  }
+/** Best-effort — a write failure is logged, not thrown, and never blocks
+ *  reporting the push's own status. */
+function enqueueOutbox(entry: OutboxEntry): void {
+  const outbox = readOutbox();
+  outbox[entry.key] = entry;
+  writeOutbox(outbox);
 }
 
-async function dequeueOutbox(key: string): Promise<void> {
-  await idbDelete(STORES.outbox, key);
+function dequeueOutbox(key: string): void {
+  const outbox = readOutbox();
+  if (!(key in outbox)) return;
+  delete outbox[key];
+  writeOutbox(outbox);
 }
 
 /** Runs `entry`'s push, reporting "saved" only if it actually succeeded.
@@ -164,22 +192,25 @@ async function dequeueOutbox(key: string): Promise<void> {
  *  but still failing" (error, worth a user-visible warning): a thrown
  *  request all but always means no network path at all, and a returned
  *  error while `getConnState()` already reads offline is the same signal
- *  arriving a different way. */
+ *  arriving a different way. The whole push is also bounded by a timeout:
+ *  supabase-js awaits `auth.getSession()` before the request, and once the
+ *  token has expired offline that alone spends ~25 s in auth-js's retry
+ *  loop — the indicator would otherwise sit on "saving" for that long. */
 function runAndReport(entry: OutboxEntry): void {
-  Promise.resolve(doPush(entry)).then(
+  withTimeout(Promise.resolve(doPush(entry)), PUSH_TIMEOUT_MS, "progress push").then(
     (result) => {
       if (result?.error) {
         console.error(`[sync] push failed for "${entry.key}"`, result.error);
-        void enqueueOutbox(entry);
+        enqueueOutbox(entry);
         notifyStatus(entry.key, getConnState() === "offline" ? "queued" : "error");
       } else {
-        void dequeueOutbox(entry.key);
+        dequeueOutbox(entry.key);
         notifyStatus(entry.key, "saved");
       }
     },
     (err) => {
       console.error(`[sync] push threw for "${entry.key}"`, err);
-      void enqueueOutbox(entry);
+      enqueueOutbox(entry);
       notifyStatus(entry.key, "queued");
     },
   );
@@ -194,9 +225,24 @@ function schedule(entry: OutboxEntry): void {
   notifyStatus(entry.key, "saving");
   const timer = setTimeout(() => {
     pending.delete(entry.key);
-    runAndReport(entry);
+    dispatch(entry);
   }, DEBOUNCE_MS);
   pending.set(entry.key, { timer, entry });
+}
+
+/** Known offline: don't spend a doomed round-trip (plus the auth retry loop)
+ *  finding out — queue straight away and let the reconnect replay. The
+ *  outbox write is synchronous, which matters for `flushPendingPushes`: a
+ *  Reload tapped offline swaps the service worker and reloads the page
+ *  within tens of milliseconds, long before a push could fail and reach the
+ *  rejection branch that would otherwise have queued it. */
+function dispatch(entry: OutboxEntry): void {
+  if (getConnState() === "offline") {
+    enqueueOutbox(entry);
+    notifyStatus(entry.key, "queued");
+    return;
+  }
+  runAndReport(entry);
 }
 
 /** Runs every still-pending debounced push immediately. Called when the tab
@@ -206,7 +252,7 @@ export function flushPendingPushes(): void {
   for (const [key, { timer, entry }] of pending) {
     clearTimeout(timer);
     pending.delete(key);
-    runAndReport(entry);
+    dispatch(entry);
   }
 }
 
@@ -219,9 +265,8 @@ export function flushPendingPushes(): void {
  *  last-write-wins-by-`updatedAt` rule `reconcileAll` uses, just applied
  *  per-key instead of in one bulk pass. */
 export async function retryOutbox(): Promise<void> {
-  if (!supabase) return;
-  const entries = await idbGetAll<OutboxEntry>(STORES.outbox);
-  for (const entry of entries) {
+  if (!supabase || getConnState() === "offline") return;
+  for (const entry of Object.values(readOutbox())) {
     const remote =
       entry.kind === "syndicated"
         ? await pullProgress(entry.userId, entry.source!, entry.date!)
@@ -232,7 +277,7 @@ export async function retryOutbox(): Promise<void> {
       // Remote is newer — drop the stale queued write. The next time this
       // puzzle opens, the existing pull-before-mount reconcile in App.tsx
       // picks up the fresher remote copy on its own.
-      await dequeueOutbox(entry.key);
+      dequeueOutbox(entry.key);
       continue;
     }
     runAndReport(entry);
@@ -242,10 +287,16 @@ export async function retryOutbox(): Promise<void> {
 if (typeof window !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") flushPendingPushes();
-    else void retryOutbox();
+    // Deferred to land after lib/online.ts's own resume probe, so a replay
+    // isn't attempted against a radio that hasn't come back yet.
+    else setTimeout(() => void retryOutbox(), 1000);
   });
   window.addEventListener("pagehide", flushPendingPushes);
-  window.addEventListener("online", () => void retryOutbox());
+  // The probed state, not the browser's `online` event — the latter fires
+  // for captive portals too, and the replay would just re-queue everything.
+  onConnChange((s) => {
+    if (s === "online") void retryOutbox();
+  });
   // Give a save still in flight a moment to land, and warn instead of letting
   // the tab close silently drop it — the fetch itself survives the unload
   // (see the `keepalive` fetch in supabase.ts), but only once it's sent.

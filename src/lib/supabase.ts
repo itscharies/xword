@@ -7,10 +7,16 @@ import { createMockSupabase } from "./mockSupabase.ts";
 
 // `npm run dev:mock` — an in-memory stand-in for local testing of signed-in/
 // signed-out UI without a real Supabase project. See mockSupabase.ts.
-const mockMode = import.meta.env.VITE_MOCK_BACKEND === "1";
+export const mockMode = import.meta.env.VITE_MOCK_BACKEND === "1";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
+// Exposed for lib/online.ts's raw reachability probe, which deliberately
+// bypasses the client (see there for why). The gateway wants the apikey on
+// every route, /auth/v1/health included — without it the probe still proves
+// reachability, but as a 401 logged in the console on every launch.
+export const supabaseUrl: string | undefined = url;
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+export const supabaseKey: string | undefined = publishableKey;
 
 export const supabaseEnabled = mockMode || Boolean(url && publishableKey);
 
