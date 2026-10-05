@@ -28,7 +28,7 @@ import { useProfile } from "../hooks/useProfile.ts";
 import { useConnState } from "../hooks/useConnState.ts";
 import { useMediaQuery } from "../hooks/useMediaQuery.ts";
 import { TOUCH_QUERY, useSwipeActions, type SwipeAction } from "../hooks/useSwipeActions.ts";
-import { markSolved } from "../lib/markSolved.ts";
+import { markSolved, type ProgressTarget } from "../lib/markSolved.ts";
 import { getConnState } from "../lib/online.ts";
 import { withTimeout } from "../lib/timeout.ts";
 import { listArchivePage, getPuzzleById, type ArchiveFeedItem, type MutualProgress } from "../lib/puzzles.ts";
@@ -543,6 +543,8 @@ export function Archive({
                 indexEntries={readOfflineIndex()}
                 onPick={onPick}
                 onOpenPuzzle={onOpenPuzzle}
+                swipe={swipe}
+                onProgressChange={bumpProgress}
               />
             ) : (
               <div className="archive-empty">
@@ -672,29 +674,56 @@ export function Archive({
   );
 }
 
+/** The fields that say which puzzle a saved entry is — shared by the live
+ *  store's CachedPuzzle and the index mirror's OfflineIndexEntry, so helpers
+ *  below take either. */
+type OfflineRef = Pick<OfflineIndexEntry, "kind" | "source" | "date" | "puzzleId">;
+
+/** Where a saved puzzle's progress lives, in lib/markSolved.ts's keying —
+ *  the same ProgressTarget then serves the tile's progress lookup and its
+ *  mark-solved swipe. */
+function offlineTarget(e: OfflineRef): ProgressTarget {
+  return e.kind === "syndicated"
+    ? { kind: "syndicated", source: e.source!, date: e.date! }
+    : { kind: "community", puzzleId: e.puzzleId! };
+}
+
+function targetProgress(t: ProgressTarget): Progress | null {
+  return t.kind === "syndicated" ? loadProgress(t.source, t.date) : loadCommunityProgress(t.puzzleId);
+}
+
 /** Shown in place of the archive feed when it's offline and the feed fetch
  *  came back empty — the puzzles saved via "Save offline" (the download icon
  *  on any tile, or in the Solver) are still openable even though the feed
- *  itself isn't reachable.
+ *  itself isn't reachable. Each saved puzzle gets the same tile as the live
+ *  feed (OfflineItem): the solved tick / percent badge, and the swipe or
+ *  hover controls to remove the download or flip the solved flag — so the
+ *  saved list reads as the same archive, not a bolted-on view.
  *
  *  When the store itself couldn't be read (`storeError`), hasn't been read
  *  yet (`puzzles` null), or the one-time migration from IndexedDB hasn't
  *  finished yet, the live list is empty for a reason other than "nothing
  *  saved" — so the localStorage index mirror (`indexEntries`, titles only)
  *  is listed instead, with an honest notice, rather than telling the user
- *  they have no downloads. */
+ *  they have no downloads. Those tiles still show progress (it lives in
+ *  localStorage, not the store) but stay plain cards: removing a download
+ *  can't succeed while the store is unreadable, so no control offers it. */
 function OfflineFallback({
   puzzles,
   storeError,
   indexEntries,
   onPick,
   onOpenPuzzle,
+  swipe,
+  onProgressChange,
 }: {
   puzzles: CachedPuzzle[] | null;
   storeError: string | null;
   indexEntries: OfflineIndexEntry[];
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenPuzzle: (id: string) => void;
+  swipe: boolean;
+  onProgressChange: () => void;
 }) {
   // Same grouping convention as the live feed above (a Map built in sorted
   // order, so insertion order is display order) — newest day first, one
@@ -711,7 +740,7 @@ function OfflineFallback({
     return [...byDate.entries()];
   }, [puzzles]);
 
-  const openEntry = (e: { kind: "syndicated" | "community"; source?: PuzzleSource; date?: string; puzzleId?: string }) =>
+  const openEntry = (e: OfflineRef) =>
     e.kind === "syndicated" ? onPick(e.source!, e.date!) : onOpenPuzzle(e.puzzleId!);
 
   if (puzzles === null || (puzzles.length === 0 && (storeError || !isOfflineStoreMigrated()))) {
@@ -722,17 +751,21 @@ function OfflineFallback({
         </p>
         {indexEntries.length > 0 && (
           <ul className="card-list">
-            {indexEntries.map((e) => (
-              <Card key={e.key} onPress={() => openEntry(e)}>
-                <span className="ai-source">
-                  {e.kind === "syndicated" ? SOURCES[e.source!].label : (e.title ?? "Community puzzle")}
-                </span>
-                {e.kind === "syndicated" && e.title !== SOURCES[e.source!].label && (
-                  <span className="ai-theme">{e.title}</span>
-                )}
-                <span className="ai-author">{e.kind === "syndicated" ? "Saved for offline" : "Community puzzle"}</span>
-              </Card>
-            ))}
+            {indexEntries.map((e) => {
+              const { done, pct } = progressOf(targetProgress(offlineTarget(e)));
+              return (
+                <Card key={e.key} onPress={() => openEntry(e)}>
+                  <span className="ai-source">
+                    {e.kind === "syndicated" ? SOURCES[e.source!].label : (e.title ?? "Community puzzle")}
+                  </span>
+                  {e.kind === "syndicated" && e.title !== SOURCES[e.source!].label && (
+                    <span className="ai-theme">{e.title}</span>
+                  )}
+                  <span className="ai-author">{e.kind === "syndicated" ? "Saved for offline" : "Community puzzle"}</span>
+                  <TileCorner swipe={swipe} done={done} pct={pct} />
+                </Card>
+              );
+            })}
           </ul>
         )}
         {storeError && (
@@ -768,22 +801,81 @@ function OfflineFallback({
           <h2 className="archive-day-head">{formatDate(iso)}</h2>
           <ul className="card-list">
             {dayPuzzles.map((p) => (
-              <Card key={p.key} onPress={() => openEntry(p)}>
-                <span className="ai-source">
-                  {p.kind === "syndicated" ? SOURCES[p.source!].label : p.puzzle.title}
-                </span>
-                {p.kind === "syndicated" && p.puzzle.title !== SOURCES[p.source!].label && (
-                  <span className="ai-theme">{p.puzzle.title}</span>
-                )}
-                <span className="ai-author">
-                  {p.kind === "syndicated" ? `By ${p.puzzle.author || "Anonymous"}` : "Community puzzle"}
-                </span>
-              </Card>
+              <OfflineItem
+                key={p.key}
+                cached={p}
+                onOpen={() => openEntry(p)}
+                swipe={swipe}
+                onProgressChange={onProgressChange}
+              />
             ))}
           </ul>
         </section>
       ))}
     </>
+  );
+}
+
+/** One saved puzzle in the offline fallback — the live feed's tile, with the
+ *  download side reduced to "remove": everything listed here is saved by
+ *  definition, so there is nothing to save, and the store itself is the
+ *  source of truth for whether it's still there (removePuzzleOffline fires
+ *  "xword:offline-changed", which refreshes Archive's list and drops this
+ *  tile, so no callback is needed for that). Its own component, like
+ *  SyndicatedItem, so the hooks sit at the top rather than in a map. */
+function OfflineItem({
+  cached,
+  onOpen,
+  swipe,
+  onProgressChange,
+}: {
+  cached: CachedPuzzle;
+  onOpen: () => void;
+  swipe: boolean;
+  onProgressChange: () => void;
+}) {
+  const { user } = useAuth();
+  const target = offlineTarget(cached);
+  const { done, pct } = progressOf(targetProgress(target));
+
+  const [saving, setSaving] = useState(false);
+  const online = useConnState() === "online";
+  const remove = async () => {
+    if (saving) return;
+    setSaving(true);
+    await removePuzzleOffline(cached.key);
+    // A removal the store refused leaves the tile in place, so the control
+    // has to come back; one that succeeded unmounts it a beat later anyway.
+    setSaving(false);
+  };
+
+  const removeAction: SwipeAction = {
+    label: "Remove download",
+    icon: <DeleteIcon />,
+    disabled: saving,
+    onCommit: remove,
+  };
+  const solvedAction: SwipeAction = {
+    label: done ? "Mark unsolved" : "Mark solved",
+    icon: <CheckIcon />,
+    onCommit: () => {
+      markSolved(target, !done, user?.id ?? null);
+      onProgressChange();
+    },
+  };
+
+  const { puzzle } = cached;
+  return (
+    <SwipeTile enabled={swipe} onPress={onOpen} swipeLeft={removeAction} swipeRight={solvedAction}>
+      <span className="ai-source">{cached.kind === "syndicated" ? SOURCES[cached.source!].label : puzzle.title}</span>
+      {cached.kind === "syndicated" && puzzle.title !== SOURCES[cached.source!].label && (
+        <span className="ai-theme">{puzzle.title}</span>
+      )}
+      <span className="ai-author">
+        {cached.kind === "syndicated" ? `By ${puzzle.author || "Anonymous"}` : "Community puzzle"}
+      </span>
+      <TileCorner swipe={swipe} saved saving={saving} online={online} onToggle={remove} done={done} pct={pct} />
+    </SwipeTile>
   );
 }
 
@@ -914,6 +1006,60 @@ function OfflineBadge() {
   );
 }
 
+/** A tile's solve state from its stored Progress. Cap at 99% while unsolved:
+ *  a fully-filled grid with a wrong letter is 100% filled but not "done",
+ *  and showing 100% would look solved. 100%/the tick is reserved for a
+ *  correct solve. */
+function progressOf(prog: Progress | null): { done: boolean; pct: number } {
+  const done = prog?.completed ?? false;
+  const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+  return { done, pct };
+}
+
+/** The tile's top-right corner (.ai-corner-group): the offline download
+ *  control — OfflineToggle, or on touch devices the inert OfflineBadge once
+ *  saved — followed by the solve state, a tick when done or the filled
+ *  percentage while in progress. Without `onToggle` only the solve state
+ *  renders: the offline index-mirror list has no download control to offer,
+ *  since its store can't currently be written. */
+function TileCorner({
+  swipe,
+  saved = false,
+  saving = false,
+  online = true,
+  onToggle,
+  done,
+  pct,
+}: {
+  swipe: boolean;
+  saved?: boolean;
+  saving?: boolean;
+  online?: boolean;
+  onToggle?: () => void;
+  done: boolean;
+  pct: number;
+}) {
+  return (
+    <div className="ai-corner-group">
+      {onToggle &&
+        (swipe ? (
+          saved && <OfflineBadge />
+        ) : (
+          <OfflineToggle saved={saved} saving={saving} online={online} onToggle={onToggle} />
+        ))}
+      {done ? (
+        <span className="ai-done" title="Solved" aria-label="Solved">
+          <CheckIcon />
+        </span>
+      ) : pct > 0 ? (
+        <span className="ai-pct" title={`${pct}% filled`}>
+          {pct}%
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 /** The archive tile on touch devices: the li is a "slot" that casts the one
  *  hard shadow and stays put while the card slides inside it over an action
  *  panel — swipe left to save/remove offline, right to mark solved/unsolved
@@ -947,7 +1093,7 @@ function SwipeTile({
     >
       {a && (
         <div
-          className={`swipe-panel tone-${a.tone ?? "accent"}${a.disabled ? " is-disabled" : ""}`}
+          className={`swipe-panel${a.disabled ? " is-disabled" : ""}`}
           aria-hidden="true"
         >
           <span className="swipe-panel-body">
@@ -992,12 +1138,7 @@ function SyndicatedItem({
   const mainLabel = SOURCES[source].label;
   const theme =
     source === "nyt" ? themeName(item.title) : item.title !== SOURCES[source].label ? item.title : null;
-  const prog = loadProgress(source, date);
-  const done = prog?.completed ?? false;
-  // Cap at 99% while unsolved: a fully-filled grid with a wrong letter is
-  // 100% filled but not "done", and showing 100% would look solved. 100%/the
-  // tick is reserved for a correct solve.
-  const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+  const { done, pct } = progressOf(loadProgress(source, date));
 
   const offlineKey = syndicatedOfflineKey(source, date);
   const saved = offlineKeys.has(offlineKey);
@@ -1022,14 +1163,12 @@ function SyndicatedItem({
   const downloadAction: SwipeAction = {
     label: saved ? "Remove download" : online ? "Save offline" : "Go online to save",
     icon: saved ? <DeleteIcon /> : <DownloadIcon />,
-    tone: saved ? "neutral" : "accent",
     disabled: saving || (!online && !saved),
     onCommit: toggleOffline,
   };
   const solvedAction: SwipeAction = {
     label: done ? "Mark unsolved" : "Mark solved",
     icon: <CheckIcon />,
-    tone: done ? "neutral" : "accent",
     onCommit: () => {
       markSolved({ kind: "syndicated", source, date }, !done, user?.id ?? null);
       onProgressChange();
@@ -1047,22 +1186,15 @@ function SyndicatedItem({
       {theme && <span className="ai-theme">{theme}</span>}
       <span className="ai-author">By {item.author || "Anonymous"}</span>
       <MutualStack mutuals={item.mutualProgress} />
-      <div className="ai-corner-group">
-        {swipe ? (
-          saved && <OfflineBadge />
-        ) : (
-          <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
-        )}
-        {done ? (
-          <span className="ai-done" title="Solved" aria-label="Solved">
-            <CheckIcon />
-          </span>
-        ) : pct > 0 ? (
-          <span className="ai-pct" title={`${pct}% filled`}>
-            {pct}%
-          </span>
-        ) : null}
-      </div>
+      <TileCorner
+        swipe={swipe}
+        saved={saved}
+        saving={saving}
+        online={online}
+        onToggle={toggleOffline}
+        done={done}
+        pct={pct}
+      />
     </SwipeTile>
   );
 }
@@ -1087,9 +1219,7 @@ function CommunityItem({
 }) {
   const { user } = useAuth();
   const isMine = !!user && item.authorProfile?.user_id === user.id;
-  const prog = loadCommunityProgress(item.id);
-  const done = prog?.completed ?? false;
-  const pct = !done && prog?.total ? Math.min(99, Math.round((100 * (prog.filled ?? 0)) / prog.total)) : 0;
+  const { done, pct } = progressOf(loadCommunityProgress(item.id));
 
   const offlineKey = communityOfflineKey(item.id);
   const saved = offlineKeys.has(offlineKey);
@@ -1114,14 +1244,12 @@ function CommunityItem({
   const downloadAction: SwipeAction = {
     label: saved ? "Remove download" : online ? "Save offline" : "Go online to save",
     icon: saved ? <DeleteIcon /> : <DownloadIcon />,
-    tone: saved ? "neutral" : "accent",
     disabled: saving || (!online && !saved),
     onCommit: toggleOffline,
   };
   const solvedAction: SwipeAction = {
     label: done ? "Mark unsolved" : "Mark solved",
     icon: <CheckIcon />,
-    tone: done ? "neutral" : "accent",
     onCommit: () => {
       markSolved({ kind: "community", puzzleId: item.id }, !done, user?.id ?? null);
       onProgressChange();
@@ -1155,22 +1283,15 @@ function CommunityItem({
         </div>
       </div>
       <MutualStack mutuals={item.mutualProgress} />
-      <div className="ai-corner-group">
-        {swipe ? (
-          saved && <OfflineBadge />
-        ) : (
-          <OfflineToggle saved={saved} saving={saving} online={online} onToggle={toggleOffline} />
-        )}
-        {done ? (
-          <span className="ai-done" title="Solved" aria-label="Solved">
-            <CheckIcon />
-          </span>
-        ) : pct > 0 ? (
-          <span className="ai-pct" title={`${pct}% filled`}>
-            {pct}%
-          </span>
-        ) : null}
-      </div>
+      <TileCorner
+        swipe={swipe}
+        saved={saved}
+        saving={saving}
+        online={online}
+        onToggle={toggleOffline}
+        done={done}
+        pct={pct}
+      />
     </SwipeTile>
   );
 }

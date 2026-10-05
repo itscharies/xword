@@ -2640,6 +2640,21 @@ html.sc-locked {
 /* Clip only mid-gesture: at rest nothing overflows, and the mutuals flyout
    (.tip-panel hangs below the card) must stay visible. */
 .swipe-tile:not([data-phase="idle"]) { overflow: hidden; }
+/* While the face is displaced its far edge — and the card's border on that
+   side — slides out of the slot and is clipped away, so the tile reads as
+   cut off. This frame on the slot redraws it: it coincides with the card's
+   and the panel's own borders on the other three sides and paints the one
+   missing edge over the cut. Last in tree order, so it sits above the face
+   without a z-index (the same stacking-context reasoning as .swipe-face
+   below). Only mid-gesture: at rest the card's own border is the frame and
+   must stay pixel-identical to a plain card. */
+.swipe-tile:not([data-phase="idle"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: var(--bw) solid var(--line);
+  pointer-events: none;
+}
 /* The tap press-down moves from the (now shadowless) card to the slot. It is
    driven by the hook (data-pressed: a finger resting ~60 ms, dropped the
    moment it moves) rather than :active — WebKit applies :active on touch
@@ -2656,8 +2671,13 @@ html.sc-locked {
    would paint over it. */
 .swipe-face { position: relative; display: grid; }
 .swipe-tile[data-phase="drag"] .swipe-face { transition: none; will-change: transform; }
-/* Durations must match COMMIT_OUT_MS / RETURN_MS in hooks/useSwipeActions.ts. */
-.swipe-tile[data-phase="commit"] .swipe-face { transition: transform 0.2s ease-in; will-change: transform; }
+/* Commit is a hold: the face stays parked at the reveal distance while the
+   action lands, so nothing moves in this phase — but it carries the return's
+   transition anyway. The hold timer writes the homeward transform at once
+   while React lands data-phase="return" a task later, so under a
+   transition-free commit rule that first paint could snap home instead of
+   easing. Duration must match RETURN_MS in hooks/useSwipeActions.ts. */
+.swipe-tile[data-phase="commit"] .swipe-face,
 .swipe-tile[data-phase="return"] .swipe-face { transition: transform 0.25s ease-out; will-change: transform; }
 /* Inside a swipe tile the card's own :active is inert (a drag isn't a press)
    and the accent flash follows data-pressed instead. */
@@ -2667,8 +2687,11 @@ html.sc-locked {
 
 /* Full-size panel behind the face, bordered like the card so the uncovered
    part of the slot still reads as a bordered box. The body is a fixed
-   96px column (the commit minimum) anchored to the revealing edge — the
-   right edge for a leftward swipe — so it never reflows under the finger. */
+   96px column anchored to the revealing edge — the right edge for a leftward
+   swipe — so it never reflows under the finger; the face stops exactly at
+   its inner edge, so the reveal is the label and nothing more. Grey until
+   the finger reaches that stop, then the accent: the colour flip (with the
+   label zoom below) is the "you're there" cue for every action alike. */
 .swipe-panel {
   position: absolute;
   inset: 0;
@@ -2677,15 +2700,15 @@ html.sc-locked {
   justify-content: flex-start;
   border: var(--bw) solid var(--line);
   background: var(--surface-2);
-  color: var(--fg);
+  color: var(--muted);
   transition: background 0.12s;
 }
 .swipe-tile[data-dir="left"] .swipe-panel { justify-content: flex-end; }
-.swipe-panel.tone-accent { background: var(--accent-2); color: #000; }
-.swipe-tile[data-armed] .swipe-panel.tone-accent { background: var(--accent); }
-.swipe-tile[data-armed] .swipe-panel.tone-neutral { background: var(--surface); }
+.swipe-tile[data-armed] .swipe-panel { background: var(--accent); color: #000; }
+/* An inert side never arms, so it keeps the resting grey. */
 .swipe-panel.is-disabled { background: var(--surface-2); color: var(--muted); }
 .swipe-panel-body {
+  /* The reveal distance — must match REVEAL_PX in hooks/useSwipeActions.ts. */
   width: 96px;
   display: flex;
   flex-direction: column;

@@ -17,9 +17,6 @@ export const TOUCH_QUERY = "(hover: none) and (pointer: coarse)";
 export interface SwipeAction {
   label: string;
   icon: ReactNode;
-  /** accent = do (accent-2 → accent when armed); neutral = undo (surface-2 →
-   *  surface when armed). Default "accent". */
-  tone?: "accent" | "neutral";
   /** Shown but inert: the tile only budges a little so the label can explain
    *  why; release never commits. */
   disabled?: boolean;
@@ -36,17 +33,15 @@ const INTENT_PX = 10;
 // …except a clearly sideways start (|dx| > 2|dy|) locks in sooner, to beat
 // WebKit's own vertical-scroll recognizer to the touch (see onTouchMove).
 const INTENT_FAST_PX = 6;
-// Release past this fraction of the tile width commits…
-const COMMIT_FRACTION = 0.4;
-// …but never less than this.
-const COMMIT_MIN_PX = 96;
+// How far the face follows the finger before it sticks, and the distance that
+// arms the action: exactly the panel's label column, so the face stops flush
+// with the label's edge — must match .swipe-panel-body { width } in index.css.
+const REVEAL_PX = 96;
 // A disabled side only peeks: this ratio of the finger, capped at DISABLED_PEEK_PX.
 const DISABLED_FOLLOW = 0.35;
 const DISABLED_PEEK_PX = 56;
-// Face slides fully out (ease-in) — must match .swipe-tile[data-phase="commit"] in index.css.
-const COMMIT_OUT_MS = 200;
-// Panel shown alone while the action lands.
-const COMMIT_HOLD_MS = 120;
+// Face parked at REVEAL_PX, armed look kept, while the action lands.
+const COMMIT_HOLD_MS = 140;
 // Snap-back / return (ease-out) — must match .swipe-tile[data-phase="return"] in index.css.
 const RETURN_MS = 250;
 // Slack past the CSS duration before the timer stands in for a transitionend
@@ -60,9 +55,13 @@ const PRESS_DELAY_MS = 60;
 type Lock = "none" | "h" | "dead";
 
 /** The iOS Mail row gesture for a list tile: the face follows the finger
- *  sideways over an action panel; release past the threshold commits (the
- *  face slides out, the action fires while the panel stands alone, then the
- *  face returns), release short of it snaps back. Vertical scrolling is never
+ *  sideways over an action panel, 1:1 up to REVEAL_PX (the panel's label
+ *  column) and then sticks there however far the finger goes, so the reveal
+ *  never runs past the label. Reaching that point arms the action — the
+ *  panel turns from grey to the accent and its label zooms (CSS on
+ *  `data-armed`) — and pulling back un-arms it. Release while armed commits:
+ *  the face holds where it is, armed look intact, while onCommit lands, then
+ *  eases home; release short of it snaps back. Vertical scrolling is never
  *  hijacked — the root needs `touch-action: pan-y` and the gesture only locks
  *  in once a drag is clearly horizontal. The hot path (move) writes the
  *  transform imperatively and touches React state only on direction/armed
@@ -96,7 +95,7 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
   /** A resting press, for the tile's pressed look — never during a swipe. */
   pressed: boolean;
   /** The panel to render behind the face, or null when nothing is revealed.
-   *  Frozen at commit so the label can't flip mid-animation. */
+   *  Frozen at commit so the label can't flip during the hold and return. */
   panel: { dir: SwipeDir; action: SwipeAction } | null;
   rootProps: {
     onPointerDown: (e: ReactPointerEvent<HTMLLIElement>) => void;
@@ -123,11 +122,12 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
   // The mouse/pen pointer, or the finger, the current gesture belongs to.
   const pointerId = useRef(-1);
   const touchId = useRef(-1);
-  const width = useRef(0);
-  const threshold = useRef(0);
   const offset = useRef(0);
-  // Direction the panel currently shows, null while nothing is revealed.
+  // Direction the panel currently shows, null while nothing is revealed, and
+  // the action it was rendered from — compared by the fields the panel shows,
+  // since the action objects are rebuilt every render.
   const shownDir = useRef<SwipeDir | null>(null);
+  const shownAction = useRef<SwipeAction | null>(null);
   const armedRef = useRef(false);
   // Set once a press has become a drag so the click the browser may still
   // synthesise on release is swallowed rather than opening the puzzle.
@@ -138,7 +138,8 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
   const alive = useRef(true);
   const pendingEnd = useRef<(() => void) | null>(null);
   // The actions are rebuilt every render (their labels flip after a commit),
-  // and onCommit fires from a timer, so it reads the latest through a ref.
+  // so the gesture core reads the latest through a ref rather than closing
+  // over one render's copy.
   const actions = useRef({ swipeLeft, swipeRight });
   actions.current = { swipeLeft, swipeRight };
 
@@ -155,6 +156,7 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
   };
   const setPanel = (p: { dir: SwipeDir; action: SwipeAction } | null) => {
     shownDir.current = p?.dir ?? null;
+    shownAction.current = p?.action ?? null;
     if (alive.current) setPanelState(p);
   };
   const clearTimers = () => {
@@ -212,15 +214,17 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
 
   const commit = (dir: SwipeDir) => {
     setPhase("commit");
-    moveFace(dir === "left" ? -width.current : width.current);
+    // Nothing animates here: the face is already pinned at the reveal
+    // distance (the drag clamp put it there) and simply holds, so a plain
+    // timer paces the hold — no transitionend to wait on. `armed` is left
+    // true through it so the accent and the label zoom don't flicker.
+    moveFace(dir === "left" ? -REVEAL_PX : REVEAL_PX);
     // Firing onCommit while the face is parked means the badge/label change
     // is already rendered when the card comes back; `panel` stays frozen so
     // the label can't flip during the hold.
-    afterTransition(COMMIT_OUT_MS, () => {
-      const action = dir === "left" ? actions.current.swipeLeft : actions.current.swipeRight;
-      action.onCommit();
-      timers.current.push(window.setTimeout(returnHome, COMMIT_HOLD_MS));
-    });
+    const action = dir === "left" ? actions.current.swipeLeft : actions.current.swipeRight;
+    action.onCommit();
+    timers.current.push(window.setTimeout(returnHome, COMMIT_HOLD_MS));
   };
 
   // ---- gesture core — refs only, shared by both input paths ---------------
@@ -258,8 +262,6 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
         locked.current = "h";
         swipedRef.current = true;
         clearPress();
-        width.current = rootEl.current?.getBoundingClientRect().width ?? 0;
-        threshold.current = Math.max(COMMIT_MIN_PX, COMMIT_FRACTION * width.current);
         setPhase("drag");
       } else if (ady > INTENT_PX) {
         // A scroll: pan-y hands it to the browser, which will usually cancel
@@ -274,11 +276,24 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
     const action = dir === "left" ? actions.current.swipeLeft : actions.current.swipeRight;
     const live = !action.disabled;
     const sign = dx < 0 ? -1 : 1;
-    // 1:1 under the finger like Mail, clamped at the tile's own width; an
+    // 1:1 under the finger like Mail until the label column is uncovered,
+    // then stuck there — the trigger point is also the furthest the face
+    // goes, so overshooting reads as resistance, not a longer slide. An
     // inert side only budges enough for its label to explain why.
-    moveFace(live ? sign * Math.min(mag, width.current) : sign * Math.min(mag * DISABLED_FOLLOW, DISABLED_PEEK_PX));
-    if (shownDir.current !== dir) setPanel({ dir, action });
-    const nowArmed = live && mag >= threshold.current;
+    moveFace(live ? sign * Math.min(mag, REVEAL_PX) : sign * Math.min(mag * DISABLED_FOLLOW, DISABLED_PEEK_PX));
+    // Re-render the panel on a direction change, and when the live action no
+    // longer matches what it shows — e.g. "Remove download" finishing mid-drag
+    // and the side becoming a live "Save offline": `live` above already
+    // follows the new action, so the label and grey must follow too, or the
+    // tile could arm and commit under the opposite label.
+    if (
+      shownDir.current !== dir ||
+      shownAction.current?.label !== action.label ||
+      shownAction.current?.disabled !== action.disabled
+    )
+      setPanel({ dir, action });
+    // Armed exactly when the face has hit its stop; easing back un-arms.
+    const nowArmed = live && mag >= REVEAL_PX;
     if (nowArmed !== armedRef.current) {
       setArmed(nowArmed);
       if (nowArmed) navigator.vibrate?.(10);
@@ -426,11 +441,10 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
     alive.current = true;
     // Backgrounded mid-gesture (app switch, tab hide): the pointer is gone
     // and timers are throttled, so put everything back rather than resume.
+    // Nothing is lost by cutting a commit's hold short: its onCommit has
+    // already run, synchronously, at the start of the commit phase.
     const onHide = () => {
       if (document.visibilityState !== "hidden" || phaseRef.current === "idle") return;
-      // The user has already seen the face commit: land the action now and
-      // skip only the animation, rather than dropping it with the timers.
-      if (phaseRef.current === "commit") pendingEnd.current?.();
       pressed.current = false;
       locked.current = "none";
       touchId.current = -1;
