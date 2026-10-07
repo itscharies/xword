@@ -37,6 +37,12 @@ const INTENT_FAST_PX = 6;
 // arms the action: exactly the panel's label column, so the face stops flush
 // with the label's edge — must match .swipe-panel-body { width } in index.css.
 const REVEAL_PX = 96;
+// Past the clamp the face gives a little more, rubber-band style: at most this
+// many px, reached only when the finger hits the far edge of the screen…
+const STRETCH_MAX_PX = 20;
+// …with the give decaying exponentially on the way there (higher = stiffer
+// sooner). See stretch().
+const STRETCH_DECAY = 4;
 // A disabled side only peeks: this ratio of the finger, capped at DISABLED_PEEK_PX.
 const DISABLED_FOLLOW = 0.35;
 const DISABLED_PEEK_PX = 56;
@@ -54,10 +60,28 @@ const PRESS_DELAY_MS = 60;
 
 type Lock = "none" | "h" | "dead";
 
+/** Extra px the face moves for `over` px of finger travel past the clamp,
+ *  given `room` px between the clamp point and the screen edge. Its rate
+ *  starts near half the finger's and decays exponentially, reaching exactly
+ *  zero at the edge — so dragging to the far side of the screen adds
+ *  STRETCH_MAX_PX and not a pixel more:
+ *
+ *    f(t) = MAX · [(1 − e^(−kt)) − kt·e^(−k)] / [1 − e^(−k) − k·e^(−k)],  t = over/room
+ *
+ *  f(0) = 0, f(1) = MAX, f'(1) = 0 (the −kt·e^(−k) term cancels the
+ *  exponential's leftover slope at t = 1). */
+function stretch(over: number, room: number): number {
+  if (over <= 0 || room <= 0) return 0;
+  const t = Math.min(over / room, 1);
+  const k = STRETCH_DECAY;
+  const tail = Math.exp(-k);
+  return (STRETCH_MAX_PX * (1 - Math.exp(-k * t) - k * t * tail)) / (1 - tail - k * tail);
+}
+
 /** The iOS Mail row gesture for a list tile: the face follows the finger
  *  sideways over an action panel, 1:1 up to REVEAL_PX (the panel's label
- *  column) and then sticks there however far the finger goes, so the reveal
- *  never runs past the label. Reaching that point arms the action — the
+ *  column) and then only rubber-bands a few px further (STRETCH_MAX_PX at the
+ *  screen edge), so the reveal barely runs past the label. Reaching that point arms the action — the
  *  panel turns from grey to the accent and its label zooms (CSS on
  *  `data-armed`) — and pulling back un-arms it. Release while armed commits:
  *  the face holds where it is, armed look intact, while onCommit lands, then
@@ -214,10 +238,11 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
 
   const commit = (dir: SwipeDir) => {
     setPhase("commit");
-    // Nothing animates here: the face is already pinned at the reveal
-    // distance (the drag clamp put it there) and simply holds, so a plain
-    // timer paces the hold — no transitionend to wait on. `armed` is left
-    // true through it so the accent and the label zoom don't flicker.
+    // The face settles from any rubber-band stretch back to the reveal
+    // distance (the commit rule carries the return's ease, so it springs
+    // rather than jumps) and holds there; a plain timer paces the hold.
+    // `armed` is left true through it so the accent and the label zoom
+    // don't flicker.
     moveFace(dir === "left" ? -REVEAL_PX : REVEAL_PX);
     // Firing onCommit while the face is parked means the badge/label change
     // is already rendered when the card comes back; `panel` stays frozen so
@@ -277,10 +302,17 @@ export function useSwipeActions({ swipeLeft, swipeRight }: { swipeLeft: SwipeAct
     const live = !action.disabled;
     const sign = dx < 0 ? -1 : 1;
     // 1:1 under the finger like Mail until the label column is uncovered,
-    // then stuck there — the trigger point is also the furthest the face
-    // goes, so overshooting reads as resistance, not a longer slide. An
-    // inert side only budges enough for its label to explain why.
-    moveFace(live ? sign * Math.min(mag, REVEAL_PX) : sign * Math.min(mag * DISABLED_FOLLOW, DISABLED_PEEK_PX));
+    // then all but stuck there: overshoot only stretches the face a little
+    // further, dying away to nothing by the screen edge, so it reads as
+    // resistance, not a longer slide. An inert side only budges enough for
+    // its label to explain why.
+    if (live) {
+      const clampAt = startX.current + sign * REVEAL_PX;
+      const room = sign > 0 ? window.innerWidth - clampAt : clampAt;
+      moveFace(sign * (Math.min(mag, REVEAL_PX) + stretch(mag - REVEAL_PX, room)));
+    } else {
+      moveFace(sign * Math.min(mag * DISABLED_FOLLOW, DISABLED_PEEK_PX));
+    }
     // Re-render the panel on a direction change, and when the live action no
     // longer matches what it shows — e.g. "Remove download" finishing mid-drag
     // and the side becoming a live "Save offline": `live` above already
