@@ -81,12 +81,38 @@ export function cursorClue(xw: Crossword, cur: RemoteCursor) {
   );
 }
 
-/** The toast copy for a grid check. A check of a full, correct grid never
- *  happens (that's completion), so "no mistakes" always has more to fill
- *  unless the grid is simply empty. */
-export function describeCheck({ wrong, blank }: CheckSummary): string {
-  if (wrong > 0) return wrong === 1 ? "1 mistake" : `${wrong} mistakes`;
+const mistakes = (n: number) => (n === 1 ? "1 mistake" : `${n} mistakes`);
+
+/** Toast copy for the solver's own check. A full, correct grid never gets
+ *  checked (that's completion), so a clean grid check always has more to
+ *  fill unless the grid is simply empty. */
+export function describeCheck({ scope, wrong, blank }: CheckSummary): string {
+  if (scope === "cell") {
+    if (wrong > 0) return "That square's wrong";
+    return blank > 0 ? "That square's empty" : "That square's right";
+  }
+  if (scope === "word") {
+    if (wrong > 0) return `${mistakes(wrong)} in this word`;
+    return blank > 0 ? "No mistakes in this word so far" : "This word's right";
+  }
+  if (wrong > 0) return mistakes(wrong);
   return blank > 0 ? "No mistakes so far" : "No mistakes";
+}
+
+/** Toast copy for a peer's check, seen by everyone else in the session. */
+export function describePeerCheck(name: string, { scope, wrong, blank }: CheckSummary): string {
+  if (scope === "cell") {
+    return `${name} checked a square — ${wrong > 0 ? "wrong" : blank > 0 ? "empty" : "right"}`;
+  }
+  const verdict =
+    wrong > 0
+      ? mistakes(wrong)
+      : blank > 0
+        ? "no mistakes so far"
+        : scope === "word"
+          ? "all right"
+          : "no mistakes";
+  return `${name} checked ${scope === "word" ? "a word" : "the grid"} — ${verdict}`;
 }
 
 export type SessionNotice =
@@ -117,7 +143,7 @@ export interface SessionApi {
    *  append-only, no edit or delete. */
   comments: SessionComment[];
   postComment: (body: string) => Promise<void>;
-  /** Tell the room this player just checked the whole grid. */
+  /** Tell the room this player just checked a square, word or the grid. */
   announceCheck: (summary: CheckSummary) => void;
 }
 
@@ -306,7 +332,7 @@ export function useSession(
         onCheck: (sid, summary) => {
           const meta = peersBySidRef.current.get(sid);
           const name = meta?.displayName || meta?.username || "Someone";
-          pushNotice(`${name} checked the grid — ${describeCheck(summary).toLowerCase()}`);
+          pushNotice(describePeerCheck(name, summary));
         },
         onEnded: () => {
           setEnded(true);

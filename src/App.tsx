@@ -931,13 +931,13 @@ function Solver({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, xw.completed]);
 
-  // Confirm a hand-run grid check — with no mistakes it otherwise changes
-  // nothing on screen. Shares the session notice stack's look, and in a
-  // session tells everyone else too.
+  // Confirm a hand-run check (square, word or grid) — with no mistakes it
+  // otherwise changes nothing on screen. Shares the session notice stack's
+  // look, and in a session tells everyone else too.
   const [checkToast, setCheckToast] = useState<{ id: number; text: string; leaving?: boolean } | null>(null);
   useEffect(() => {
     const result = xw.lastCheck;
-    if (!result || result.scope !== "puzzle") return;
+    if (!result) return;
     setCheckToast({ id: result.id, text: describeCheck(result) });
     sApi?.announceCheck(result);
     const fade = setTimeout(() => setCheckToast((t) => (t ? { ...t, leaving: true } : t)), 2500);

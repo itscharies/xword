@@ -118,9 +118,10 @@ interface DoneMsg extends Env {
   atT: number;
 }
 
-/** A peer ran a grid check by hand — purely a notification (the verdicts
+/** A peer ran a check by hand — purely a notification (the verdicts
  *  themselves travel as `marks`), so receivers can toast who checked. */
 export interface CheckSummary {
+  scope: "cell" | "word" | "puzzle";
   wrong: number;
   blank: number;
 }
@@ -250,7 +251,7 @@ export interface CoopEvents {
   onNotice(text: string): void;
   /** The grid was observed complete somewhere — force-converged locally. */
   onDone(atT: number): void;
-  /** A peer checked the whole grid (own tabs filtered out). */
+  /** A peer checked a square, word or the grid (own tabs filtered out). */
   onCheck(sid: string, summary: CheckSummary): void;
   /** The session was ended (inactivity). */
   onEnded(): void;
@@ -704,13 +705,18 @@ export class CoopClient {
    *  so a receiver's grid already shows the verdicts when the toast lands. */
   announceCheck(summary: CheckSummary): void {
     if (this.done || this.ended) return;
-    this.sendReliable("check", { wrong: summary.wrong, blank: summary.blank } as Partial<CheckMsg>);
+    this.sendReliable("check", { scope: summary.scope, wrong: summary.wrong, blank: summary.blank } as Partial<CheckMsg>);
   }
 
   private recvCheck(msg: CheckMsg): void {
     if (!this.checkEnvelope(msg, true)) return;
     if (this.done || this.ended || msg.uid === this.deps.uid) return;
-    this.deps.events.onCheck(msg.sid, { wrong: msg.wrong ?? 0, blank: msg.blank ?? 0 });
+    this.deps.events.onCheck(msg.sid, {
+      // Builds that only announced grid checks sent no scope.
+      scope: msg.scope ?? "puzzle",
+      wrong: msg.wrong ?? 0,
+      blank: msg.blank ?? 0,
+    });
   }
 
   private recvEnd(msg: EndMsg): void {
