@@ -13,6 +13,7 @@ import type {
 import {
   CoopClient,
   SESSION_IDLE_MS,
+  type CheckSummary,
   type PeerMeta,
   type RemoteCursorState,
   type WireComment,
@@ -80,6 +81,14 @@ export function cursorClue(xw: Crossword, cur: RemoteCursor) {
   );
 }
 
+/** The toast copy for a grid check. A check of a full, correct grid never
+ *  happens (that's completion), so "no mistakes" always has more to fill
+ *  unless the grid is simply empty. */
+export function describeCheck({ wrong, blank }: CheckSummary): string {
+  if (wrong > 0) return wrong === 1 ? "1 mistake" : `${wrong} mistakes`;
+  return blank > 0 ? "No mistakes so far" : "No mistakes";
+}
+
 export type SessionNotice =
   | { id: number; kind: "text"; text: string; leaving?: boolean }
   | { id: number; kind: "comment"; authorId: string; body: string; leaving?: boolean };
@@ -108,6 +117,8 @@ export interface SessionApi {
    *  append-only, no edit or delete. */
   comments: SessionComment[];
   postComment: (body: string) => Promise<void>;
+  /** Tell the room this player just checked the whole grid. */
+  announceCheck: (summary: CheckSummary) => void;
 }
 
 const NOTICE_TTL_MS = 4000;
@@ -292,6 +303,11 @@ export function useSession(
           }
           if (fixes.length > 0) engine.applyRemoteCells(fixes);
         },
+        onCheck: (sid, summary) => {
+          const meta = peersBySidRef.current.get(sid);
+          const name = meta?.displayName || meta?.username || "Someone";
+          pushNotice(`${name} checked the grid — ${describeCheck(summary).toLowerCase()}`);
+        },
         onEnded: () => {
           setEnded(true);
           setStatus((s) => (s === "completed" ? s : "ended"));
@@ -416,5 +432,6 @@ export function useSession(
     inviteUrl: `${window.location.origin}${BASE}s/${join.session.id}`,
     comments,
     postComment,
+    announceCheck: (summary) => clientRef.current?.announceCheck(summary),
   };
 }

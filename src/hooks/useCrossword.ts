@@ -16,6 +16,18 @@ import { SOURCES } from "../lib/sources.ts";
 
 export type RevealScope = "cell" | "word" | "puzzle";
 
+/** The outcome of a hand-run check, surfaced so the Solver can confirm it —
+ *  a check that finds nothing otherwise changes nothing on screen. `id`
+ *  bumps on every check so repeat identical results still register. */
+export interface CheckResult {
+  id: number;
+  scope: RevealScope;
+  /** Filled cells in scope that don't match the solution. */
+  wrong: number;
+  /** Empty cells in scope. */
+  blank: number;
+}
+
 export interface Pos {
   row: number;
   col: number;
@@ -160,6 +172,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     () => new Set(saved?.revealed ?? []),
   );
   const [wrong, setWrongState] = useState<Set<string>>(() => new Set());
+  const [lastCheck, setLastCheck] = useState<CheckResult | null>(null);
   // Rebus mode: typed letters accumulate in the active cell instead of
   // advancing, so a whole word can be entered into one square.
   const [rebus, setRebusState] = useState(false);
@@ -618,18 +631,24 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     [clueThrough, width, height, isOpen],
   );
 
+  /** `quiet` is for automatic sweeps (autocheck) — they mark cells but
+   *  don't publish a CheckResult, so they never raise a toast. */
   const check = useCallback(
-    (scope: RevealScope) => {
+    (scope: RevealScope, opts?: { quiet?: boolean }) => {
       const cells = scopeCells(scope);
       const next = new Set(wrongRef.current);
       const marks: MarkCommitDelta[] = [];
+      let wrongCount = 0;
+      let blank = 0;
       for (const { row, col } of cells) {
         const entry = entriesRef.current[row][col];
         const sol = grid[row][col].solution;
         const k = keyOf(row, col);
+        if (!entry) blank++;
         if (entry && sol && entry !== sol) {
           if (!next.has(k)) marks.push({ row, col, expect: entry, wrong: true });
           next.add(k);
+          wrongCount++;
         } else {
           if (next.has(k)) marks.push({ row, col, expect: entry, wrong: false });
           next.delete(k);
@@ -637,6 +656,9 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
       }
       setWrong(next);
       if (marks.length > 0) coopRef.current?.onMarksCommitted?.({ marks });
+      if (!opts?.quiet) {
+        setLastCheck((prev) => ({ id: (prev?.id ?? 0) + 1, scope, wrong: wrongCount, blank }));
+      }
     },
     [scopeCells, grid],
   );
@@ -867,6 +889,7 @@ export function useCrossword(puzzle: Puzzle, saved: Progress | null, coop?: Coop
     completed,
     openCells,
     isCryptic,
+    lastCheck,
     // derived helpers
     clueAt,
     solutionAt,

@@ -118,6 +118,15 @@ interface DoneMsg extends Env {
   atT: number;
 }
 
+/** A peer ran a grid check by hand — purely a notification (the verdicts
+ *  themselves travel as `marks`), so receivers can toast who checked. */
+export interface CheckSummary {
+  wrong: number;
+  blank: number;
+}
+
+interface CheckMsg extends Env, CheckSummary {}
+
 interface EndMsg extends Env {
   reason: string;
 }
@@ -241,6 +250,8 @@ export interface CoopEvents {
   onNotice(text: string): void;
   /** The grid was observed complete somewhere — force-converged locally. */
   onDone(atT: number): void;
+  /** A peer checked the whole grid (own tabs filtered out). */
+  onCheck(sid: string, summary: CheckSummary): void;
   /** The session was ended (inactivity). */
   onEnded(): void;
   /** A chat message was posted to the session. */
@@ -456,6 +467,7 @@ export class CoopClient {
     ch.on("broadcast", { event: "snapreq" }, ({ payload }) => this.recvSnapReq(payload as SnapReqMsg));
     ch.on("broadcast", { event: "snap" }, ({ payload }) => this.recvSnap(payload as SnapMsg));
     ch.on("broadcast", { event: "done" }, ({ payload }) => this.recvDone(payload as DoneMsg));
+    ch.on("broadcast", { event: "check" }, ({ payload }) => this.recvCheck(payload as CheckMsg));
     ch.on("broadcast", { event: "end" }, ({ payload }) => this.recvEnd(payload as EndMsg));
     ch.on("broadcast", { event: "comment" }, ({ payload }) => this.recvComment(payload as CommentMsg));
 
@@ -686,6 +698,19 @@ export class CoopClient {
     this.hlc.observe(msg.atT);
     this.deps.events.onDone(msg.atT);
     this.writeSnapshotNow();
+  }
+
+  /** Sent after the check's `marks`, on the same ordered reliable stream,
+   *  so a receiver's grid already shows the verdicts when the toast lands. */
+  announceCheck(summary: CheckSummary): void {
+    if (this.done || this.ended) return;
+    this.sendReliable("check", { wrong: summary.wrong, blank: summary.blank } as Partial<CheckMsg>);
+  }
+
+  private recvCheck(msg: CheckMsg): void {
+    if (!this.checkEnvelope(msg, true)) return;
+    if (this.done || this.ended || msg.uid === this.deps.uid) return;
+    this.deps.events.onCheck(msg.sid, { wrong: msg.wrong ?? 0, blank: msg.blank ?? 0 });
   }
 
   private recvEnd(msg: EndMsg): void {

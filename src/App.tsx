@@ -15,7 +15,7 @@ import {
 } from "./lib/theme.ts";
 import { confirmLeave } from "./lib/navGuard.ts";
 import { useCrossword, type CoopOptions } from "./hooks/useCrossword.ts";
-import { useSession, type CoopBridge } from "./hooks/useSession.ts";
+import { describeCheck, useSession, type CoopBridge } from "./hooks/useSession.ts";
 import { progressFromSessionState, stateFromProgress } from "./lib/coop.ts";
 import {
   createSession,
@@ -910,13 +910,13 @@ function Solver({
     () =>
       subscribePrefs(() => {
         bumpPrefs();
-        if (getAutocheck()) xwRef.current.check("puzzle");
+        if (getAutocheck()) xwRef.current.check("puzzle", { quiet: true });
       }),
     [],
   );
   // A puzzle opened with autocheck already on shows its standing mistakes.
   useEffect(() => {
-    if (getAutocheck()) xwRef.current.check("puzzle");
+    if (getAutocheck()) xwRef.current.check("puzzle", { quiet: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -930,6 +930,24 @@ function Solver({
     return () => window.removeEventListener("blur", onBlur);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, xw.completed]);
+
+  // Confirm a hand-run grid check — with no mistakes it otherwise changes
+  // nothing on screen. Shares the session notice stack's look, and in a
+  // session tells everyone else too.
+  const [checkToast, setCheckToast] = useState<{ id: number; text: string; leaving?: boolean } | null>(null);
+  useEffect(() => {
+    const result = xw.lastCheck;
+    if (!result || result.scope !== "puzzle") return;
+    setCheckToast({ id: result.id, text: describeCheck(result) });
+    sApi?.announceCheck(result);
+    const fade = setTimeout(() => setCheckToast((t) => (t ? { ...t, leaving: true } : t)), 2500);
+    const drop = setTimeout(() => setCheckToast(null), 2700);
+    return () => {
+      clearTimeout(fade);
+      clearTimeout(drop);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xw.lastCheck]);
 
   const [showModal, setShowModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1271,9 +1289,14 @@ function Solver({
           </div>
         </div>
 
-        {sApi && sApi.notices.some((n) => n.kind === "text") && (
+        {(checkToast || sApi?.notices.some((n) => n.kind === "text")) && (
           <div className="session-notices" aria-live="polite">
-            {sApi.notices
+            {checkToast && (
+              <div className={`session-notice ${checkToast.leaving ? "leaving" : ""}`} key={`check-${checkToast.id}`}>
+                {checkToast.text}
+              </div>
+            )}
+            {sApi?.notices
               .filter((n) => n.kind === "text")
               .map((n) => (
                 <div className={`session-notice ${n.leaving ? "leaving" : ""}`} key={n.id}>
