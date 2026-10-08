@@ -39,10 +39,10 @@ const INTENT_FAST_PX = 6;
 const REVEAL_PX = 96;
 // Past the clamp the face gives a little more, rubber-band style: at most this
 // many px, reached only when the finger hits the far edge of the screen…
-const STRETCH_MAX_PX = 20;
+const STRETCH_MAX_PX = 32;
 // …with the give decaying exponentially on the way there (higher = stiffer
 // sooner). See stretch().
-const STRETCH_DECAY = 4;
+const STRETCH_DECAY = 3;
 // A disabled side only peeks: this ratio of the finger, capped at DISABLED_PEEK_PX.
 const DISABLED_FOLLOW = 0.35;
 const DISABLED_PEEK_PX = 56;
