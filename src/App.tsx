@@ -84,6 +84,7 @@ import { Modal } from "./components/Modal.tsx";
 import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
+import { AdminPage } from "./components/AdminPage.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { Sk, SolverSkeleton } from "./components/Skeleton.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
@@ -221,6 +222,18 @@ function AppRoutes() {
         onOpenArchive={() => goTo("")}
         onOpenCreate={() => goTo("create")}
         onOpenDraft={(id) => goTo(`draft/${id}`)}
+        onOpenAdmin={() => goTo("admin")}
+      />
+    );
+  }
+
+  // Admin stats — "admin" for the overview, "admin/<username>" for one user.
+  if (route === "admin" || route.startsWith("admin/")) {
+    return (
+      <AdminPage
+        username={route.slice(6) || null}
+        onOpenArchive={() => goTo("")}
+        onNavigate={goTo}
       />
     );
   }

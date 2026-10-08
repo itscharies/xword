@@ -34,10 +34,12 @@ export function AccountPage({
   onOpenArchive,
   onOpenCreate,
   onOpenDraft,
+  onOpenAdmin,
 }: {
   onOpenArchive: () => void;
   onOpenCreate: () => void;
   onOpenDraft: (id: string) => void;
+  onOpenAdmin: () => void;
 }) {
   const { status, user, signInWithGoogle, signOut } = useAuth();
   const profile = useProfile();
@@ -54,7 +56,11 @@ export function AccountPage({
     } else {
       body = (
         <>
-          <AccountSummary profile={profile} onSignOut={() => void signOut()} />
+          <AccountSummary
+            profile={profile}
+            onSignOut={() => void signOut()}
+            onOpenAdmin={onOpenAdmin}
+          />
           <PuzzlesSection
             userId={user.id}
             onOpenCreate={onOpenCreate}
@@ -110,9 +116,11 @@ function SignInPrompt({
 function AccountSummary({
   profile,
   onSignOut,
+  onOpenAdmin,
 }: {
   profile: Profile;
   onSignOut: () => void;
+  onOpenAdmin: () => void;
 }) {
   const [accent, setAccentState] = useState<AccentId>(profile.accent);
 
@@ -138,6 +146,11 @@ function AccountSummary({
           <div className="account-display-name">{profile.display_name}</div>
           <div className="savedata-status">@{profile.username}</div>
         </div>
+        {profile.is_admin && (
+          <button className="btn" onClick={onOpenAdmin}>
+            Admin stats
+          </button>
+        )}
         <button className="btn" onClick={onSignOut}>
           Sign out
         </button>

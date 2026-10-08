@@ -62,6 +62,7 @@ interface MockProgress {
 const IRIS = "11111111-1111-1111-1111-111111111111";
 const MAX = "22222222-2222-2222-2222-222222222222";
 const SAM = "33333333-3333-3333-3333-333333333333";
+const ADA = "44444444-4444-4444-4444-444444444444";
 
 function isoDaysAgo(n: number): string {
   const d = new Date();
@@ -204,6 +205,8 @@ const db = {
     { user_id: IRIS, username: "iris_solver", display_name: "Iris", accent: "pink", is_admin: false },
     { user_id: MAX, username: "max_cryptic", display_name: "Max", accent: "blue", is_admin: false },
     { user_id: SAM, username: "sam_grid", display_name: "Sam", accent: "orange", is_admin: false },
+    // The one admin — for the /admin stats page.
+    { user_id: ADA, username: "ada_admin", display_name: "Ada", accent: "green", is_admin: true },
   ] as MockProfile[],
 
   // Sam follows Iris (one-way); Iris and Max follow each other (mutual).
@@ -741,6 +744,223 @@ class MockQueryBuilder implements PromiseLike<{ data: unknown; error: { message:
 }
 
 // ---------------------------------------------------------------------------
+// Admin stats rpcs — a rough JS stand-in for 20261008000000_admin_stats.sql.
+// The seed has no timestamps on profiles/progress, so "joined" and "last
+// active" are synthesized; good enough to lay the page out against.
+// ---------------------------------------------------------------------------
+
+function mockIsAdmin(): boolean {
+  return !!db.profiles.find((p) => p.user_id === currentUserId)?.is_admin;
+}
+
+const ADMIN_DENIED = { data: null, error: { message: "admin only", code: "42501" } };
+
+const mockJoined = (i: number) => `${isoDaysAgo(40 - i * 9)}T08:00:00Z`;
+const mockActive = (i: number) => `${isoDaysAgo(i)}T12:00:00Z`;
+
+function mockUserRef(p: MockProfile) {
+  return { user_id: p.user_id, username: p.username, display_name: p.display_name, accent: p.accent };
+}
+
+function mockLastActive(userId: string): string | null {
+  const i = db.progress.findIndex((g) => g.user_id === userId);
+  return i < 0 ? null : mockActive(i);
+}
+
+const isDone = (g: MockProgress) => !!(g.data as { completed?: boolean }).completed;
+const elapsedOf = (g: MockProgress) => (g.data as { elapsed?: number }).elapsed ?? 0;
+
+function median(xs: number[]): number | null {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function mockAdminOverview() {
+  const done = db.progress.filter(isDone);
+  const pub = (v: MockPuzzle["visibility"]) => db.puzzles.filter((p) => p.visibility === v).length;
+  const followerCount = (id: string) => db.follows.filter((f) => f.followee_id === id).length;
+  const bySource = new Map<string, MockProgress[]>();
+  for (const g of db.progress) {
+    if (!g.source) continue;
+    bySource.set(g.source, [...(bySource.get(g.source) ?? []), g]);
+  }
+  return {
+    generated_at: new Date().toISOString(),
+    users: {
+      total: db.profiles.length,
+      new_7d: 1,
+      new_30d: 2,
+      unclaimed: 0,
+      active_1d: 1,
+      active_7d: new Set(db.progress.map((g) => g.user_id)).size,
+      active_30d: new Set(db.progress.map((g) => g.user_id)).size,
+      admins: db.profiles.filter((p) => p.is_admin).length,
+    },
+    solving: {
+      started: db.progress.length,
+      completed: done.length,
+      completed_7d: done.length,
+      completed_30d: done.length,
+      median_seconds: median(done.map(elapsedOf)),
+      clean: done.length,
+      avg_rating: null,
+    },
+    community: {
+      public: pub("public"),
+      mutual: pub("mutual"),
+      unlisted: pub("unlisted"),
+      draft: pub("draft"),
+      authors: new Set(db.puzzles.filter((p) => p.visibility !== "draft").map((p) => p.author_id)).size,
+      new_30d: db.puzzles.filter((p) => p.visibility !== "draft").length,
+      completions: db.puzzles.reduce((n, p) => n + p.completions, 0),
+    },
+    social: {
+      follows: db.follows.length,
+      mutual_pairs: db.follows.filter((f) => f.follower_id < f.followee_id && isFollowing(f.followee_id, f.follower_id)).length,
+      following_anyone: new Set(db.follows.map((f) => f.follower_id)).size,
+      new_30d: db.follows.length,
+    },
+    coop: { sessions: 0, completed: 0, open: 0, sessions_30d: 0, avg_players: null, messages: 0 },
+    // Deterministic wiggle so the charts have something to draw.
+    daily: Array.from({ length: 30 }, (_, i) => ({
+      day: isoDaysAgo(29 - i),
+      signups: i % 9 === 0 ? 1 : 0,
+      active: 1 + ((i * 7) % 4),
+      completed: (i * 5) % 6,
+    })),
+    sources: [...bySource].map(([source, rows]) => ({
+      source,
+      started: rows.length,
+      completed: rows.filter(isDone).length,
+      solvers: new Set(rows.map((g) => g.user_id)).size,
+      median_seconds: median(rows.filter(isDone).map(elapsedOf)),
+      avg_rating: null,
+    })),
+    top_puzzles: db.puzzles
+      .filter((p) => p.visibility !== "draft")
+      .sort((a, b) => b.completions - a.completions)
+      .map((p) => {
+        const a = db.profiles.find((x) => x.user_id === p.author_id);
+        return {
+          id: p.id,
+          title: p.title,
+          visibility: p.visibility,
+          completions: p.completions,
+          created_at: p.created_at,
+          author_username: a?.username ?? null,
+          author_display_name: a?.display_name ?? null,
+        };
+      }),
+    most_followed: db.profiles
+      .map((p) => ({ ...mockUserRef(p), followers: followerCount(p.user_id) }))
+      .filter((p) => p.followers > 0)
+      .sort((a, b) => b.followers - a.followers),
+    top_solvers_30d: db.profiles
+      .map((p) => ({ ...mockUserRef(p), completed: done.filter((g) => g.user_id === p.user_id).length }))
+      .filter((p) => p.completed > 0)
+      .sort((a, b) => b.completed - a.completed),
+  };
+}
+
+function mockAdminSearchUsers(query: string, limit: number) {
+  const q = query.trim().toLowerCase();
+  return db.profiles
+    .map((p, i) => ({
+      ...mockUserRef(p),
+      is_admin: p.is_admin,
+      email: `${p.username}@mock.local`,
+      created_at: mockJoined(i),
+      last_active_at: mockLastActive(p.user_id),
+      solved: db.progress.filter((g) => g.user_id === p.user_id && isDone(g)).length,
+      following: db.follows.filter((f) => f.follower_id === p.user_id).length,
+      followers: db.follows.filter((f) => f.followee_id === p.user_id).length,
+      puzzles: db.puzzles.filter((x) => x.author_id === p.user_id && x.visibility !== "draft").length,
+    }))
+    .filter((u) => !q || [u.username, u.display_name, u.email].some((f) => f.toLowerCase().includes(q)))
+    .slice(0, limit);
+}
+
+function mockAdminUserDetail(username: string) {
+  const i = db.profiles.findIndex((p) => p.username === username.toLowerCase());
+  if (i < 0) return null;
+  const p = db.profiles[i];
+  const mine = db.progress.filter((g) => g.user_id === p.user_id);
+  const done = mine.filter(isDone);
+  const edge = (other: string, at: string, mutual: boolean) => {
+    const o = db.profiles.find((x) => x.user_id === other)!;
+    return { ...mockUserRef(o), followed_at: at, mutual };
+  };
+  return {
+    profile: {
+      ...mockUserRef(p),
+      is_admin: p.is_admin,
+      created_at: mockJoined(i),
+      email: `${p.username}@mock.local`,
+      signed_up_at: mockJoined(i),
+      last_sign_in_at: mockActive(1),
+      provider: "google",
+      last_active_at: mockLastActive(p.user_id),
+    },
+    stats: {
+      started: mine.length,
+      completed: done.length,
+      completed_30d: done.length,
+      clean: done.length,
+      median_seconds: median(done.map(elapsedOf)),
+      total_seconds: mine.reduce((n, g) => n + elapsedOf(g), 0),
+      avg_rating: null,
+      sessions: 0,
+      messages: 0,
+      active_days_30d: mine.length,
+    },
+    sources: [...new Set(mine.map((g) => g.source ?? "community"))].map((source) => {
+      const rows = mine.filter((g) => (g.source ?? "community") === source);
+      return { source, started: rows.length, completed: rows.filter(isDone).length };
+    }),
+    following: db.follows
+      .filter((f) => f.follower_id === p.user_id)
+      .map((f) => edge(f.followee_id, mockJoined(i), isFollowing(f.followee_id, p.user_id))),
+    followers: db.follows
+      .filter((f) => f.followee_id === p.user_id)
+      .map((f) => edge(f.follower_id, mockJoined(i), isFollowing(p.user_id, f.follower_id))),
+    puzzles: db.puzzles
+      .filter((x) => x.author_id === p.user_id)
+      .map((x) => ({
+        id: x.id,
+        title: x.title,
+        visibility: x.visibility,
+        completions: x.completions,
+        created_at: x.created_at,
+        width: x.data.width,
+        height: x.data.height,
+        solvers: db.progress.filter((g) => g.puzzle_id === x.id).length,
+      })),
+    solves: mine.map((g, j) => {
+      const d = g.data as { elapsed?: number; filled?: number; total?: number; revealed?: string[]; rating?: number };
+      const title = g.puzzle_id
+        ? db.puzzles.find((x) => x.id === g.puzzle_id)?.title
+        : db.syndicated_puzzles.find((x) => x.source === g.source && x.puzzle_date === g.puzzle_date)?.title;
+      return {
+        source: g.source,
+        puzzle_date: g.puzzle_date,
+        puzzle_id: g.puzzle_id,
+        title: title ?? null,
+        updated_at: mockActive(j),
+        completed_at: isDone(g) ? mockActive(j) : null,
+        elapsed: d.elapsed ?? null,
+        filled: d.filled ?? null,
+        total: d.total ?? null,
+        revealed: d.revealed?.length ?? 0,
+        rating: d.rating ?? null,
+      };
+    }),
+    sessions: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 
 /** A duck-typed stand-in for the real SupabaseClient — cast at the one call
  *  site in supabase.ts. Only implements what's exercised above. */
@@ -802,6 +1022,20 @@ export function createMockSupabase() {
           },
           error: null,
         };
+      }
+      if (name === "admin_overview") {
+        return mockIsAdmin() ? { data: mockAdminOverview(), error: null } : ADMIN_DENIED;
+      }
+      if (name === "admin_search_users") {
+        if (!mockIsAdmin()) return ADMIN_DENIED;
+        return {
+          data: mockAdminSearchUsers((params?.p_query as string) ?? "", (params?.p_limit as number) ?? 50),
+          error: null,
+        };
+      }
+      if (name === "admin_user_detail") {
+        if (!mockIsAdmin()) return ADMIN_DENIED;
+        return { data: mockAdminUserDetail(params?.p_username as string), error: null };
       }
       return { data: null, error: { message: `mockSupabase: unknown rpc "${name}"` } };
     },

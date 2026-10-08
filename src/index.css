@@ -719,6 +719,157 @@ select.text-input.compact {
 .account-identity { flex: 1; min-width: 0; }
 .account-display-name { font-weight: 700; }
 
+/* ===========================================================================
+   Admin stats page (/admin) — the account page's section blocks, with stat
+   tiles, small daily bar charts and plain tables inside.
+   ======================================================================== */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  padding: 12px 14px;
+  min-width: 0;
+}
+.admin-stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.admin-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.admin-stat-sub { font-size: 12px; color: var(--muted); }
+
+.admin-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.admin-chart {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+  padding: 12px 14px;
+}
+.admin-chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.admin-chart-readout {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.admin-chart svg { width: 100%; height: 90px; display: block; }
+.admin-chart-bar { fill: var(--accent); }
+.admin-chart-bar.hover { fill: var(--fg); }
+.admin-chart-axis { stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.admin-chart-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.admin-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 26px;
+}
+
+.admin-search { width: 100%; max-width: 480px; }
+
+/* Wide tables scroll sideways inside their own box, never the page. */
+.admin-table-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  box-shadow: var(--sh) var(--sh) 0 var(--shadow-col);
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--fg);
+}
+.admin-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: var(--bw) solid var(--line);
+  white-space: nowrap;
+}
+.admin-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--surface-2);
+  white-space: nowrap;
+}
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (hover: hover) {
+  .admin-table tbody tr:hover td { background: var(--surface-2); }
+}
+
+.admin-link { color: var(--fg); text-decoration: none; font-weight: 600; }
+.admin-link:hover { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+.title-block h1 .admin-link { font-weight: inherit; }
+.admin-user-cell { display: inline-flex; align-items: center; gap: 8px; }
+.admin-user-cell svg { flex: none; }
+
+.admin-user-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-user-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--accent-2);
+  color: #000;
+  border: 1px solid var(--line);
+  vertical-align: middle;
+}
+
 .seg { display: flex; gap: 0; border: var(--bw) solid var(--line); width: fit-content; }
 .seg-btn {
   display: inline-flex;
