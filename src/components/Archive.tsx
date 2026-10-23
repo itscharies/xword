@@ -5,6 +5,7 @@ import { getFilters, setFilters, type Filters } from "../lib/theme.ts";
 import { Modal } from "./Modal.tsx";
 import { ThemeControls } from "./ThemeControls.tsx";
 import { SaveDataControls } from "./SaveDataControls.tsx";
+import { UpdateLog } from "./UpdateLog.tsx";
 import { HowToPlay } from "./HowToPlay.tsx";
 import { AboutPuzzles } from "./AboutPuzzles.tsx";
 import {
@@ -632,6 +633,7 @@ export function Archive({
           <ThemeControls />
           {/* Signed-in progress lives in Supabase, not a local JSON backup. */}
           {!user && <SaveDataControls />}
+          <UpdateLog />
         </Modal>
       )}
 

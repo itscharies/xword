@@ -476,6 +476,23 @@ summary,
    default intrinsic width. */
 .savedata-actions .text-input { flex: 1; min-width: 120px; }
 .savedata-status { font-size: 12px; color: var(--muted); }
+/* Service-worker handshake trace (components/UpdateLog.tsx): newest first,
+   monospace, boxed and scrollable so a long history can't push the Settings
+   modal off the bottom of a phone screen. */
+.sw-log {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--surface-2);
+  border: var(--bw) solid var(--line);
+  word-break: break-word;
+}
+.sw-log-time { color: var(--muted); }
 
 .offline-puzzle-list { display: flex; flex-direction: column; gap: 8px; }
 .offline-puzzle-row {
