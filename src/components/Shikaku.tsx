@@ -62,7 +62,7 @@ export function ShikakuHome({
 
         <section>
           <h3 className="shk-section-head">Today’s puzzles</h3>
-          <div className="toolbar">
+          <div className="shk-row">
             {SHIKAKU_SIZES.map((n) => {
               const p = dailyState(n);
               return (
@@ -81,7 +81,7 @@ export function ShikakuHome({
 
         <section>
           <h3 className="shk-section-head">Random puzzle</h3>
-          <div className="toolbar">
+          <div className="shk-row">
             {SHIKAKU_SIZES.map((n) => (
               <button
                 key={n}
@@ -97,7 +97,7 @@ export function ShikakuHome({
         {inProgress.length > 0 && (
           <section>
             <h3 className="shk-section-head">Continue</h3>
-            <div className="toolbar">
+            <div className="shk-row">
               {inProgress.slice(0, 8).map((s) => (
                 <button key={s.id} className="btn" onClick={() => onNavigate(`shikaku/${s.id}`)}>
                   {labelFor(s.id)} · {fmtTime(s.progress.elapsed)}
@@ -436,7 +436,7 @@ function Board({
         )}
       </div>
 
-      <div className="toolbar shk-actions">
+      <div className="shk-row shk-actions">
         <button className="btn" onClick={undo} disabled={history.length === 0}>
           Undo
         </button>

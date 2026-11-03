@@ -3712,5 +3712,8 @@ html.sc-locked {
 }
 .shk-wrap.is-solved .shk-rect { background: rgba(var(--accent-rgb), 0.5); }
 .shk-status { font-size: 13px; color: var(--muted); align-self: center; min-height: 1.2em; }
+/* Own row class, not .toolbar: the mobile .toolbar rule squeezes buttons
+   to icon squares, and these are text-only. */
+.shk-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.shk-row .btn { white-space: nowrap; }
 .shk-actions { justify-content: center; }
-.shk-home .btn, .shk-actions .btn { white-space: nowrap; }
