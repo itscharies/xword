@@ -13,7 +13,6 @@ import {
   DeleteIcon,
   DownloadIcon,
   FilterIcon,
-  SquareIcon,
   InfoIcon,
   PeopleIcon,
   SettingsIcon,
@@ -155,13 +154,11 @@ export function Archive({
   onOpenAccount,
   onOpenPuzzle,
   onJoinSession,
-  onOpenShikaku,
 }: {
   onPick: (source: PuzzleSource, date: string) => void;
   onOpenAccount: () => void;
   onOpenPuzzle: (id: string) => void;
   onJoinSession: (sessionId: string) => void;
-  onOpenShikaku: () => void;
 }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -528,12 +525,6 @@ export function Archive({
       <div className="archive-filters-bar">
         <button className="btn filters-btn" onClick={() => setShowFilters(true)}>
           <FilterIcon /> Filters{filterCount > 0 ? ` (${filterCount})` : ""}
-        </button>
-        {/* Shikaku lives beside the crossword feed for now — a visible way
-            in while it's a demo; it may move once there are more puzzle
-            types. */}
-        <button className="btn filters-btn" onClick={onOpenShikaku}>
-          <SquareIcon /> Shikaku
         </button>
       </div>
 

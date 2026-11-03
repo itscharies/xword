@@ -85,7 +85,6 @@ import { Archive } from "./components/Archive.tsx";
 import { Builder } from "./components/Builder.tsx";
 import { AccountPage } from "./components/AccountPage.tsx";
 import { AdminPage } from "./components/AdminPage.tsx";
-import { ShikakuHome, ShikakuPlay } from "./components/Shikaku.tsx";
 import { Logo } from "./components/Logo.tsx";
 import { Sk, SolverSkeleton } from "./components/Skeleton.tsx";
 import { AnagramHelper } from "./components/AnagramHelper.tsx";
@@ -288,24 +287,6 @@ function AppRoutes() {
     );
   }
 
-  // Shikaku — a self-contained logic puzzle (no backend). "shikaku" is the
-  // size picker, "shikaku/<id>" plays one; the id is a pure seed, so the
-  // same URL always replays the same puzzle. Never collides with
-  // <source>/<date>: "shikaku" isn't a PuzzleSource.
-  if (route === "shikaku") {
-    return <ShikakuHome onOpenArchive={() => goTo("")} onNavigate={goTo} />;
-  }
-  if (route.startsWith("shikaku/")) {
-    return (
-      <ShikakuPlay
-        key={route}
-        id={route.slice(8)}
-        onOpenArchive={() => goTo("")}
-        onNavigate={goTo}
-      />
-    );
-  }
-
   // A "<source>/<date>" path shows that puzzle directly — PuzzleView fetches
   // it itself and reports not-found, so this doesn't wait on the catalogue.
   if (isSource(routeSrc) && routeDate) {
@@ -328,7 +309,6 @@ function AppRoutes() {
       onOpenAccount={() => goTo("account")}
       onOpenPuzzle={(id) => goTo(`p/${id}`)}
       onJoinSession={(id) => goTo(`s/${id}`)}
-      onOpenShikaku={() => goTo("shikaku")}
     />
   );
 }
