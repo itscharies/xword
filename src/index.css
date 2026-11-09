@@ -35,6 +35,21 @@
   color-scheme: dark;
 }
 
+/* In dark mode the neutral greys above give way to the accent: page, panels,
+   cells sit a touch darker than the old greys and take the accent's hue at
+   low chroma (OKLCH, chroma = accent's x0.2 capped at 0.03 — scratch script,
+   pinned as hex). Borders, shadows and blocked squares stay pure black. */
+[data-theme="dark"][data-accent="red"]     { --bg: #200f0d; --surface: #301d1b; --cell-bg: #301d1b; --surface-2: #3e2927; --shaded: #442c2a; --fg: #eae5e4; --cell-fg: #eae5e4; --muted: #988c8b; }
+[data-theme="dark"][data-accent="orange"]  { --bg: #1f1007; --surface: #2e1e15; --cell-bg: #2e1e15; --surface-2: #3d2a20; --shaded: #422e22; --fg: #eae5e3; --cell-fg: #eae5e3; --muted: #978d87; }
+[data-theme="dark"][data-accent="yellow"]  { --bg: #171404; --surface: #262312; --cell-bg: #262312; --surface-2: #33301c; --shaded: #37341e; --fg: #e7e6e2; --cell-fg: #e7e6e2; --muted: #919085; }
+[data-theme="dark"][data-accent="lime"]    { --bg: #0b180b; --surface: #1a2619; --cell-bg: #1a2619; --surface-2: #253425; --shaded: #283828; --fg: #e4e7e4; --cell-fg: #e4e7e4; --muted: #8a928a; }
+[data-theme="dark"][data-accent="green"]   { --bg: #0a180d; --surface: #18271b; --cell-bg: #18271b; --surface-2: #233426; --shaded: #263829; --fg: #e3e7e4; --cell-fg: #e3e7e4; --muted: #89928a; }
+[data-theme="dark"][data-accent="cyan"]    { --bg: #03181b; --surface: #10262a; --cell-bg: #10262a; --surface-2: #1b3438; --shaded: #1c383d; --fg: #e2e7e8; --cell-fg: #e2e7e8; --muted: #869294; }
+[data-theme="dark"][data-accent="blue"]    { --bg: #0c1422; --surface: #1a2331; --cell-bg: #1a2331; --surface-2: #263040; --shaded: #293346; --fg: #e4e6ea; --cell-fg: #e4e6ea; --muted: #8a8f99; }
+[data-theme="dark"][data-accent="indigo"]  { --bg: #141221; --surface: #222030; --cell-bg: #222030; --surface-2: #2f2c3f; --shaded: #333044; --fg: #e6e5ea; --cell-fg: #e6e5ea; --muted: #8f8e98; }
+[data-theme="dark"][data-accent="violet"]  { --bg: #19101d; --surface: #281e2d; --cell-bg: #281e2d; --surface-2: #352a3b; --shaded: #3a2e40; --fg: #e8e5e9; --cell-fg: #e8e5e9; --muted: #938d96; }
+[data-theme="dark"][data-accent="pink"]    { --bg: #1f0e14; --surface: #2f1c22; --cell-bg: #2f1c22; --surface-2: #3d282f; --shaded: #432b32; --fg: #eae5e6; --cell-fg: #eae5e6; --muted: #988c8f; }
+
 [data-theme="light"] {
   --bg: #ffffff;
   --fg: #000000;
