@@ -48,7 +48,6 @@ export function getMode(): Mode {
 
 export function setMode(mode: Mode): void {
   root().dataset.theme = resolve(mode);
-  updateThemeColor();
   try {
     localStorage.setItem(THEME_KEY, mode);
   } catch {
@@ -62,9 +61,7 @@ export function initTheme(): void {
   if (themeWatched || typeof matchMedia === "undefined") return;
   themeWatched = true;
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-    if (getMode() !== "system") return;
-    root().dataset.theme = e.matches ? "dark" : "light";
-    updateThemeColor();
+    if (getMode() === "system") root().dataset.theme = e.matches ? "dark" : "light";
   });
 }
 
@@ -77,7 +74,6 @@ export function getAccent(): AccentId {
 export function applyAccent(accent: AccentId): void {
   root().dataset.accent = accent;
   updateFavicon();
-  updateThemeColor();
 }
 
 /** The last accent saved locally — the signed-out settings choice or the
@@ -105,23 +101,6 @@ export function setAccent(accent: AccentId): void {
   } catch {
     /* ignore */
   }
-}
-
-/** Point the browser-chrome colour (Safari's tab bar, the iOS status bar on
- *  the installed app) at the page background. Dark mode's --bg is tinted per
- *  accent (see index.css), so index.html's static value is only the
- *  pre-paint fallback; this re-reads the live token after any theme or
- *  accent change. */
-export function updateThemeColor(): void {
-  const bg = getComputedStyle(root()).getPropertyValue("--bg").trim();
-  if (!bg) return;
-  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (!meta) {
-    meta = document.createElement("meta");
-    meta.name = "theme-color";
-    document.head.appendChild(meta);
-  }
-  meta.content = bg;
 }
 
 /** Redraw the favicon (the highlighted-word mark) in the current accent colour,
