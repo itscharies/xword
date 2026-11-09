@@ -12,6 +12,7 @@ import {
   setAccent,
   subscribePrefs,
   updateFavicon,
+  updateThemeColor,
 } from "./lib/theme.ts";
 import { confirmLeave } from "./lib/navGuard.ts";
 import { useCrossword, type CoopOptions } from "./hooks/useCrossword.ts";
@@ -190,6 +191,7 @@ function AppRoutes() {
   useEffect(() => {
     initTheme();
     updateFavicon();
+    updateThemeColor();
   }, []);
 
   // Signed in: the theme accent follows the profile's avatar colour, so the
