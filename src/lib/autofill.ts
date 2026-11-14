@@ -22,9 +22,9 @@ export interface FillRequest {
   runId: number;
   wordlistUrl: string;
   slots: SlotSpec[];
-  /** Abandon the search after trying this many words (bounds CPU time). */
-  nodeBudget: number;
-  /** Stop after streaming this many fills (bounds the options list). */
+  /** Stop after streaming this many fills (bounds the options list). The
+   *  search has no other limit: it runs until it has covered every
+   *  combination, or is cancelled. */
   maxSolutions: number;
   /** Tie-break seed: words of equal score are tried in a per-run shuffled
    *  order (STWL scores are coarse bands, so a stable sort would otherwise
@@ -45,8 +45,9 @@ export type FillResponse =
   | {
       type: "done";
       runId: number;
-      /** True when the whole search space was covered (a "no fill" is then
-       *  definitive, not just a budget timeout). */
+      /** True when the whole search space was covered — with no fills found,
+       *  that's proof none exists. False only when the solution cap ended the
+       *  search early. */
       exhausted: boolean;
       nodes: number;
     }

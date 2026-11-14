@@ -58,9 +58,8 @@ export function BuilderAutofill({ b }: { b: Builder }) {
       {af.status === "done" && !af.error && af.count === 0 && (
         <>
           <span className="autofill-msg">
-            {af.exhausted
-              ? "No combination of words completes this grid — try freeing up some letters."
-              : "Nothing found within the search budget — try filling a few more squares."}
+            No combination of words completes this grid — try freeing up some
+            letters.
           </span>
           <button className="btn" onClick={af.dismiss}>
             OK

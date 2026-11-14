@@ -9,14 +9,11 @@ import type {
   WorkerRequest,
 } from "../lib/autofill.ts";
 
-// Bound on the background search: how many candidate words it may try before
-// giving up. A CPU bound, not a memory one — at ~14µs a word this is around a
-// minute of worst-case background time, streaming and cancellable throughout.
-const NODE_BUDGET = 4_000_000;
 // Stop after this many fills: nobody cycles further than this, and on easy
-// grids an uncapped enumeration would spend the whole budget piling up
-// options (the one list that grows without bound). Hard grids — fills rare
-// or none found yet — get the full budget.
+// grids an uncapped enumeration would pile up options without end. It's the
+// search's only limit — until it has fills to show it never gives up: it
+// runs until it has covered every combination (a definitive "no fill"), the
+// author cancels, or an edit invalidates it.
 const SOLUTION_CAP = 200;
 
 const keyOf = (r: number, c: number) => `${r},${c}`;
@@ -148,7 +145,6 @@ export function useAutofill({
       runId: runIdRef.current,
       wordlistUrl: import.meta.env.BASE_URL + "wordlist.txt",
       slots,
-      nodeBudget: NODE_BUDGET,
       maxSolutions: SOLUTION_CAP,
       seed: Math.floor(Math.random() * 0x7fffffff),
     };
